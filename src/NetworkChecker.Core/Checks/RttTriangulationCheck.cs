@@ -6,8 +6,7 @@ using NetworkChecker.Core.Net;
 namespace NetworkChecker.Core.Checks;
 
 /// <summary>
-/// SNITCH (β): RTT-триангуляция. Если до RU-хостов задержка больше, чем до иностранных,
-/// трафик, вероятно, выходит за пределы страны и возвращается — признак туннеля.
+/// RTT-триангуляция (β): сравнение задержек, не определяет географию маршрута.
 /// </summary>
 public sealed class RttTriangulationCheck : ICheck
 {
@@ -19,11 +18,23 @@ public sealed class RttTriangulationCheck : ICheck
     public async Task<CheckResult> RunAsync(CheckContext context, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        if (context.Options.OfflineMode)
+            return new CheckResult
+            {
+                Category = Category,
+                Title = Title,
+                Subtitle = Subtitle,
+                Weight = Weight,
+                Status = CheckStatus.Skipped,
+                Findings = [Finding.Info("Офлайн-режим", "Внешние сетевые проверки отключены.")],
+                Duration = sw.Elapsed,
+            };
         var findings = new List<Finding>();
         var metrics = new List<Metric>();
 
-        var ru = await SampleGroupAsync(context.Options.RttRussianHosts, context, ct).ConfigureAwait(false);
-        var foreign = await SampleGroupAsync(context.Options.RttForeignHosts, context, ct).ConfigureAwait(false);
+        var methodsUsed = new List<string>();
+        var ru = await SampleGroupAsync(context.Options.RttRussianHosts, context, methodsUsed, ct).ConfigureAwait(false);
+        var foreign = await SampleGroupAsync(context.Options.RttForeignHosts, context, methodsUsed, ct).ConfigureAwait(false);
 
         if (ru.Samples == 0 || foreign.Samples == 0)
         {
@@ -50,52 +61,38 @@ public sealed class RttTriangulationCheck : ICheck
         metrics.Add(new Metric("RU медиана", Format(ru.Median), string.Join(", ", ru.Hosts)));
         metrics.Add(new Metric("Иностранные медиана", Format(foreign.Median), string.Join(", ", foreign.Hosts)));
         metrics.Add(new Metric("Разница", $"{delta:+0;-0;0} мс", "RU минус иностранные"));
-        metrics.Add(new Metric("Потери пакетов", $"RU {ru.Loss:F0}%, мир {foreign.Loss:F0}%"));
-        var methods = Methods.Distinct().ToList();
+        metrics.Add(new Metric("Успешных замеров", $"RU {ru.Samples}, мир {foreign.Samples}", "ICMP и TCP не дают общей оценки потерь пакетов"));
+        var methods = methodsUsed.Distinct().ToList();
         metrics.Add(new Metric("Метод измерения", string.Join(" + ", methods),
-            methods.Contains("TCP") ? "ICMP заблокирован, часть замеров сделана по TCP :443" : "ICMP echo"));
+            methods.Contains("TCP") ? "ICMP не ответил для части целей; использован TCP :443 или :80" : "ICMP echo"));
 
         // Логика: при прямом подключении из РФ медиана до RU-хостов обычно заметно ниже или сравнима.
         if (delta > 60)
         {
             findings.Add(Finding.Warning(
                 "RU-хосты отвечают медленнее иностранных",
-                $"Разница {delta:F0} мс. Похоже, трафик к российским адресам уходит за границу и возвращается — типично для зарубежного туннеля.",
+                $"Разница {delta:F0} мс. Это может быть связано с маршрутами, нагрузкой или расположением узлов; географию пути по RTT определить нельзя.",
                 $"RU {ru.Median:F0} мс против {foreign.Median:F0} мс"));
         }
         else if (Math.Abs(delta) <= 60)
         {
             findings.Add(Finding.Info("Задержки симметричны",
-                "Разница в пределах нормы: нет признаков «дальнего» маршрута до российских адресов."));
+                "Разница менее заданного порога не устанавливает географию маршрута."));
         }
         else
         {
             findings.Add(Finding.Info("Российские хосты ближе",
-                "Ожидаемая картина для прямого подключения из РФ."));
+                "Такая разница сама по себе не устанавливает местоположение пользователя или тип подключения."));
         }
 
-        if (foreign.Loss > 30 && ru.Loss < 10)
-        {
-            findings.Add(Finding.Notice("Высокие потери до иностранных хостов",
-                "Иногда это следствие блокировки ICMP на стороне провайдера, а не признак обхода.",
-                $"мир {foreign.Loss:F0}%"));
-        }
-
-        if (ru.Jitter > 80 || foreign.Jitter > 80)
-        {
-            findings.Add(Finding.Notice("Высокий jitter",
-                "Нестабильная задержка характерна для шифрованного туннеля с реорганизацией пакетов.",
-                $"RU {ru.Jitter:F0} мс, мир {foreign.Jitter:F0} мс"));
-        }
-
-        var detected = findings.Any(f => f.Severity == Severity.Warning);
+        var review = findings.Any(f => f.Severity is Severity.Warning or Severity.Notice);
 
         return new CheckResult
         {
             Category = Category,
             Title = Title,
             Subtitle = Subtitle,
-            Status = detected ? CheckStatus.Detected : CheckStatus.Clean,
+            Status = review ? CheckStatus.NeedsReview : CheckStatus.Clean,
             Findings = findings,
             Metrics = metrics,
             Duration = sw.Elapsed,
@@ -103,38 +100,28 @@ public sealed class RttTriangulationCheck : ICheck
         };
     }
 
-    private async Task<GroupStats> SampleGroupAsync(IReadOnlyList<string> hosts, CheckContext context, CancellationToken ct)
+    private static async Task<GroupStats> SampleGroupAsync(IReadOnlyList<string> hosts, CheckContext context, List<string> methodsUsed, CancellationToken ct)
     {
         var all = new List<double>();
         var usedHosts = new List<string>();
-        var attempts = 0;
         foreach (var host in hosts)
         {
             ct.ThrowIfCancellationRequested();
             context.Progress($"RTT: {host}");
             var (samples, method) = await PingTools.SampleLatencyOrTcpAsync(host, 3, TimeSpan.FromSeconds(2), ct).ConfigureAwait(false);
-            attempts += 5;
-            if (samples.Count > 0) Methods.Add(method);
+            if (samples.Count > 0) methodsUsed.Add(method);
             if (samples.Count == 0) continue;
             usedHosts.Add(host);
             all.AddRange(samples.Select(s => s.TotalMilliseconds));
         }
 
-        if (all.Count == 0) return new GroupStats(0, 0, 0, usedHosts, attempts);
+        if (all.Count == 0) return new GroupStats(0, 0, usedHosts);
         all.Sort();
         var median = all[all.Count / 2];
-        var mean = all.Average();
-        var jitter = Math.Sqrt(all.Average(v => Math.Pow(v - mean, 2)));
-        var loss = attempts == 0 ? 0 : (attempts - all.Count) / (double)attempts * 100;
-        return new GroupStats(all.Count, median, jitter, usedHosts, attempts) { Loss = loss };
+        return new GroupStats(all.Count, median, usedHosts);
     }
 
     private static string Format(double value) => value <= 0 ? "—" : $"{value:F0} мс";
 
-    public List<string> Methods { get; } = [];
-
-    private sealed record GroupStats(int Samples, double Median, double Jitter, List<string> Hosts, int Attempts)
-    {
-        public double Loss { get; init; }
-    }
+    private sealed record GroupStats(int Samples, double Median, List<string> Hosts);
 }

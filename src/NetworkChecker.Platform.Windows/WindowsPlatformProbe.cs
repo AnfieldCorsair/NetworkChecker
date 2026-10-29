@@ -515,7 +515,7 @@ public sealed class WindowsPlatformProbe(VpnClientCatalog catalog) : IPlatformPr
             if (!OperatingSystem.IsWindows()) return list;
 
             var json = await PowerShell.QueryJsonAsync(
-                "Get-Service -ErrorAction SilentlyContinue | Select-Object Name,DisplayName,Status,StartType",
+                "Get-Service -ErrorAction SilentlyContinue | Select-Object Name,DisplayName,@{Name='Status';Expression={$_.Status.ToString()}},@{Name='StartType';Expression={$_.StartType.ToString()}}",
                 TimeSpan.FromSeconds(10), ct).ConfigureAwait(false);
 
             using var servicesKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services");
@@ -550,7 +550,7 @@ public sealed class WindowsPlatformProbe(VpnClientCatalog catalog) : IPlatformPr
             if (!OperatingSystem.IsWindows()) return list;
 
             var json = await PowerShell.QueryJsonAsync(
-                "Get-VpnConnection -AllUserConnection -ErrorAction SilentlyContinue | Select-Object Name,ServerAddress,ConnectionStatus,TunnelType,DnsSuffix",
+                "Get-VpnConnection -AllUserConnection -ErrorAction SilentlyContinue | Select-Object Name,ServerAddress,@{Name='ConnectionStatus';Expression={$_.ConnectionStatus.ToString()}},TunnelType,DnsSuffix",
                 TimeSpan.FromSeconds(8), ct).ConfigureAwait(false);
             foreach (var item in PowerShell.Enumerate(json))
             {
@@ -568,7 +568,7 @@ public sealed class WindowsPlatformProbe(VpnClientCatalog catalog) : IPlatformPr
 
             // RAS-подключения текущего пользователя (в т.ч. созданные клиентами)
             var ras = await PowerShell.QueryJsonAsync(
-                "Get-VpnConnection -ErrorAction SilentlyContinue | Select-Object Name,ServerAddress,ConnectionStatus,TunnelType",
+                "Get-VpnConnection -ErrorAction SilentlyContinue | Select-Object Name,ServerAddress,@{Name='ConnectionStatus';Expression={$_.ConnectionStatus.ToString()}},TunnelType",
                 TimeSpan.FromSeconds(6), ct).ConfigureAwait(false);
             foreach (var item in PowerShell.Enumerate(ras))
             {
@@ -630,7 +630,7 @@ public sealed class WindowsPlatformProbe(VpnClientCatalog catalog) : IPlatformPr
             if (!OperatingSystem.IsWindows()) return list;
             var json = await PowerShell.QueryJsonAsync(
                 "Get-NetFirewallRule -Direction Outbound -Enabled True -Action Block -ErrorAction SilentlyContinue | " +
-                "Select-Object -First 300 DisplayName,Group,Direction,Action,Enabled",
+                "Select-Object -First 300 DisplayName,Group,@{Name='Direction';Expression={$_.Direction.ToString()}},@{Name='Action';Expression={$_.Action.ToString()}},@{Name='Enabled';Expression={$_.Enabled.ToString()}}",
                 TimeSpan.FromSeconds(12), ct).ConfigureAwait(false);
             foreach (var item in PowerShell.Enumerate(json))
             {

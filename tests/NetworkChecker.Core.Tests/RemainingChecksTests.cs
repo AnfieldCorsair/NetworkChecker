@@ -76,6 +76,18 @@ internal sealed class LoopbackServer : IAsyncDisposable
         });
     }
 
+    public static LoopbackServer OrdinaryHttp()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        return new LoopbackServer(listener, async stream =>
+        {
+            var buffer = new byte[512];
+            _ = await stream.ReadAsync(buffer);
+            await stream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n"));
+        });
+    }
+
     public async ValueTask DisposeAsync()
     {
         await _cts.CancelAsync();
@@ -133,13 +145,12 @@ public class BypassCheckTests
 
         var result = await RunUntilAsync(
             () => check.RunAsync(Sample.Context(OptionsWithPorts(server.Port)), CancellationToken.None),
-            r => r.Findings.Any(f => f.Detail.Contains("SOCKS5", StringComparison.Ordinal)));
+            r => r.Findings.Any(f => f.Title.Contains("SOCKS5", StringComparison.Ordinal)));
 
-        Assert.Equal(CheckStatus.Detected, result.Status);
-        var finding = result.Findings.Single(f => f.Title == $"Локальный прокси на 127.0.0.1:{server.Port}");
-        Assert.Equal(Severity.Critical, finding.Severity);
-        Assert.Contains("SOCKS5", finding.Detail);
-        Assert.Contains(result.Findings, f => f.Title == "Комбинация SOCKS5 + TUN");
+        Assert.Equal(CheckStatus.NeedsReview, result.Status);
+        var finding = result.Findings.Single(f => f.Title.Contains("SOCKS5") && f.Title.Contains(server.Port.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        Assert.Equal(Severity.Warning, finding.Severity);
+        Assert.DoesNotContain(result.Findings, f => f.Title == "Комбинация SOCKS5 + TUN");
     }
 
     [Fact]
@@ -150,9 +161,9 @@ public class BypassCheckTests
 
         var result = await RunUntilAsync(
             () => check.RunAsync(Sample.Context(OptionsWithPorts(server.Port)), CancellationToken.None),
-            r => r.Findings.Any(f => f.Detail.Contains("HTTP", StringComparison.Ordinal)));
+            r => r.Findings.Any(f => f.Title.Contains("HTTP", StringComparison.Ordinal)));
 
-        Assert.Contains(result.Findings, f => f.Title.Contains("127.0.0.1:" + server.Port) && f.Detail.Contains("HTTP"));
+        Assert.Contains(result.Findings, f => f.Title.Contains("127.0.0.1:" + server.Port) && f.Title.Contains("HTTP"));
     }
 
     [Fact]
@@ -163,8 +174,9 @@ public class BypassCheckTests
 
         var result = await check.RunAsync(Sample.Context(OptionsWithPorts()), CancellationToken.None);
 
-        var finding = Assert.Single(result.Findings, f => f.Title.Contains("Clash"));
-        Assert.Equal(Severity.Critical, finding.Severity);
+        var finding = Assert.Single(result.Findings, f => f.Title.Contains("9090"));
+        Assert.Equal(Severity.Notice, finding.Severity);
+        Assert.Contains("не идентифицирован", finding.Detail);
         Assert.Contains("9090", finding.Title);
     }
 
@@ -176,7 +188,19 @@ public class BypassCheckTests
 
         var result = await check.RunAsync(Sample.Context(OptionsWithPorts()), CancellationToken.None);
 
-        Assert.Contains(result.Findings, f => f.Title.Contains("Xray"));
+        Assert.Contains(result.Findings, f => f.Title.Contains("10085") && f.Detail.Contains("не подтверждает Xray"));
+        Assert.DoesNotContain(result.Findings, f => f.Severity == Severity.Critical);
+    }
+
+    [Fact]
+    public async Task Ordinary_http_service_is_not_a_proxy_or_a_critical_finding()
+    {
+        await using var server = LoopbackServer.OrdinaryHttp();
+        var result = await new BypassCheck(new FakeHttpProbe())
+            .RunAsync(Sample.Context(OptionsWithPorts(server.Port)), CancellationToken.None);
+        Assert.Contains(result.Findings, f => f.Title.Contains("Локальный сервис"));
+        Assert.DoesNotContain(result.Findings, f => f.Title.Contains("прокси на") || f.Severity == Severity.Critical);
+        Assert.Equal(CheckStatus.Clean, result.Status);
     }
 
     [Fact]
@@ -261,13 +285,14 @@ public class CallTransportCheckTests
     public async Task No_stun_servers_reports_udp_unavailable()
     {
         var options = Sample.Options();
+        options.OfflineMode = false;
         options.StunServers = [];
         options.RequestTimeoutSeconds = 2;
 
         var result = await new CallTransportCheck(new FakeHttpProbe())
             .RunAsync(Sample.Context(options), CancellationToken.None);
 
-        Assert.Contains(result.Findings, f => f.Title == "UDP полностью недоступен");
+        Assert.Contains(result.Findings, f => f.Title == "STUN-серверы не ответили");
         Assert.Equal("0 из 0", result.Metrics.Single(m => m.Label == "STUN-серверов ответило").Value);
     }
 
@@ -275,6 +300,7 @@ public class CallTransportCheckTests
     public async Task Closed_stun_server_is_counted_as_no_answer()
     {
         var options = Sample.Options();
+        options.OfflineMode = false;
         options.StunServers = ["127.0.0.1:9"];
         options.RequestTimeoutSeconds = 1;
 
@@ -292,6 +318,7 @@ public class DomainReachabilityCheckTests
     public async Task Unresolvable_names_are_reported_per_stage()
     {
         var options = Sample.Options();
+        options.OfflineMode = false;
         options.ReachabilityTargets = ["нет-такого-домена.invalid"];
         options.RequestTimeoutSeconds = 2;
 
@@ -317,6 +344,7 @@ public class DomainReachabilityCheckTests
     public async Task Localhost_is_reachable_and_clean()
     {
         var options = Sample.Options();
+        options.OfflineMode = false;
         options.ReachabilityTargets = ["localhost"];
         options.RequestTimeoutSeconds = 1;
 

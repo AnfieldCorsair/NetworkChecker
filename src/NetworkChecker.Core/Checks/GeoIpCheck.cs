@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using NetworkChecker.Core.Abstractions;
 using NetworkChecker.Core.Models;
 using NetworkChecker.Core.Net;
@@ -48,10 +49,10 @@ public sealed class GeoIpCheck(IHttpProbe http) : ICheck
             var response = await _http.GetAsync(new Uri(provider), timeout, ignoreProxy: false, ct).ConfigureAwait(false);
             if (!response.Success || string.IsNullOrWhiteSpace(response.Body)) continue;
             var info = GeoIpParser.Parse(response.Body);
-            if (info is null || string.IsNullOrWhiteSpace(info.Ip)) continue;
+            if (info is null || !IPAddress.TryParse(info.Ip, out _)) continue;
             results.Add((new Uri(provider).Host, info, response.Elapsed));
             context.CollectIp($"GeoIP · {new Uri(provider).Host}", info.Ip!, info.IsRussian,
-                info.Country is null ? null : GeoCountries.Name(info.Country));
+                info.Country is null ? null : GeoCountries.Name(info.Country), IpChannel.Web);
         }
 
         if (results.Count == 0)
@@ -60,10 +61,18 @@ public sealed class GeoIpCheck(IHttpProbe http) : ICheck
         }
 
         var (Provider, Info, Elapsed) = results[0];
-        var country = Info.Country ?? results.FirstOrDefault(r => r.Info.Country is not null).Info?.Country;
-        var hostingVotes = results.Where(r => r.Info.Hosting == true).Count();
-        var hostingTotal = results.Count(r => r.Info.Hosting is not null);
-        var proxyHit = results.FirstOrDefault(r => r.Info.Proxy == true);
+        var primaryIp = IPAddress.Parse(Info.Ip!);
+        if (primaryIp.IsIPv4MappedToIPv6) primaryIp = primaryIp.MapToIPv4();
+        var comparable = results.Where(r =>
+        {
+            var candidate = IPAddress.Parse(r.Info.Ip!);
+            if (candidate.IsIPv4MappedToIPv6) candidate = candidate.MapToIPv4();
+            return candidate.Equals(primaryIp);
+        }).ToList();
+        var country = Info.Country ?? comparable.FirstOrDefault(r => r.Info.Country is not null).Info?.Country;
+        var hostingVotes = comparable.Count(r => r.Info.Hosting == true);
+        var hostingTotal = comparable.Count(r => r.Info.Hosting is not null);
+        var proxyHit = comparable.FirstOrDefault(r => r.Info.Proxy == true);
         var isHosting = hostingTotal > 0 && hostingVotes * 2 > hostingTotal;
         var isProxy = proxyHit.Info is not null;
         var foreign = country is not null && !country.Equals("RU", StringComparison.OrdinalIgnoreCase);
@@ -87,7 +96,7 @@ public sealed class GeoIpCheck(IHttpProbe http) : ICheck
         {
             findings.Add(Finding.Critical(
                 "IP помечен как proxy/VPN/Tor",
-                "Хотя бы один провайдер вернул признак proxy/VPN/Tor — это прямой сигнал методики РКН.",
+                "Один из провайдеров присвоил такую метку; она может быть неточной или устаревшей.",
                 $"{proxyHit.Provider}: proxy=true"));
         }
 
@@ -99,23 +108,26 @@ public sealed class GeoIpCheck(IHttpProbe http) : ICheck
                     "Методика относит такой случай к needsReview: иностранный адрес без явных признаков дата-центра."));
         }
 
-        if (!foreign && !isHosting && !isProxy)
-        {
-            findings.Add(Finding.Info("Признаков не найдено", "Российский адрес, без hosting/proxy-меток."));
-        }
+        var reputationKnown = comparable.Any(r => r.Info.Proxy is not null || r.Info.Hosting is not null);
+        if (!foreign && !isHosting && !isProxy && country is not null && reputationKnown)
+            findings.Add(Finding.Info("Признаков не найдено", "В доступных данных нет положительных hosting/proxy-меток; источники могут ошибаться."));
+        if (country is null || !reputationKnown)
+            findings.Add(Finding.Notice("Данные GeoIP неполные", "Страна или сведения о репутации отсутствуют; отсутствие метки не означает, что адрес чистый."));
+        if (comparable.Count != results.Count)
+            findings.Add(Finding.Notice("Провайдеры сообщили разные IP", "Метки репутации объединены только для выбранного адреса; другие адреса не включены в голосование."));
 
-        var distinctCountries = results.Select(r => r.Info.Country).Where(c => c is not null).Distinct().Count();
+        var distinctCountries = comparable.Select(r => r.Info.Country).Where(c => c is not null).Distinct().Count();
         if (distinctCountries > 1)
         {
             findings.Add(Finding.Notice(
                 "Провайдеры расходятся в стране",
-                "Разные GeoIP-базы вернули разные страны для одного IP — типично для anycast или цепочки прокси.",
+                "GeoIP-базы сообщили разные страны для одного адреса; расположение по IP может быть неточным.",
                 string.Join(", ", results.Select(r => $"{r.Provider}={r.Info.Country}"))));
         }
 
         // Методика: hosting/proxy — detected; иностранный адрес без них — needsReview.
         var status = isProxy || isHosting ? CheckStatus.Detected
-            : foreign ? CheckStatus.NeedsReview
+            : foreign || country is null || !reputationKnown || comparable.Count != results.Count || distinctCountries > 1 ? CheckStatus.NeedsReview
             : CheckStatus.Clean;
 
         return new CheckResult

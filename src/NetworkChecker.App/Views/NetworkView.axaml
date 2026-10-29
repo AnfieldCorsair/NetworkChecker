@@ -305,6 +305,7 @@
                           <SelectableTextBlock Grid.Column="1" Text="{Binding Protocol}" Classes="muted" FontSize="10" />
                         </Grid>
                         <SelectableTextBlock Text="{Binding IssuerShort}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                        <SelectableTextBlock Text="{Binding ValidationText}" Classes="muted" FontSize="10" />
                       </StackPanel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>

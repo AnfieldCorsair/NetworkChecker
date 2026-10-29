@@ -170,6 +170,11 @@ public class HistoryRepositoryTests
 
         Assert.True(restored!.Environment.PrivacyMode);
         Assert.Equal("•••", restored.Environment.MachineName);
+        Assert.Null(restored.IpConsensus.ConsensusIp);
+        Assert.Empty(restored.IpConsensus.Observations);
+        Assert.Empty(restored.Environment.Adapters);
+        var rawDb = await File.ReadAllBytesAsync(System.IO.Path.Combine(temp.Path, "history.db"));
+        Assert.DoesNotContain(baseRun.IpConsensus.ConsensusIp!, System.Text.Encoding.UTF8.GetString(rawDb), StringComparison.Ordinal);
     }
 }
 

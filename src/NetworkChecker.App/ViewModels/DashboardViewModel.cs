@@ -107,11 +107,11 @@ public sealed class VerdictViewModel
         Headline = Localizer.T(verdict.Headline);
         Summary = verdict.Summary;
         Score = verdict.Score;
-        ScoreText = $"{verdict.Score} / 100";
+        ScoreText = verdict.ScoreText;
         LevelText = Localizer.T(verdict.LevelText);
         Reasons = new ObservableCollection<string>(verdict.Reasons);
         HasReasons = Reasons.Count > 0;
-        IpText = consensus.Summary;
+        IpText = consensus.ConsensusIp is null ? "нет данных" : Masking.Ip(consensus.ConsensusIp);
         Observations = new ObservableCollection<string>(consensus.Observations
             .Select(o => $"{o.Source}: {Masking.Ip(o.Ip)}{(o.Note is null ? "" : $" · {o.Note}")}")
             .Distinct());
@@ -241,7 +241,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
 
     public override string Title => global::NetworkChecker.App.Localization.Localizer.T("Проверка");
     public override string Icon => global::NetworkChecker.App.Icons.ShieldCheck;
-    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Обнаружение VPN и прокси по методике РКН");
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Признаки VPN и прокси");
 
     public UiModeService Mode { get; }
 
@@ -413,7 +413,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
             {
                 RiskLevel.Clean => "The checks found no indicators of a tunnel or proxy. This does not rule out a VPN.",
                 RiskLevel.NeedsReview => "Some observations need review, but they do not prove active bypass.",
-                RiskLevel.Detected => "Some indicators are consistent with a VPN or proxy; other explanations are possible.",
+                RiskLevel.Detected => "Windows reports proxy settings or a connected Windows VPN. The browser route has not been verified.",
                 _ => "Insufficient data was collected for a conclusion.",
             };
             if (result.Checks.Any(c => c.Status is CheckStatus.Failed or CheckStatus.Skipped))
@@ -456,7 +456,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         if (_lastResult is null) return;
         try
         {
-            var file = ReportExporter.Build(SelectedFormat.Format, _lastResult);
+            var file = ReportExporter.Build(SelectedFormat.Format, _lastResult, forcePrivate: PrivacyMode);
             var path = await _files.SaveBytesAsync(file.FileName, file.Content, SelectedFormat.Extension, file.Description)
                 .ConfigureAwait(true);
             SaveMessage = path is null ? string.Empty : $"Отчёт сохранён: {path}";
@@ -484,9 +484,9 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         var window = (Application.Current.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow;
         var clipboard = window?.Clipboard;
         if (clipboard is null) return;
-        var text = $"{_lastResult.Verdict.Headline} · {_lastResult.Verdict.Score}/100\n" +
+        var text = $"{_lastResult.Verdict.Headline} · {_lastResult.Verdict.ScoreText}\n" +
                    string.Join("\n", _lastResult.Checks.Select(c => $"{c.Title}: {c.StatusText}")) +
-                   $"\nВнешний IP: {_lastResult.IpConsensus.Summary}";
+                   $"\nВнешний IP: {(PrivacyMode || _lastResult.Environment.PrivacyMode ? "скрыт" : _lastResult.IpConsensus.Summary)}";
         await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text).ConfigureAwait(true);
         SaveMessage = "Сводка скопирована в буфер обмена";
     }

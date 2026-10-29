@@ -28,7 +28,7 @@ public static class DocxExporter
             // Вердикт
             var plain = PlainLanguage.ForVerdict(result.Verdict, result.Checks);
             body.Append(Heading("Вердикт"));
-            body.Append(Paragraph($"{result.Verdict.Headline} · {result.Verdict.Score}/100", size: 26, bold: true,
+            body.Append(Paragraph($"{result.Verdict.Headline} · индекс {result.Verdict.ScoreText}", size: 26, bold: true,
                 color: ColourOf(result.Verdict.Level), spaceAfter: 80));
             body.Append(Paragraph(plain.WhatItMeans, spaceAfter: 80));
             body.Append(Paragraph($"Что делать: {plain.Advice}", size: 20, color: "44546A", spaceAfter: 200));

@@ -22,9 +22,32 @@ public sealed class DomainReachabilityCheck : ICheck
     public async Task<CheckResult> RunAsync(CheckContext context, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        if (context.Options.OfflineMode)
+            return new CheckResult
+            {
+                Category = Category,
+                Title = Title,
+                Subtitle = Subtitle,
+                Weight = Weight,
+                Status = CheckStatus.Skipped,
+                Findings = [Finding.Info("Офлайн-режим", "Внешние сетевые проверки отключены.")],
+                Duration = sw.Elapsed,
+            };
         var findings = new List<Finding>();
         var metrics = new List<Metric>();
         var timeout = TimeSpan.FromSeconds(Math.Min(context.Options.RequestTimeoutSeconds, 6));
+
+        if (context.Options.ReachabilityTargets.Count == 0)
+            return new CheckResult
+            {
+                Category = Category,
+                Title = Title,
+                Subtitle = Subtitle,
+                Weight = Weight,
+                Status = CheckStatus.Skipped,
+                Findings = [Finding.Info("Нет целей для проверки")],
+                Duration = sw.Elapsed
+            };
 
         var blockedDns = new List<string>();
         var blockedTcp = new List<string>();
@@ -53,12 +76,12 @@ public sealed class DomainReachabilityCheck : ICheck
                 case "dns":
                     blockedDns.Add(target);
                     findings.Add(Finding.Warning($"DNS не разрешает {target}",
-                        "Имя не резолвится — блокировка на уровне DNS или провайдер-подмена.", error));
+                        "Имя не разрешилось. Возможны сбой DNS, ошибка имени, отсутствие сети или фильтрация; причину тест не устанавливает.", error));
                     break;
                 case "tcp":
                     blockedTcp.Add(target);
                     findings.Add(Finding.Notice($"TCP :443 недоступен для {target}",
-                        "Имя резолвится, но соединение не устанавливается — характерно для DPI-блокировки по SNI/IP.", error));
+                        "Имя разрешилось, но TCP-соединение не установлено. Причин может быть несколько; SNI ещё не отправлялся.", error));
                     break;
                 case "tls":
                     blockedTls.Add(target);
@@ -67,38 +90,42 @@ public sealed class DomainReachabilityCheck : ICheck
                     break;
                 default:
                     ok.Add(target);
-                    if (tls?.Issuer is not null && IsSuspiciousIssuer(tls.Issuer, target))
+                    if (tls is { ChainValid: false })
                     {
                         mitm.Add(target);
-                        findings.Add(Finding.Warning(
-                            $"Подозрительный сертификат для {target}",
-                            "Цепочка сертификата не похожа на публичный CA — признак перехвата TLS.",
+                        findings.Add(Finding.Warning($"Сертификат {target} не прошёл проверку платформы",
+                            "Причина может быть в имени, сроке или цепочке доверия. Это не доказывает перехват.",
                             $"{tls.Issuer} (до {tls.NotAfter:yyyy-MM-dd})"));
+                    }
+                    else if (tls?.Issuer is not null && IsSuspiciousIssuer(tls.Issuer))
+                    {
+                        mitm.Add(target);
+                        findings.Add(Finding.Notice($"Издатель сертификата {target} похож на ПО безопасности",
+                            "Возможно, используется проверка TLS защитным или корпоративным ПО; имя издателя не является доказательством.", tls.Issuer));
                     }
                     break;
             }
         }
 
         metrics.Add(new Metric("Доступно", $"{ok.Count}/{results.Length}", string.Join(", ", ok.Take(6))));
-        if (blockedDns.Count > 0) metrics.Add(new Metric("Блокировка DNS", blockedDns.Count.ToString(CultureInfo.InvariantCulture), string.Join(", ", blockedDns)));
-        if (blockedTcp.Count > 0) metrics.Add(new Metric("Блокировка TCP", blockedTcp.Count.ToString(CultureInfo.InvariantCulture), string.Join(", ", blockedTcp)));
-        if (blockedTls.Count > 0) metrics.Add(new Metric("Блокировка TLS", blockedTls.Count.ToString(CultureInfo.InvariantCulture), string.Join(", ", blockedTls)));
+        if (blockedDns.Count > 0) metrics.Add(new Metric("Ошибки DNS", blockedDns.Count.ToString(CultureInfo.InvariantCulture), string.Join(", ", blockedDns)));
+        if (blockedTcp.Count > 0) metrics.Add(new Metric("Ошибки TCP", blockedTcp.Count.ToString(CultureInfo.InvariantCulture), string.Join(", ", blockedTcp)));
+        if (blockedTls.Count > 0) metrics.Add(new Metric("Ошибки TLS", blockedTls.Count.ToString(CultureInfo.InvariantCulture), string.Join(", ", blockedTls)));
 
         if (blockedDns.Count + blockedTcp.Count + blockedTls.Count == 0)
         {
             findings.Add(Finding.Info("Все проверенные домены доступны",
-                "Ни DNS-, ни TCP-, ни TLS-блокировок не обнаружено. Если VPN активен, значит он не даёт заметного выигрыша по этим целям."));
+                "Соединения установлены. Это не определяет, какие маршруты использовались и есть ли фильтрация других целей."));
         }
 
-        var detected = mitm.Count > 0;
-        var review = blockedDns.Count + blockedTcp.Count + blockedTls.Count > 0;
+        var review = mitm.Count + blockedDns.Count + blockedTcp.Count + blockedTls.Count > 0;
 
         return new CheckResult
         {
             Category = Category,
             Title = Title,
             Subtitle = Subtitle,
-            Status = detected ? CheckStatus.Detected : review ? CheckStatus.NeedsReview : CheckStatus.Clean,
+            Status = review ? CheckStatus.NeedsReview : CheckStatus.Clean,
             Findings = findings,
             Metrics = metrics,
             Duration = sw.Elapsed,
@@ -106,7 +133,7 @@ public sealed class DomainReachabilityCheck : ICheck
         };
     }
 
-    private static bool IsSuspiciousIssuer(string issuer, string target)
+    private static bool IsSuspiciousIssuer(string issuer)
     {
         string[] trustedHints =
         [

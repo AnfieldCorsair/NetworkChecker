@@ -39,9 +39,10 @@ public static class ReportExporter
         (ReportFormat.Html, "HTML", ".html", "один файл для браузера и писем"),
     ];
 
-    public static ReportFile Build(ReportFormat format, CheckRunResult result, string? baseName = null)
+    public static ReportFile Build(ReportFormat format, CheckRunResult result, string? baseName = null, bool forcePrivate = false)
     {
-        var name = baseName ?? $"rkn-hardering-{result.StartedAt.ToLocalTime():yyyyMMdd-HHmm}";
+        if (forcePrivate || result.Environment.PrivacyMode) result = PrivateRunProjection.Create(result);
+        var name = baseName ?? $"networkchecker-{result.StartedAt.ToLocalTime():yyyyMMdd-HHmm}";
         return format switch
         {
             ReportFormat.Pdf => new ReportFile(name + ".pdf", PdfExporter.Build(result), "application/pdf", "PDF-отчёт"),

@@ -93,7 +93,7 @@ public static class PdfExporter
             column.Item().Background(VerdictBackground(result.Verdict.Level)).Padding(12).Column(box =>
             {
                 box.Item().Text(result.Verdict.Headline).FontSize(15).SemiBold().FontColor(VerdictColor(result.Verdict.Level));
-                box.Item().PaddingTop(2).Text($"Балл {result.Verdict.Score}/100 · {result.Verdict.LevelText} · внешний IP: {result.IpConsensus.ConsensusIp ?? "нет данных"}")
+                box.Item().PaddingTop(2).Text($"Условный индекс {result.Verdict.ScoreText} · {result.Verdict.LevelText} · внешний IP: {result.IpConsensus.ConsensusIp ?? "нет данных"}")
                     .FontSize(8).FontColor(Colors.Grey.Darken2);
                 box.Item().PaddingTop(6).Text(plain.WhatItMeans).FontSize(9);
                 box.Item().PaddingTop(4).Text($"Что делать: {plain.Advice}").FontSize(9).Italic();

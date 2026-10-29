@@ -1,9 +1,13 @@
 namespace NetworkChecker.Core.Models;
 
+/// <summary>Структурированный вид доказательства; не зависит от текста и языка.</summary>
+public enum EvidenceKind { Unspecified, ConfiguredProxy, ConnectedWindowsVpn }
+
 /// <summary>Одна находка внутри результата проверки.</summary>
 public sealed record Finding
 {
     public required Severity Severity { get; init; }
+    public EvidenceKind Kind { get; init; }
     public required string Title { get; init; }
     public string Detail { get; init; } = string.Empty;
     /// <summary>Сырые данные/доказательство: имя интерфейса, порт, IP, строка вывода.</summary>

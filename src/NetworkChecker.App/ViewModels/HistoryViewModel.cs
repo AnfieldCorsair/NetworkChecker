@@ -15,7 +15,20 @@ public sealed class HistoryRowViewModel(RunRecord record)
     public RunRecord Record { get; } = record;
     public string When { get; } = record.StartedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss", CultureInfo.InvariantCulture);
     public string Headline { get; } = record.Headline;
-    public string ScoreText { get; } = $"{record.Score}/100";
+    public string ScoreText { get; } = ScoreTextOf(record);
+
+    private static string ScoreTextOf(RunRecord record)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(record.ChecksJson);
+            var hasData = doc.RootElement.EnumerateArray().Any(c =>
+                c.TryGetProperty("weight", out var w) && w.GetInt32() > 0 &&
+                c.TryGetProperty("status", out var status) && status.GetInt32() is not (int)CheckStatus.Skipped and not (int)CheckStatus.Failed);
+            return hasData ? $"{record.Score}/100" : "—";
+        }
+        catch (System.Text.Json.JsonException) { return "—"; }
+    }
     public string IpText { get; } = Masking.Ip(record.ExternalIp);
     public string DurationText { get; } = $"{record.DurationMs / 1000.0:F1} с";
     public string Color { get; } = record.RiskLevel switch
@@ -44,8 +57,8 @@ public sealed class ComparisonRowViewModel(CheckChange change)
     public string AfterText { get; } = StatusTextOf(change.After);
     public string DirectionText { get; } = change.Direction switch
     {
-        ChangeDirection.Worse => "хуже",
-        ChangeDirection.Better => "лучше",
+        ChangeDirection.Worse => "больше сигналов",
+        ChangeDirection.Better => "меньше сигналов",
         ChangeDirection.Same => "без изменений",
         _ => "несопоставимо",
     };
@@ -204,7 +217,7 @@ public sealed partial class HistoryViewModel : ViewModelBase
         var comparison = RunComparer.Compare(before, after);
         ComparisonRows.Clear();
         foreach (var change in comparison.Changes) ComparisonRows.Add(new ComparisonRowViewModel(change));
-        ComparisonHeadline = $"{comparison.ScoreBefore}/100 → {comparison.ScoreAfter}/100";
+        ComparisonHeadline = $"{comparison.Before.Verdict.ScoreText} → {comparison.After.Verdict.ScoreText}";
         ComparisonSummary = comparison.Summary + $" Сравнение с прогоном от {previous.When}.";
         HasComparison = true;
     }

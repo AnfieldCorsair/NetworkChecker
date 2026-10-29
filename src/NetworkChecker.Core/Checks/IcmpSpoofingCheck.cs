@@ -20,6 +20,17 @@ public sealed class IcmpSpoofingCheck : ICheck
     public async Task<CheckResult> RunAsync(CheckContext context, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        if (context.Options.OfflineMode)
+            return new CheckResult
+            {
+                Category = Category,
+                Title = Title,
+                Subtitle = Subtitle,
+                Weight = Weight,
+                Status = CheckStatus.Skipped,
+                Findings = [Finding.Info("Офлайн-режим", "Внешние сетевые проверки отключены.")],
+                Duration = sw.Elapsed,
+            };
         var findings = new List<Finding>();
         var metrics = new List<Metric>();
 
@@ -55,9 +66,9 @@ public sealed class IcmpSpoofingCheck : ICheck
             if (icmp.Success && tcp443.Success && icmp.Address is not null && tcp443.RemoteAddress is not null &&
                 icmp.Address != tcp443.RemoteAddress)
             {
-                findings.Add(Finding.Critical(
+                findings.Add(Finding.Warning(
                     $"{target}: ICMP и TCP отвечают с разных адресов",
-                    "Пакеты ICMP и TCP уходят к разным узлам — признак прозрачного перехвата (спуфинг ICMP или подмена маршрута).",
+                    "Разница возможна из-за балансировки, DNS или маршрутов; она не доказывает подмену ICMP или перехват.",
                     $"ICMP {Masking.Ip(icmp.Address)} ≠ TCP {Masking.Ip(tcp443.RemoteAddress)}"));
             }
 
@@ -71,7 +82,7 @@ public sealed class IcmpSpoofingCheck : ICheck
             {
                 findings.Add(Finding.Warning(
                     $"{target}: подозрительно «близкий» ответ",
-                    "ICMP-ответ пришёл с малым TTL и минимальной задержкой — так выглядит ответ локального узла-перехватчика, а не зарубежного сервера.",
+                    "Малый TTL и задержка сами по себе не устанавливают расположение или подмену отвечающего узла.",
                     $"TTL {icmp.Ttl}, {icmp.Roundtrip.TotalMilliseconds:F1} мс"));
             }
         }
@@ -81,15 +92,13 @@ public sealed class IcmpSpoofingCheck : ICheck
             findings.Add(Finding.Info("Аномалий ICMP не обнаружено"));
         }
 
-        var detected = findings.Any(f => f.Severity is Severity.Critical or Severity.Warning);
+        var review = findings.Any(f => f.Severity is Severity.Critical or Severity.Warning or Severity.Notice);
         return new CheckResult
         {
             Category = Category,
             Title = Title,
             Subtitle = Subtitle,
-            Status = detected ? CheckStatus.Detected
-                : findings.Any(f => f.Severity == Severity.Notice) ? CheckStatus.NeedsReview
-                : CheckStatus.Clean,
+            Status = review ? CheckStatus.NeedsReview : CheckStatus.Clean,
             Findings = findings,
             Metrics = metrics,
             Duration = sw.Elapsed,

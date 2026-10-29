@@ -13,8 +13,8 @@ public sealed record HostLatency(string Host, string? Address, double? MedianMs,
 {
     public string MedianText => MedianMs is null ? "—" : $"{MedianMs:F0} мс";
     public string JitterText => MedianMs is null ? "—" : $"{JitterMs:F0} мс";
-    public string LossText => $"{LossPercent:F0}%";
-    public string StatusText => MedianMs is null ? "нет ответа" : LossPercent > 60 ? "потери" : "ок";
+    public string LossText => Method == "ICMP" ? $"{LossPercent:F0}%" : "—";
+    public string StatusText => MedianMs is null ? "нет ответа" : Method == "ICMP" && LossPercent > 60 ? "потери" : "ок";
     public string MethodText => Method;
 }
 
@@ -29,8 +29,9 @@ public sealed record DnsProbeResult(string Label, string Server, string? Answer,
     public string StatusText => Error is null ? "ok" : "ошибка";
 }
 
-public sealed record TlsProbe(string Host, string? Issuer, string? Subject, DateTime? NotAfter, string? Protocol, bool Success, double ElapsedMs, string? Error)
+public sealed record TlsProbe(string Host, string? Issuer, string? Subject, DateTime? NotAfter, string? Protocol, bool Success, double ElapsedMs, string? Error, bool? ChainValid = null)
 {
+    public string ValidationText => !Success ? "TLS не установлен" : ChainValid == true ? "Проверка сертификата: пройдена" : "Сертификат не прошёл проверку или статус неизвестен";
     public string IssuerShort
     {
         get
@@ -192,7 +193,7 @@ public sealed class NetworkInfoService(IPlatformProbe platform, IHttpProbe http,
             progress?.Report($"TLS: {host}");
             var result = await ConnectivityProbes.TlsHandshakeAsync(host, 443, TimeSpan.FromSeconds(5), ct).ConfigureAwait(false);
             return new TlsProbe(host, result.Issuer, result.Subject, result.NotAfter, result.NegotiatedProtocol,
-                result.Success, result.Elapsed.TotalMilliseconds, result.Error);
+                result.Success, result.Elapsed.TotalMilliseconds, result.Error, result.Success ? result.ChainValid : null);
         }).ToArray();
 
         await Task.WhenAll(hostTasks).ConfigureAwait(false);

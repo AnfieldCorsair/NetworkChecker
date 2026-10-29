@@ -1,7 +1,7 @@
 {
-  "id": "f545e90f-5811-4cfc-98b2-154562c12969",
-  "startedAt": "2026-10-29T21:54:24.0909259+00:00",
-  "finishedAt": "2026-10-29T21:54:26.6130864+00:00",
+  "id": "9d38e52f-90b1-4d1e-86b6-f932f1ded37e",
+  "startedAt": "2026-10-29T22:37:16.0972562+00:00",
+  "finishedAt": "2026-10-29T22:37:16.1104951+00:00",
   "checks": [
     {
       "category": 0,
@@ -11,13 +11,14 @@
       "findings": [
         {
           "severity": 0,
+          "kind": 0,
           "title": "Офлайн-режим",
           "detail": "Запросы к GeoIP-провайдерам отключены в настройках."
         }
       ],
       "metrics": [],
-      "startedAt": "2026-10-29T21:54:24.0910744+00:00",
-      "duration": "00:00:00.0000045",
+      "startedAt": "2026-10-29T22:37:16.0973187+00:00",
+      "duration": "00:00:00.0000042",
       "weight": 20,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -33,13 +34,14 @@
       "findings": [
         {
           "severity": 0,
+          "kind": 0,
           "title": "Офлайн-режим",
           "detail": "Внешние запросы отключены."
         }
       ],
       "metrics": [],
-      "startedAt": "2026-10-29T21:54:24.0913591+00:00",
-      "duration": "00:00:00.0000041",
+      "startedAt": "2026-10-29T22:37:16.0975754+00:00",
+      "duration": "00:00:00.0000036",
       "weight": 0,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -55,6 +57,7 @@
       "findings": [
         {
           "severity": 0,
+          "kind": 0,
           "title": "Системный прокси не настроен",
           "detail": ""
         }
@@ -89,8 +92,8 @@
           "value": "0"
         }
       ],
-      "startedAt": "2026-10-29T21:54:24.0922396+00:00",
-      "duration": "00:00:00.0008395",
+      "startedAt": "2026-10-29T22:37:16.0986407+00:00",
+      "duration": "00:00:00.0009889",
       "weight": 30,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -106,8 +109,9 @@
       "findings": [
         {
           "severity": 2,
-          "title": "DNS туннеля перекрывает системный",
-          "detail": "Туннельный адаптер публикует собственные DNS-серверы — трафик резолвинга идёт внутрь туннеля.",
+          "kind": 0,
+          "title": "DNS-серверы туннельного интерфейса",
+          "detail": "Адаптер публикует DNS-серверы; фактический выбор зависит от маршрутов и политик DNS.",
           "evidence": "8.8.8.8"
         }
       ],
@@ -132,8 +136,8 @@
           "hint": "только стандартные"
         }
       ],
-      "startedAt": "2026-10-29T21:54:24.0930886+00:00",
-      "duration": "00:00:00.0008081",
+      "startedAt": "2026-10-29T22:37:16.0996207+00:00",
+      "duration": "00:00:00.0009368",
       "weight": 20,
       "highestSeverity": 2,
       "criticalCount": 0,
@@ -149,8 +153,9 @@
       "findings": [
         {
           "severity": 0,
-          "title": "Локальные прокси не обнаружены",
-          "detail": "На типовых портах (1080, 1087, 2080, 7890, 8080, 9050...) никто не ответил."
+          "kind": 0,
+          "title": "Локальные сервисы на проверенных портах не ответили",
+          "detail": "Это не исключает прокси на других портах или с другой настройкой."
         }
       ],
       "metrics": [
@@ -164,8 +169,8 @@
           "hint": "не найдено"
         }
       ],
-      "startedAt": "2026-10-29T21:54:24.1055351+00:00",
-      "duration": "00:00:00.0124162",
+      "startedAt": "2026-10-29T22:37:16.1099112+00:00",
+      "duration": "00:00:00.0102531",
       "weight": 30,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -177,48 +182,24 @@
       "category": 5,
       "title": "UDP / STUN-транспорт",
       "subtitle": "Доступность UDP и адрес выхода через STUN",
-      "status": 0,
+      "status": 3,
       "findings": [
         {
           "severity": 0,
-          "title": "UDP-транспорт работает",
-          "detail": "Ответили 3 STUN-серверов. Голосовые вызовы и QUIC пойдут напрямую."
-        },
-        {
-          "severity": 1,
-          "title": "STUN-серверы видят разные порты",
-          "detail": "Разные внешние порты для одного узла — симметричный NAT. Нормально для мобильных операторов, нетипично для домашнего Wi-Fi.",
-          "evidence": "stun.l.google.com:19302=58434, stun.cloudflare.com:3478=59428, stun.sipnet.ru:3478=38227"
+          "kind": 0,
+          "title": "Офлайн-режим",
+          "detail": "Внешние сетевые проверки отключены."
         }
       ],
-      "metrics": [
-        {
-          "label": "STUN-серверов ответило",
-          "value": "3 из 3"
-        },
-        {
-          "label": "Внешний адрес (UDP)",
-          "value": "8.235.75.40",
-          "hint": "адрес, который видит NAT для UDP"
-        },
-        {
-          "label": "Внешний адрес (TCP)",
-          "value": "8.235.75.40",
-          "hint": "адрес для HTTP(S)"
-        },
-        {
-          "label": "Telegram DC (MTProto)",
-          "value": "доступен"
-        }
-      ],
-      "startedAt": "2026-10-29T21:54:24.3698955+00:00",
-      "duration": "00:00:00.2762709",
+      "metrics": [],
+      "startedAt": "2026-10-29T22:37:16.1002106+00:00",
+      "duration": "00:00:00.0000016",
       "weight": 10,
-      "highestSeverity": 1,
+      "highestSeverity": 0,
       "criticalCount": 0,
       "warningCount": 0,
-      "noticeCount": 1,
-      "statusText": "Чисто"
+      "noticeCount": 0,
+      "statusText": "Пропущено"
     },
     {
       "category": 6,
@@ -228,13 +209,14 @@
       "findings": [
         {
           "severity": 0,
+          "kind": 0,
           "title": "Офлайн-режим",
           "detail": ""
         }
       ],
       "metrics": [],
-      "startedAt": "2026-10-29T21:54:24.0936568+00:00",
-      "duration": "00:00:00.0000029",
+      "startedAt": "2026-10-29T22:37:16.1002352+00:00",
+      "duration": "00:00:00.0000010",
       "weight": 5,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -246,157 +228,94 @@
       "category": 7,
       "title": "Доступность доменов",
       "subtitle": "DNS → TCP → TLS: где именно ломается доступ",
-      "status": 0,
+      "status": 3,
       "findings": [
         {
           "severity": 0,
-          "title": "Все проверенные домены доступны",
-          "detail": "Ни DNS-, ни TCP-, ни TLS-блокировок не обнаружено. Если VPN активен, значит он не даёт заметного выигрыша по этим целям."
+          "kind": 0,
+          "title": "Офлайн-режим",
+          "detail": "Внешние сетевые проверки отключены."
         }
       ],
-      "metrics": [
-        {
-          "label": "Доступно",
-          "value": "6/6",
-          "hint": "example.com, ya.ru, discord.com, rutracker.org, linkedin.com, instagram.com"
-        }
-      ],
-      "startedAt": "2026-10-29T21:54:24.530969+00:00",
-      "duration": "00:00:00.4372911",
+      "metrics": [],
+      "startedAt": "2026-10-29T22:37:16.1002444+00:00",
+      "duration": "00:00:00.0000005",
       "weight": 10,
       "highestSeverity": 0,
       "criticalCount": 0,
       "warningCount": 0,
       "noticeCount": 0,
-      "statusText": "Чисто"
+      "statusText": "Пропущено"
     },
     {
       "category": 8,
       "title": "RTT-триангуляция (β)",
       "subtitle": "Задержки до RU и иностранных узлов",
-      "status": 0,
+      "status": 3,
       "findings": [
         {
           "severity": 0,
-          "title": "Задержки симметричны",
-          "detail": "Разница в пределах нормы: нет признаков «дальнего» маршрута до российских адресов."
+          "kind": 0,
+          "title": "Офлайн-режим",
+          "detail": "Внешние сетевые проверки отключены."
         }
       ],
-      "metrics": [
-        {
-          "label": "RU медиана",
-          "value": "2 мс",
-          "hint": "ya.ru, mail.ru, vk.com, gosuslugi.ru"
-        },
-        {
-          "label": "Иностранные медиана",
-          "value": "1 мс",
-          "hint": "1.1.1.1, 8.8.8.8, 9.9.9.9, cloudflare.com"
-        },
-        {
-          "label": "Разница",
-          "value": "+1 мс",
-          "hint": "RU минус иностранные"
-        },
-        {
-          "label": "Потери пакетов",
-          "value": "RU 60%, мир 60%"
-        },
-        {
-          "label": "Метод измерения",
-          "value": "TCP",
-          "hint": "ICMP заблокирован, часть замеров сделана по TCP :443"
-        }
-      ],
-      "startedAt": "2026-10-29T21:54:26.6119235+00:00",
-      "duration": "00:00:02.5181844",
+      "metrics": [],
+      "startedAt": "2026-10-29T22:37:16.1002523+00:00",
+      "duration": "00:00:00.0000007",
       "weight": 15,
       "highestSeverity": 0,
       "criticalCount": 0,
       "warningCount": 0,
       "noticeCount": 0,
-      "statusText": "Чисто"
+      "statusText": "Пропущено"
     },
     {
       "category": 9,
       "title": "ICMP-спуфинг (β)",
       "subtitle": "Поддельные ICMP-ответы и расхождение с TCP",
-      "status": 0,
+      "status": 3,
       "findings": [
         {
           "severity": 0,
-          "title": "Аномалий ICMP не обнаружено",
-          "detail": ""
+          "kind": 0,
+          "title": "Офлайн-режим",
+          "detail": "Внешние сетевые проверки отключены."
         }
       ],
-      "metrics": [
-        {
-          "label": "ICMP 8.8.8.8",
-          "value": "нет ответа"
-        },
-        {
-          "label": "TCP :443 8.8.8.8",
-          "value": "1 мс"
-        },
-        {
-          "label": "ICMP 1.1.1.1",
-          "value": "нет ответа"
-        },
-        {
-          "label": "TCP :443 1.1.1.1",
-          "value": "0 мс"
-        }
-      ],
-      "startedAt": "2026-10-29T21:54:24.1306955+00:00",
-      "duration": "00:00:00.0369103",
+      "metrics": [],
+      "startedAt": "2026-10-29T22:37:16.1002644+00:00",
+      "duration": "00:00:00.0000006",
       "weight": 10,
       "highestSeverity": 0,
       "criticalCount": 0,
       "warningCount": 0,
       "noticeCount": 0,
-      "statusText": "Чисто"
+      "statusText": "Пропущено"
     }
   ],
   "verdict": {
-    "level": 0,
-    "score": 5,
-    "headline": "Признаков обхода не обнаружено",
-    "summary": "Ни прямые, ни косвенные проверки не нашли следов туннеля, прокси или подмены.",
+    "level": 1,
+    "score": 8,
+    "scoreAvailable": true,
+    "scoreText": "8 / 100",
+    "headline": "Требуется проверка",
+    "summary": "Есть неоднозначные сигналы. Они могут иметь другие объяснения и не доказывают VPN, прокси или перехват. Индекс условный, не вероятность; влияние на браузер отдельно не проверялось.",
     "reasons": [
-      "Косвенные признаки: DNS туннеля перекрывает системный"
+      "Косвенные признаки: DNS-серверы туннельного интерфейса"
     ],
     "triggeredCategories": [],
-    "levelText": "Чисто"
+    "levelText": "Требует проверки"
   },
   "ipConsensus": {
-    "consensusIp": "8.235.75.40",
-    "observations": [
-      {
-        "source": "STUN · stun.l.google.com",
-        "ip": "8.235.75.40",
-        "note": "UDP-выход"
-      },
-      {
-        "source": "STUN · stun.cloudflare.com",
-        "ip": "8.235.75.40",
-        "note": "UDP-выход"
-      },
-      {
-        "source": "STUN · stun.sipnet.ru",
-        "ip": "8.235.75.40",
-        "note": "UDP-выход"
-      },
-      {
-        "source": "HTTPS (TCP) · ipify",
-        "ip": "8.235.75.40",
-        "note": "TCP-путь"
-      }
-    ],
+    "observations": [],
     "russianVotes": 0,
     "foreignVotes": 0,
     "isSplit": false,
-    "hasConsensus": true,
-    "summary": "8.235.75.40"
+    "withinChannelConflict": false,
+    "crossChannelMismatch": false,
+    "hasConsensus": false,
+    "summary": "нет данных"
   },
   "environment": {
     "osDescription": "Debian GNU/Linux 13 (trixie)",
@@ -481,5 +400,5 @@
     "privacyMode": false,
     "isElevated": false
   },
-  "duration": "00:00:02.5221605"
+  "duration": "00:00:00.0132389"
 }

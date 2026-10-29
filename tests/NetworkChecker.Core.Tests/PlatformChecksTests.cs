@@ -42,9 +42,9 @@ public class DirectSignsCheckTests
         var result = await check.RunAsync(Sample.Context(), CancellationToken.None);
 
         Assert.Equal(CheckStatus.Detected, result.Status);
-        Assert.Contains(result.Findings, f => f.Severity == Severity.Critical && f.Title.Contains("Системный прокси"));
+        Assert.Contains(result.Findings, f => f.Severity == Severity.Critical && f.Kind == EvidenceKind.ConfiguredProxy);
         Assert.Contains(result.Findings, f => f.Severity == Severity.Critical && f.Title.Contains("туннельный интерфейс"));
-        Assert.Contains(result.Findings, f => f.Severity == Severity.Critical && f.Title.Contains("Запущен клиент"));
+        Assert.Contains(result.Findings, f => f.Severity == Severity.Critical && f.Title.Contains("Запущен процесс"));
         Assert.Contains(result.Findings, f => f.Title.Contains("VPN-подключение"));
         Assert.Contains(result.Findings, f => f.Title.Contains("kill switch"));
     }
@@ -101,7 +101,7 @@ public class DirectSignsCheckTests
 
         var result = await check.RunAsync(Sample.Context(OnlineOptions()), CancellationToken.None);
 
-        Assert.Contains(result.Findings, f => f.Title.Contains("PAC маршрутизирует") && f.Severity == Severity.Warning);
+        Assert.Contains(result.Findings, f => f.Title.Contains("В PAC найден адрес прокси") && f.Severity == Severity.Warning);
     }
 
     [Fact]
@@ -308,7 +308,7 @@ public class CdnPullingCheckTests
     }
 
     [Fact]
-    public async Task Proxy_headers_are_critical()
+    public async Task Proxy_headers_are_ambiguous()
     {
         var body = """{"headers":{"Via":"1.1 squid","X-Forwarded-For":"10.0.0.1","Host":"httpbin.org"}}""";
         var http = new FakeHttpProbe().With("httpbin.org/headers", body);
@@ -317,7 +317,7 @@ public class CdnPullingCheckTests
 
         var result = await new CdnPullingCheck(http).RunAsync(Sample.Context(options), CancellationToken.None);
 
-        Assert.Equal(CheckStatus.Detected, result.Status);
-        Assert.Contains(result.Findings, f => f.Severity == Severity.Critical && f.Evidence!.Contains("Via"));
+        Assert.Equal(CheckStatus.NeedsReview, result.Status);
+        Assert.Contains(result.Findings, f => f.Severity == Severity.Warning && f.Evidence!.Contains("Via"));
     }
 }

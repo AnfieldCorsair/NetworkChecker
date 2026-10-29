@@ -20,9 +20,9 @@ namespace NetworkChecker.App.Startup;
 /// <summary>Сборка приложения: Microsoft.Extensions.Hosting + DI, Serilog, проверки, EF Core.</summary>
 public static class AppServices
 {
-    public static IHost Build(string[] args)
+    public static IHost Build(string[] args, string? dataDirectory = null)
     {
-        var settings = new SettingsStore();
+        var settings = new SettingsStore(dataDirectory);
         var options = settings.Load();
         Localization.Localizer.Configure(settings.Ui.Culture);
 

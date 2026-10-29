@@ -71,7 +71,12 @@ public static class ConnectivityProbes
             // TLS-зонд: сертификат нам нужен как данные (издатель, срок), а не как доверие.
             // Валидацию сознательно отключаем — иначе MITM-сертификат не прочитать.
 #pragma warning disable CA5359
-            using var ssl = new SslStream(client.GetStream(), false, static (_, _, _, _) => true);
+            SslPolicyErrors validationErrors = SslPolicyErrors.None;
+            using var ssl = new SslStream(client.GetStream(), false, (_, _, _, errors) =>
+            {
+                validationErrors = errors;
+                return true; // Диагностический сбор сертификата, не доверенное соединение.
+            });
 #pragma warning restore CA5359
             await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
             {
@@ -81,7 +86,7 @@ public static class ConnectivityProbes
             }, cts.Token).ConfigureAwait(false);
 
             var cert = ssl.RemoteCertificate as X509Certificate2 ?? new X509Certificate2(ssl.RemoteCertificate!);
-            var chainValid = cert.NotAfter > DateTime.Now;
+            var chainValid = validationErrors == SslPolicyErrors.None;
             return new TlsProbeResult(true, sw.Elapsed, null, cert.Subject, cert.Issuer, cert.NotAfter.ToLocalTime(),
                 ssl.SslProtocol.ToString(), ip.ToString(), chainValid);
         }
@@ -118,7 +123,7 @@ public static class ConnectivityProbes
             await stream.WriteAsync(new byte[] { 0x05, 0x01, 0x00 }, cts.Token).ConfigureAwait(false);
             var response = new byte[2];
             await stream.ReadExactlyAsync(response, cts.Token).ConfigureAwait(false);
-            return response[0] == 0x05;
+            return response[0] == 0x05 && response[1] == 0x00;
         }
         catch
         {
@@ -142,7 +147,9 @@ public static class ConnectivityProbes
             var read = await stream.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
             if (read < 8) return false;
             var text = Encoding.ASCII.GetString(buffer, 0, read);
-            return text.StartsWith("HTTP/1.", StringComparison.OrdinalIgnoreCase) && (text.Contains("200") || text.Contains("403") || text.Contains("407"));
+            var firstLine = text.Split('\r', '\n')[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            return firstLine.Length >= 2 && firstLine[0].StartsWith("HTTP/1.", StringComparison.OrdinalIgnoreCase)
+                && firstLine[1] == "200";
         }
         catch
         {
@@ -206,9 +213,10 @@ public static class StunClient
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(timeout);
             var request = BuildBindingRequest();
-            await udp.SendAsync(request, request.Length, new IPEndPoint(addresses[0], port)).ConfigureAwait(false);
+            udp.Connect(addresses[0], port);
+            await udp.SendAsync(request, cts.Token).ConfigureAwait(false);
             var response = await udp.ReceiveAsync(cts.Token).ConfigureAwait(false);
-            return ParseXorMapped(response.Buffer);
+            return ParseXorMapped(response.Buffer, request);
         }
         catch
         {
@@ -223,33 +231,39 @@ public static class StunClient
         buffer[2] = 0x00; buffer[3] = 0x00; // length
         Buffer.BlockCopy(BitConverter.GetBytes(MagicCookie).Reverse().ToArray(), 0, buffer, 4, 4);
         var transaction = new byte[12];
-        Random.Shared.NextBytes(transaction);
+        System.Security.Cryptography.RandomNumberGenerator.Fill(transaction);
         Buffer.BlockCopy(transaction, 0, buffer, 8, 12);
         return buffer;
     }
 
-    private static IPEndPoint? ParseXorMapped(byte[] data)
+    internal static IPEndPoint? ParseXorMapped(byte[] data, byte[] request)
     {
-        if (data.Length < 20) return null;
+        // Проверяются тип Binding Success, cookie, transaction ID и полная длина.
+        // Это не аутентификация STUN-сервера; она не предусмотрена данной пробой.
+        if (request.Length < 20 || data.Length < 20 || data[0] != 0x01 || data[1] != 0x01 ||
+            !data.AsSpan(4, 4).SequenceEqual(request.AsSpan(4, 4)) ||
+            !data.AsSpan(8, 12).SequenceEqual(request.AsSpan(8, 12))) return null;
         var length = (data[2] << 8) | data[3];
-        var offset = 20;
-        while (offset + 4 <= 20 + length && offset + 4 <= data.Length)
+        if (length % 4 != 0 || length > data.Length - 20) return null;
+        var end = 20 + length;
+        for (var offset = 20; offset + 4 <= end;)
         {
             var type = (data[offset] << 8) | data[offset + 1];
             var attrLen = (data[offset + 2] << 8) | data[offset + 3];
             var value = offset + 4;
-            if (type == 0x0020 && value + 8 <= data.Length) // XOR-MAPPED-ADDRESS
+            var padded = (attrLen + 3) & ~3;
+            if (value + padded > end) return null;
+            if (type == 0x0020 && attrLen >= 8 && data[value] == 0)
             {
                 var family = data[value + 1];
+                var size = family == 1 ? 4 : family == 2 ? 16 : 0;
+                if (size == 0 || attrLen < 4 + size) return null;
                 var port = ((data[value + 2] << 8) | data[value + 3]) ^ 0x2112;
-                if (family == 0x01)
-                {
-                    var ipBytes = new byte[4];
-                    for (var i = 0; i < 4; i++) ipBytes[i] = (byte)(data[value + 4 + i] ^ data[4 + i]);
-                    return new IPEndPoint(new IPAddress(ipBytes), port);
-                }
+                var bytes = new byte[size];
+                for (var i = 0; i < size; i++) bytes[i] = (byte)(data[value + 4 + i] ^ request[4 + i]);
+                return new IPEndPoint(new IPAddress(bytes), port);
             }
-            offset = value + attrLen + ((4 - attrLen % 4) % 4);
+            offset = value + padded;
         }
         return null;
     }

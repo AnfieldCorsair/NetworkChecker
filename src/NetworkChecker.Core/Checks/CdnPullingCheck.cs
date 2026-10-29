@@ -39,6 +39,7 @@ public sealed class CdnPullingCheck(IHttpProbe http) : ICheck
             };
         }
 
+        var usefulResponses = 0;
         foreach (var url in context.Options.CdnProbeUrls)
         {
             ct.ThrowIfCancellationRequested();
@@ -47,11 +48,12 @@ public sealed class CdnPullingCheck(IHttpProbe http) : ICheck
 
             var trace = ParseTrace(response.Body);
             if (trace.Count == 0) continue;
+            usefulResponses++;
 
             var host = new Uri(url).Host;
             if (trace.TryGetValue("ip", out var ip))
             {
-                context.CollectIp($"CDN · {host}", ip, trace.TryGetValue("loc", out var loc) ? loc == "RU" : null, trace.GetValueOrDefault("colo"));
+                context.CollectIp($"CDN · {host}", ip, trace.TryGetValue("loc", out var loc) ? loc == "RU" : null, trace.GetValueOrDefault("colo"), IpChannel.Web);
                 metrics.Add(new Metric($"{host}", Masking.Ip(ip),
                     trace.TryGetValue("loc", out var country) ? $"страна {country}, colo {trace.GetValueOrDefault("colo")}" : null));
 
@@ -68,6 +70,7 @@ public sealed class CdnPullingCheck(IHttpProbe http) : ICheck
         var probe = await _http.GetAsync(new Uri("https://httpbin.org/headers"), timeout, ignoreProxy: false, ct).ConfigureAwait(false);
         if (probe.Success && probe.Body is not null)
         {
+            usefulResponses++;
             var sniffed = new List<string>();
             foreach (var header in new[] { "Via", "X-Forwarded-For", "Forwarded", "Proxy-Connection", "X-Real-Ip" })
             {
@@ -75,9 +78,9 @@ public sealed class CdnPullingCheck(IHttpProbe http) : ICheck
             }
             if (sniffed.Count > 0)
             {
-                findings.Add(Finding.Critical(
-                    "Сервер видит прокси-заголовки",
-                    "Среди ваших заголовков присутствуют поля, которые добавляют прокси-серверы.",
+                findings.Add(Finding.Warning(
+                    "Сервис сообщил прокси-заголовки",
+                    "Поля могли быть добавлены промежуточной инфраструктурой или самим сервисом; маршрут браузера не проверен.",
                     string.Join(", ", sniffed)));
                 metrics.Add(new Metric("Прокси-заголовки", string.Join(", ", sniffed)));
             }
@@ -87,20 +90,19 @@ public sealed class CdnPullingCheck(IHttpProbe http) : ICheck
             }
         }
 
+        if (usefulResponses == 0)
+            return CheckResult.Failed(Category, Title, "Сервисы не вернули пригодные данные", sw.Elapsed, Weight);
         if (findings.Count == 0)
-        {
-            findings.Add(Finding.Info("Аномалий на edge-сервисах не обнаружено"));
-        }
+            findings.Add(Finding.Info("Аномалий на ответивших edge-сервисах не обнаружено"));
 
-        var detected = findings.Any(f => f.Severity == Severity.Critical);
-        var review = findings.Any(f => f.Severity == Severity.Notice);
+        var review = findings.Any(f => f.Severity is Severity.Notice or Severity.Warning);
 
         return new CheckResult
         {
             Category = Category,
             Title = Title,
             Subtitle = Subtitle,
-            Status = detected ? CheckStatus.Detected : review ? CheckStatus.NeedsReview : CheckStatus.Clean,
+            Status = review ? CheckStatus.NeedsReview : CheckStatus.Clean,
             Findings = findings,
             Metrics = metrics,
             Duration = sw.Elapsed,

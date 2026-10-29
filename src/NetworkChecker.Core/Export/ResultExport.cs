@@ -28,7 +28,7 @@ public static class ResultExport
         var sb = new StringBuilder();
         sb.AppendLine("# NetworkChecker — отчёт о проверке");
         sb.AppendLine();
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Вердикт:** {result.Verdict.Headline} ({result.Verdict.Level}, {result.Verdict.Score}/100)");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Вердикт:** {result.Verdict.Headline} ({result.Verdict.Level}, {result.Verdict.ScoreText})");
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Начато:** {result.StartedAt:dd.MM.yyyy HH:mm:ss zzz}");
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Длительность:** {result.Duration.TotalSeconds:F1} с");
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Внешний IP:** {result.IpConsensus.Summary}");

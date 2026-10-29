@@ -45,7 +45,7 @@ public static class CsvExporter
 
         sb.AppendLine();
         sb.AppendLine(Row("ИТОГ", result.Verdict.LevelText, result.Verdict.Headline,
-            result.Verdict.Score.ToString(CultureInfo.InvariantCulture), result.Verdict.Summary,
+            result.Verdict.ScoreAvailable ? result.Verdict.Score.ToString(CultureInfo.InvariantCulture) : "", result.Verdict.Summary,
             string.Join(" | ", result.Verdict.Reasons), result.IpConsensus.Summary,
             result.Duration.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)));
 

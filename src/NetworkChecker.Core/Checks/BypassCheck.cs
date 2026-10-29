@@ -8,7 +8,7 @@ namespace NetworkChecker.Core.Checks;
 
 /// <summary>
 /// Локальные средства обхода: открытые порты прокси на loopback, SOCKS5/HTTP-прокси,
-/// REST-API Xray и Clash/sing-box, плюс признак активного tun2socks.
+/// предположительные локальные API. Одного ответа недостаточно для установления программы.
 /// Аналог BypassChecker (Android).
 /// </summary>
 public sealed class BypassCheck(IHttpProbe http) : ICheck
@@ -53,50 +53,36 @@ public sealed class BypassCheck(IHttpProbe http) : ICheck
 
         foreach (var (port, kind, banner) in openPorts)
         {
-            findings.Add(Finding.Critical(
-                $"Локальный прокси на 127.0.0.1:{port}",
-                $"{kind}. Открытый локальный прокси — главный косвенный признак клиента обхода на ПК.",
-                banner));
+            if (kind == "сервис")
+                findings.Add(Finding.Info($"Локальный сервис на 127.0.0.1:{port}",
+                    "Сервис ответил, но его тип не подтверждён; это не свидетельство прокси.", banner));
+            else
+                findings.Add(Finding.Warning($"Возможный локальный {kind} на 127.0.0.1:{port}",
+                    "Ответ похож на ответ прокси. Открытый порт не означает, что браузер его использует."));
         }
 
-        // --- REST-API панели Xray ---
-        var xray = await ProbeJsonApiAsync("http://127.0.0.1:10085/", timeout, ct).ConfigureAwait(false);
-        if (xray)
-        {
-            findings.Add(Finding.Critical("Отвечает gRPC/REST API Xray",
-                "Порт 10085 — стандартный API Xray-core, через него управляется маршрутизация.", "127.0.0.1:10085"));
-        }
+        // GET / не является проверкой Xray gRPC. Любой ответ — лишь факт сервиса.
+        var xrayPort = await _http.GetAsync(new Uri("http://127.0.0.1:10085/"), timeout, ignoreProxy: true, ct).ConfigureAwait(false);
+        if (xrayPort.StatusCode is 200 or 403 or 404 or 405)
+            findings.Add(Finding.Info("Ответ локального сервиса на порту 10085",
+                "Это не подтверждает Xray: специфичная gRPC-проверка пока не реализована."));
 
-        // --- Clash / sing-box external controller ---
         foreach (var port in new[] { 9090, 9091 })
         {
-            var uri = new Uri($"http://127.0.0.1:{port}/version");
-            var response = await _http.GetAsync(uri, TimeSpan.FromSeconds(1), ignoreProxy: true, ct).ConfigureAwait(false);
-            if (!response.Success || response.Body is null) continue;
-            if (!response.Body.Contains("\"version\"", StringComparison.OrdinalIgnoreCase)) continue;
-            findings.Add(Finding.Critical(
-                $"Отвечает API Clash/Mihomo на порту {port}",
-                "External controller клиента Clash доступен без авторизации — значит клиент запущен.",
-                response.Body.Length > 120 ? response.Body[..120] : response.Body));
+            var response = await _http.GetAsync(new Uri($"http://127.0.0.1:{port}/version"), TimeSpan.FromSeconds(1), ignoreProxy: true, ct).ConfigureAwait(false);
+            if (!response.Success || response.Body is null ||
+                !response.Body.Contains("\"version\"", StringComparison.OrdinalIgnoreCase)) continue;
+            findings.Add(Finding.Notice($"Ответ версии на локальном порту {port}",
+                "Ответ похож на API контроллера, но поле version встречается и у других программ. Клиент не идентифицирован."));
             break;
         }
 
-        // --- tun2socks / локальный SOCKS + TUN ---
-        var hasSocks = openPorts.Any(p => p.Kind == "SOCKS5");
-        if (hasSocks)
-        {
-            findings.Add(Finding.Notice("Комбинация SOCKS5 + TUN",
-                "Связка «локальный SOCKS5 + туннельный интерфейс» — типовая схема tun2socks/v2rayN."));
-        }
-
         if (openPorts.Count == 0)
-        {
-            findings.Add(Finding.Info("Локальные прокси не обнаружены",
-                "На типовых портах (1080, 1087, 2080, 7890, 8080, 9050...) никто не ответил."));
-        }
+            findings.Add(Finding.Info("Локальные сервисы на проверенных портах не ответили",
+                "Это не исключает прокси на других портах или с другой настройкой."));
 
         var detected = findings.Any(f => f.Severity == Severity.Critical);
-        var review = findings.Any(f => f.Severity == Severity.Notice);
+        var review = findings.Any(f => f.Severity is Severity.Notice or Severity.Warning);
 
         return new CheckResult
         {
@@ -111,9 +97,4 @@ public sealed class BypassCheck(IHttpProbe http) : ICheck
         };
     }
 
-    private async Task<bool> ProbeJsonApiAsync(string url, TimeSpan timeout, CancellationToken ct)
-    {
-        var response = await _http.GetAsync(new Uri(url), timeout, ignoreProxy: true, ct).ConfigureAwait(false);
-        return response.StatusCode is 200 or 403 or 404 or 405;
-    }
 }

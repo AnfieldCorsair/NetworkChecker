@@ -214,7 +214,7 @@ public class MainWindowViewModelTests
         Assert.True(history.HasComparison);
         Assert.NotEmpty(history.ComparisonRows);
         Assert.Contains("→", history.ComparisonHeadline);
-        Assert.Contains(history.ComparisonRows, r => r.DirectionText == "хуже");
+        Assert.Contains(history.ComparisonRows, r => r.DirectionText is "больше сигналов" or "меньше сигналов");
         Assert.NotEmpty(history.ComparisonSummary);
 
         history.CloseComparisonCommand.Execute(null);

@@ -186,7 +186,7 @@ public class CheckRunnerTests
     }
 
     [Fact]
-    public async Task Verdict_is_detected_when_direct_and_geo_signals_agree()
+    public async Task Unstructured_direct_and_geo_signals_only_require_review()
     {
         var checks = new Core.Abstractions.ICheck[]
         {
@@ -197,7 +197,7 @@ public class CheckRunnerTests
 
         var result = await runner.RunAsync(Sample.Options(), false, CancellationToken.None);
 
-        Assert.Equal(RiskLevel.Detected, result.Verdict.Level);
+        Assert.Equal(RiskLevel.NeedsReview, result.Verdict.Level);
         Assert.NotEmpty(result.Verdict.Reasons);
     }
 }

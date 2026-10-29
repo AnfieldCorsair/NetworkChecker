@@ -55,9 +55,15 @@ public sealed class DirectSignsCheck(IPlatformProbe platform, VpnClientCatalog c
         {
             var detail = proxy.PacUrl is not null
                 ? $"Задан PAC-файл: {proxy.PacUrl}"
-                : "В системе задан прокси-сервер (WinINET/WinHTTP/переменные окружения).";
-            findings.Add(Finding.Critical("Системный прокси включён", detail,
-                $"{proxy.HttpProxy ?? proxy.SocksProxy ?? proxy.WinHttpProxy} {proxy.BypassList}".Trim()));
+                : "Обнаружен прокси на одном из уровней: WinINET, WinHTTP или переменные окружения процесса.";
+            findings.Add(Finding.Critical("Обнаружены настройки прокси", detail,
+                $"{proxy.HttpProxy ?? proxy.SocksProxy ?? proxy.WinHttpProxy} {proxy.BypassList}".Trim())
+                with
+            {
+                Kind = !string.IsNullOrWhiteSpace(proxy.HttpProxy) || !string.IsNullOrWhiteSpace(proxy.HttpsProxy) ||
+                    !string.IsNullOrWhiteSpace(proxy.SocksProxy) || !string.IsNullOrWhiteSpace(proxy.PacUrl)
+                    ? EvidenceKind.ConfiguredProxy : EvidenceKind.Unspecified
+            });
         }
         else
         {
@@ -73,15 +79,15 @@ public sealed class DirectSignsCheck(IPlatformProbe platform, VpnClientCatalog c
 
             if (pac.HasLoopbackProxy)
             {
-                findings.Add(Finding.Critical("PAC отправляет трафик на локальный прокси",
-                    "Скрипт автоконфигурации указывает на 127.0.0.1 — так настраивают клиенты обхода, " +
+                findings.Add(Finding.Critical("В PAC найден адрес локального прокси",
+                    "Текст PAC содержит адрес 127.0.0.1. Статический разбор не определяет, применится ли правило к конкретному сайту; " +
                     "которые поднимают локальный прокси и перенаправляют в него браузер.",
                     string.Join(", ", pac.Proxies.Select(p => p.ToString()))));
             }
             else if (pac.RoutesThroughProxy)
             {
-                findings.Add(Finding.Warning("PAC маршрутизирует трафик через прокси",
-                    "Скрипт автоконфигурации задаёт внешний прокси-сервер вместо прямого соединения.",
+                findings.Add(Finding.Warning("В PAC найден адрес прокси",
+                    "В тексте найдена директива прокси; выбор для конкретного сайта не проверен.",
                     string.Join(", ", pac.Proxies.Select(p => p.ToString()))));
             }
 
@@ -104,26 +110,28 @@ public sealed class DirectSignsCheck(IPlatformProbe platform, VpnClientCatalog c
         {
             findings.Add(Finding.Critical(
                 $"Активен туннельный интерфейс «{tunnel.Name}»",
-                $"MTU {tunnel.Mtu}, адрес {tunnel.AddressText}. Туннель перехватывает трафик системы.",
+                $"MTU {tunnel.Mtu}, адрес {tunnel.AddressText}. Состояние интерфейса само по себе не показывает, какие приложения используют туннель.",
                 tunnel.Description));
         }
 
         // --- VPN-подключения ОС (RAS) ---
-        var activeConnections = connections.Where(c => c.Status?.Contains("Connected", StringComparison.OrdinalIgnoreCase) == true
-                                                       || c.Status?.Contains("Подключ", StringComparison.OrdinalIgnoreCase) == true).ToList();
+        var activeConnections = connections.Where(c => string.Equals(c.Status?.Trim(), "Connected", StringComparison.OrdinalIgnoreCase)
+                                                       || string.Equals(c.Status?.Trim(), "Подключено", StringComparison.OrdinalIgnoreCase)).ToList();
         metrics.Add(new Metric("VPN-профили ОС", connections.Count.ToString(CultureInfo.InvariantCulture),
             connections.Count == 0 ? "нет" : string.Join(", ", connections.Select(c => c.Name))));
         foreach (var connection in activeConnections)
         {
             findings.Add(Finding.Critical($"Активно VPN-подключение ОС «{connection.Name}»",
-                $"{connection.TunnelType} → {connection.Server}", connection.DeviceType));
+                $"{connection.TunnelType} → {connection.Server}", connection.DeviceType)
+                with
+            { Kind = EvidenceKind.ConnectedWindowsVpn });
         }
 
         // --- запущенные клиенты обхода ---
         foreach (var process in processes)
         {
             findings.Add(Finding.Critical(
-                $"Запущен клиент обхода: {process.Name}",
+                $"Запущен процесс с VPN/прокси-маркером: {process.Name}",
                 $"Процесс совпал с маркером «{process.MatchedMarker}».",
                 process.Path));
         }

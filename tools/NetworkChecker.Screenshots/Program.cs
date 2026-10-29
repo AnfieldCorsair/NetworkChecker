@@ -27,18 +27,9 @@ internal static class Program
             .WithInterFont()
             .SetupWithoutStarting();
 
-        // Чистая история: скриншоты не должны зависеть от прошлых прогонов.
-        var dataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NetworkChecker");
-        if (Directory.Exists(dataDir))
-        {
-            foreach (var file in Directory.GetFiles(dataDir, "history.db*"))
-            {
-                try { File.Delete(file); } catch { }
-            }
-        }
-
-        var host = AppServices.Build([]);
+        // Изолированная временная папка: никогда не удаляем историю реального пользователя.
+        var dataDir = Path.Combine(Path.GetTempPath(), "NetworkChecker-Screenshots", Guid.NewGuid().ToString("N"));
+        var host = AppServices.Build([], dataDir);
         AppServices.MigrateAsync(host).GetAwaiter().GetResult();
 
         var main = host.Services.GetRequiredService<MainWindowViewModel>();

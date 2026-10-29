@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NetworkChecker · Признаков обхода не обнаружено</title>
+<title>NetworkChecker · Требуется проверка</title>
 <style>
 :root { color-scheme: light dark; }
 * { box-sizing: border-box; }
@@ -80,18 +80,18 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <main>
 <header class="top">
 <div class="brand">NetworkChecker</div>
-<div class="sub">отчёт о проверке · 29.10.2026 21:54</div>
+<div class="sub">отчёт о проверке · 29.10.2026 22:37</div>
 </header>
-<section class="verdict" style="border-left-color:#2FA36B">
-<div class="score" style="color:#2FA36B">5<small>/100</small></div>
-<div class="verdict-body"><h1>Признаков обхода не обнаружено</h1>
-<p class="lead">Ни прямые, ни косвенные проверки не нашли следов туннеля, прокси или подмены.</p>
-<p class="plain">В доступных данных не найдено признаков туннелей, прокси или программ обхода. Эти проверки не дают полной гарантии. Правда, 3 проверок пропущены или не смогли отработать — часть картины неизвестна.</p>
+<section class="verdict" style="border-left-color:#D79B18">
+<div class="score" style="color:#D79B18">8 / 100</div>
+<div class="verdict-body"><h1>Требуется проверка</h1>
+<p class="lead">Есть неоднозначные сигналы. Они могут иметь другие объяснения и не доказывают VPN, прокси или перехват. Индекс условный, не вероятность; влияние на браузер отдельно не проверялось.</p>
+<p class="plain">Нашлись мелочи, которые по отдельности ничего не значат: например, необычный адрес выхода или нестандартная настройка сети. Это не повод для паники, но и не идеально чистая картина. Правда, 7 проверок пропущены или не смогли отработать — часть картины неизвестна.</p>
 </div></section>
 <section>
 <h2>Что повлияло на вывод</h2>
 <ul class="reasons">
-<li>Косвенные признаки: DNS туннеля перекрывает системный</li>
+<li>Косвенные признаки: DNS-серверы туннельного интерфейса</li>
 </ul>
 </section>
 <section>
@@ -117,10 +117,9 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <div class="a">не найдены</div>
 <div class="h">Ни запущенных, ни установленных клиентов обхода не видно.</div>
 </div>
-<div class="fact ok">
+<div class="fact warn">
 <div class="q">Отклик сети</div>
-<div class="a">Россия 2 мс &#183; мир 1 мс</div>
-<div class="h">Отклик обычный для прямого подключения. Замер: TCP.</div>
+<div class="a">не измерялся</div>
 </div>
 </div>
 <p class="overall"><strong>Общая картина:</strong> Конфигурация в целом обычная, есть мелочи</p>
@@ -151,23 +150,23 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <td>1</td>
 <td class="muted">0.0 с</td></tr>
 <tr><td><strong>UDP / STUN-транспорт</strong><div class="muted">Доступность UDP и адрес выхода через STUN</div></td>
-<td><span class="status ok">Чисто</span></td>
-<td>2</td>
-<td class="muted">0.3 с</td></tr>
+<td><span class="status skip">Пропущено</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
 <tr><td><strong>CDN и redirector</strong><div class="muted">Что о вас знают edge-сервисы: страна, colo, заголовки</div></td>
 <td><span class="status skip">Пропущено</span></td>
 <td>1</td>
 <td class="muted">0.0 с</td></tr>
 <tr><td><strong>Доступность доменов</strong><div class="muted">DNS → TCP → TLS: где именно ломается доступ</div></td>
-<td><span class="status ok">Чисто</span></td>
+<td><span class="status skip">Пропущено</span></td>
 <td>1</td>
-<td class="muted">0.4 с</td></tr>
+<td class="muted">0.0 с</td></tr>
 <tr><td><strong>RTT-триангуляция (β)</strong><div class="muted">Задержки до RU и иностранных узлов</div></td>
-<td><span class="status ok">Чисто</span></td>
+<td><span class="status skip">Пропущено</span></td>
 <td>1</td>
-<td class="muted">2.5 с</td></tr>
+<td class="muted">0.0 с</td></tr>
 <tr><td><strong>ICMP-спуфинг (β)</strong><div class="muted">Поддельные ICMP-ответы и расхождение с TCP</div></td>
-<td><span class="status ok">Чисто</span></td>
+<td><span class="status skip">Пропущено</span></td>
 <td>1</td>
 <td class="muted">0.0 с</td></tr>
 </tbody></table>
@@ -175,16 +174,10 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <section>
 <h2>Находки</h2>
 <article class="finding warn">
-<div class="finding-head"><span class="sev">ВНИМАНИЕ</span><strong>DNS туннеля перекрывает системный</strong></div>
-<p>Туннельный адаптер публикует собственные DNS-серверы — трафик резолвинга идёт внутрь туннеля.</p>
+<div class="finding-head"><span class="sev">ВНИМАНИЕ</span><strong>DNS-серверы туннельного интерфейса</strong></div>
+<p>Адаптер публикует DNS-серверы; фактический выбор зависит от маршрутов и политик DNS.</p>
 <pre>8.8.8.8</pre>
 <div class="muted">модуль: Косвенные признаки</div>
-</article>
-<article class="finding notice">
-<div class="finding-head"><span class="sev">ЗАМЕТКА</span><strong>STUN-серверы видят разные порты</strong></div>
-<p>Разные внешние порты для одного узла — симметричный NAT. Нормально для мобильных операторов, нетипично для домашнего Wi-Fi.</p>
-<pre>stun.l.google.com:19302=58434, stun.cloudflare.com:3478=59428, stun.sipnet.ru:3478=38227</pre>
-<div class="muted">модуль: UDP / STUN-транспорт</div>
 </article>
 <article class="finding info">
 <div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
@@ -201,13 +194,13 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <div class="muted">модуль: Прямые признаки</div>
 </article>
 <article class="finding info">
-<div class="finding-head"><span class="sev">ИНФО</span><strong>Локальные прокси не обнаружены</strong></div>
-<p>На типовых портах (1080, 1087, 2080, 7890, 8080, 9050...) никто не ответил.</p>
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Локальные сервисы на проверенных портах не ответили</strong></div>
+<p>Это не исключает прокси на других портах или с другой настройкой.</p>
 <div class="muted">модуль: Локальный обход</div>
 </article>
 <article class="finding info">
-<div class="finding-head"><span class="sev">ИНФО</span><strong>UDP-транспорт работает</strong></div>
-<p>Ответили 3 STUN-серверов. Голосовые вызовы и QUIC пойдут напрямую.</p>
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<p>Внешние сетевые проверки отключены.</p>
 <div class="muted">модуль: UDP / STUN-транспорт</div>
 </article>
 <article class="finding info">
@@ -215,17 +208,18 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <div class="muted">модуль: CDN и redirector</div>
 </article>
 <article class="finding info">
-<div class="finding-head"><span class="sev">ИНФО</span><strong>Все проверенные домены доступны</strong></div>
-<p>Ни DNS-, ни TCP-, ни TLS-блокировок не обнаружено. Если VPN активен, значит он не даёт заметного выигрыша по этим целям.</p>
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<p>Внешние сетевые проверки отключены.</p>
 <div class="muted">модуль: Доступность доменов</div>
 </article>
 <article class="finding info">
-<div class="finding-head"><span class="sev">ИНФО</span><strong>Задержки симметричны</strong></div>
-<p>Разница в пределах нормы: нет признаков &#171;дальнего&#187; маршрута до российских адресов.</p>
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<p>Внешние сетевые проверки отключены.</p>
 <div class="muted">модуль: RTT-триангуляция (β)</div>
 </article>
 <article class="finding info">
-<div class="finding-head"><span class="sev">ИНФО</span><strong>Аномалий ICMP не обнаружено</strong></div>
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<p>Внешние сетевые проверки отключены.</p>
 <div class="muted">модуль: ICMP-спуфинг (β)</div>
 </article>
 </section>
@@ -237,8 +231,8 @@ footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 2
 <tr><th>Пользователь</th><td>user</td></tr>
 <tr><th>Права администратора</th><td>нет</td></tr>
 <tr><th>Приватный режим</th><td>выключен</td></tr>
-<tr><th>IP-консенсус</th><td>8.235.75.40</td></tr>
-<tr><th>Длительность</th><td>2.5 с</td></tr>
+<tr><th>IP-консенсус</th><td>нет данных</td></tr>
+<tr><th>Длительность</th><td>0.0 с</td></tr>
 </tbody></table>
 </section>
 <footer>

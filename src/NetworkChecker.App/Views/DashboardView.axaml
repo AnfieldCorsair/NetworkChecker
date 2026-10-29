@@ -161,14 +161,15 @@
                     <StackPanel Spacing="1">
                       <SelectableTextBlock Text="{Binding Verdict.ScoreText, FallbackValue='—'}" FontSize="18" FontWeight="Bold"
                                  HorizontalAlignment="Center" Foreground="{Binding Verdict.ColorBrush}" />
+                      <TextBlock Text="{DynamicResource ScoreDisclaimer}" Classes="muted" FontSize="10" HorizontalAlignment="Center" />
                       <SelectableTextBlock Text="{Binding Verdict.LevelText, FallbackValue='нет данных'}" Classes="muted"
                                  FontSize="10.5" HorizontalAlignment="Center" />
                     </StackPanel>
                   </Border>
                 </Grid>
 
-                <SelectableTextBlock Text="{Binding Verdict.Summary, FallbackValue='Запустите проверку: десять модулей прочитают сетевую конфигурацию, локальные прокси и внешние признаки. Все данные остаются на этом компьютере.'}"
-                           Foreground="{DynamicResource TextMuted}" MaxWidth="640" HorizontalAlignment="Left" />
+                <SelectableTextBlock Text="{Binding Verdict.Summary, FallbackValue='Запустите проверку: десять модулей прочитают сетевую конфигурацию, локальные прокси и внешние признаки. Онлайн-проверки обращаются к внешним сервисам.'}"
+                           TextWrapping="Wrap" Foreground="{DynamicResource TextMuted}" MaxWidth="640" HorizontalAlignment="Left" />
 
                 <Border Height="6" CornerRadius="3" Background="{DynamicResource SurfaceAltBrush}">
                   <Border HorizontalAlignment="Left" CornerRadius="3" Width="{Binding Verdict.ScoreWidth, FallbackValue=0}"

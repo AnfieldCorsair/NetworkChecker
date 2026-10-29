@@ -37,7 +37,7 @@ public static class XlsxExporter
         {
             ("Вердикт", result.Verdict.Headline),
             ("Уровень", result.Verdict.LevelText),
-            ("Балл", $"{result.Verdict.Score} / 100"),
+            ("Условный индекс", result.Verdict.ScoreText),
             ("Что это значит", PlainLanguage.ForVerdict(result.Verdict, result.Checks).WhatItMeans),
             ("Что делать", PlainLanguage.ForVerdict(result.Verdict, result.Checks).Advice),
             ("Кратко", result.Verdict.Summary),

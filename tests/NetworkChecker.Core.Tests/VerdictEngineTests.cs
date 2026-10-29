@@ -39,7 +39,7 @@ public class VerdictEngineTests
     }
 
     [Fact]
-    public void Direct_critical_plus_geo_gives_detected()
+    public void Untyped_direct_critical_plus_geo_needs_review()
     {
         var checks = new[]
         {
@@ -49,8 +49,8 @@ public class VerdictEngineTests
 
         var verdict = VerdictEngine.Build(checks, new IpConsensus { ConsensusIp = "1.2.3.4" });
 
-        Assert.Equal(RiskLevel.Detected, verdict.Level);
-        Assert.True(verdict.Score >= 60);
+        Assert.Equal(RiskLevel.NeedsReview, verdict.Level);
+        Assert.True(verdict.Score > 0);
         Assert.NotEmpty(verdict.Reasons);
     }
 
@@ -109,7 +109,7 @@ public class VerdictEngineTests
         var verdict = VerdictEngine.Build(checks, new IpConsensus { ConsensusIp = "1.2.3.4" });
 
         Assert.InRange(verdict.Score, 0, 100);
-        Assert.Equal(RiskLevel.Detected, verdict.Level);
+        Assert.Equal(RiskLevel.NeedsReview, verdict.Level);
         Assert.Contains("неполный", verdict.Summary);
     }
 
@@ -128,7 +128,7 @@ public class VerdictEngineTests
 
         Assert.Equal(RiskLevel.NeedsReview, verdict.Level);
         Assert.Equal("Проверка неполная", verdict.Headline);
-        Assert.True(verdict.Score >= 25);
+        Assert.Equal(0, verdict.Score);
         Assert.Contains(verdict.Reasons, r => r.Contains("Не проверялось", StringComparison.Ordinal));
     }
 

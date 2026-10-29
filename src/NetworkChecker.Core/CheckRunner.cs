@@ -36,7 +36,7 @@ public sealed class CheckRunner(IEnumerable<ICheck> checks, IPlatformProbe platf
         Masking.Enabled = privacyMode;
         try
         {
-            return await RunCoreAsync(options, privacyMode, ct).ConfigureAwait(false);
+            return await RunCoreAsync(options.Clone(), privacyMode, ct).ConfigureAwait(false);
         }
         finally
         {

@@ -6,7 +6,8 @@ namespace NetworkChecker.Core.Net;
 /// <summary>Маскирование и форматирование значений с учётом режима приватности.</summary>
 public static class Masking
 {
-    public static bool Enabled { get; set; }
+    private static readonly AsyncLocal<bool> IsEnabled = new();
+    public static bool Enabled { get => IsEnabled.Value; set => IsEnabled.Value = value; }
 
     public static string Ip(string? ip)
     {
@@ -21,7 +22,7 @@ public static class Masking
     public static string Mac(string? mac)
     {
         if (string.IsNullOrWhiteSpace(mac)) return "—";
-        return Enabled ? mac[..8] + ":••:••:••" : mac;
+        return Enabled ? (mac.Length >= 8 ? mac[..8] + ":••:••:••" : "•••") : mac;
     }
 
     public static string Host(string? host)
@@ -42,7 +43,7 @@ public static class GeoIpParser
     private static readonly string[] IpKeys = ["ip", "query", "ipAddress", "ip_address", "YourFuckingIPAddress"];
     private static readonly string[] CountryKeys = ["country_code", "countryCode", "country", "country_code2", "country_code3", "loc"];
     private static readonly string[] HostingKeys = ["is_hosting", "hosting", "isHosting", "is_datacenter", "datacenter"];
-    private static readonly string[] ProxyKeys = ["is_proxy", "proxy", "isProxy", "is_vpn", "vpn", "is_tor", "tor", "is_abuser"];
+    private static readonly string[] ProxyKeys = ["is_proxy", "proxy", "isProxy", "is_vpn", "vpn", "is_tor", "tor"];
     private static readonly string[] IspKeys = ["isp", "org", "organization", "asn_org"];
     private static readonly string[] AsnKeys = ["asn", "as_number", "asn_number"];
     private static readonly string[] CityKeys = ["city", "town"];
@@ -56,8 +57,8 @@ public static class GeoIpParser
             return new GeoInfo(
                 FindString(root, IpKeys),
                 FindCountry(root),
-                FindBool(root, HostingKeys),
-                FindBool(root, ProxyKeys),
+                FindAnyBool(root, HostingKeys),
+                FindAnyBool(root, ProxyKeys),
                 FindString(root, IspKeys),
                 FindString(root, ["org", "organization", "as_org"]),
                 FindString(root, AsnKeys),
@@ -90,20 +91,24 @@ public static class GeoIpParser
         return code.Length == 2 ? code : GeoCountries.ToCode(code) ?? code;
     }
 
-    private static bool? FindBool(JsonElement element, string[] keys)
+    private static bool? FindAnyBool(JsonElement element, string[] keys)
     {
+        var hasFalse = false;
         foreach (var key in keys)
         {
             if (!TryFind(element, key, out var value)) continue;
-            switch (value.ValueKind)
+            bool? parsed = value.ValueKind switch
             {
-                case JsonValueKind.True: return true;
-                case JsonValueKind.False: return false;
-                case JsonValueKind.String when bool.TryParse(value.GetString(), out var parsed): return parsed;
-                case JsonValueKind.Number when value.TryGetInt32(out var number): return number != 0;
-            }
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.String when bool.TryParse(value.GetString(), out var b) => b,
+                JsonValueKind.Number when value.TryGetInt32(out var n) => n != 0,
+                _ => null,
+            };
+            if (parsed == true) return true;
+            if (parsed == false) hasFalse = true;
         }
-        return null;
+        return hasFalse ? false : null;
     }
 
     private static bool TryFind(JsonElement element, string key, out JsonElement value, int depth = 0)

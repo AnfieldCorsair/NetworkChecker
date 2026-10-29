@@ -42,7 +42,7 @@ public class RunComparerTests
 
         Assert.Equal(ChangeDirection.Same, comparison.Direction);
         Assert.Empty(comparison.MeaningfulChanges);
-        Assert.Contains("не изменилось", comparison.Summary);
+        Assert.Contains("изменений не обнаружено", comparison.Summary);
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class RunComparerTests
         Assert.Equal(CheckStatus.Clean, change.Before);
         Assert.Equal(CheckStatus.Detected, change.After);
         Assert.Contains("Системный прокси включён", change.Appeared);
-        Assert.Contains("Стало хуже", comparison.Summary);
+        Assert.Contains("Больше сигналов", comparison.Summary);
     }
 
     [Fact]
@@ -132,7 +132,8 @@ public class RunComparerTests
         Assert.Equal(CheckStatus.NeedsReview, change.After);
         Assert.Equal(["DNS на loopback"], change.Appeared);
         Assert.Empty(change.Disappeared);
-        Assert.Equal(ChangeDirection.Worse, change.Direction);
+        // Информационная находка сама по себе не делает состояние хуже.
+        Assert.Equal(ChangeDirection.Same, change.Direction);
     }
 
     [Fact]

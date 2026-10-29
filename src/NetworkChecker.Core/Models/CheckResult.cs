@@ -47,7 +47,9 @@ public sealed class CheckResult
 }
 
 /// <summary>Одно наблюдение IP-адреса от конкретного источника.</summary>
-public sealed record IpObservation(string Source, string Ip, bool? IsRussian, string? Note = null);
+public enum IpChannel { Unknown, Web, Udp }
+
+public sealed record IpObservation(string Source, string Ip, bool? IsRussian, string? Note = null, IpChannel Channel = IpChannel.Unknown);
 
 /// <summary>Кросс-модульный консенсус по внешнему IP.</summary>
 public sealed class IpConsensus
@@ -56,13 +58,15 @@ public sealed class IpConsensus
     public IReadOnlyList<IpObservation> Observations { get; init; } = Array.Empty<IpObservation>();
     public int RussianVotes { get; init; }
     public int ForeignVotes { get; init; }
-    public bool IsSplit { get; init; }          // разные IP у разных источников — признак цепочки прокси
+    public bool IsSplit { get; init; }          // разные адреса одного семейства; причины неизвестны
+    public bool WithinChannelConflict { get; init; }
+    public bool CrossChannelMismatch { get; init; }
     public bool HasConsensus => !string.IsNullOrWhiteSpace(ConsensusIp);
 
     public string Summary => ConsensusIp is null
         ? "нет данных"
         : IsSplit
-            ? $"расхождение источников (консенсус: {ConsensusIp})"
+            ? $"расхождение адресов одного семейства (выбранный адрес: {ConsensusIp})"
             : ConsensusIp;
 }
 

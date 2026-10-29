@@ -81,7 +81,7 @@ public class PlainLanguageTests
         var domains = PlainLanguage.ToPlain(Sample.Check(CheckCategory.DomainReachability, status: CheckStatus.Detected));
 
         Assert.Contains("прокси", proxy.Advice, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("дата-центру", geo.Advice, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("не доказывают VPN", geo.Advice, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("сайтов", domains.Advice, StringComparison.OrdinalIgnoreCase);
         Assert.NotEqual(proxy.Advice, domains.Advice);
     }

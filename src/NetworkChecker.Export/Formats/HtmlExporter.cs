@@ -49,7 +49,7 @@ public static class HtmlExporter
         // --- Вердикт ---
         html.Append("<section class=\"verdict\" style=\"border-left-color:").Append(accent).AppendLine("\">");
         html.Append("<div class=\"score\" style=\"color:").Append(accent).Append("\">")
-            .Append(result.Verdict.Score.ToString(Culture)).AppendLine("<small>/100</small></div>");
+            .Append(E(result.Verdict.ScoreText)).AppendLine("</div>");
         html.Append("<div class=\"verdict-body\">");
         html.Append("<h1>").Append(E(result.Verdict.Headline)).AppendLine("</h1>");
         html.Append("<p class=\"lead\">").Append(E(result.Verdict.Summary)).AppendLine("</p>");

@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using NetworkChecker.Core.Abstractions;
 using NetworkChecker.Core.Models;
 using NetworkChecker.Core.Net;
+using NetworkChecker.Core.Verdict;
 
 namespace NetworkChecker.Core.Checks;
 
@@ -64,9 +66,10 @@ public sealed class IpComparisonCheck(IHttpProbe http) : ICheck
                 var info = GeoIpParser.Parse(response.Body);
                 ip = info?.Ip;
             }
-            if (string.IsNullOrWhiteSpace(ip)) continue;
-            seen.Add((name, ip!));
-            context.CollectIp($"IP comparison · {name}", ip!, null);
+            if (!IPAddress.TryParse(ip, out var parsed)) continue;
+            ip = (parsed.IsIPv4MappedToIPv6 ? parsed.MapToIPv4() : parsed).ToString();
+            seen.Add((name, ip));
+            context.CollectIp($"IP comparison · {name}", ip!, null, channel: IpChannel.Web);
         }
 
         // UDP-путь: STUN показывает адрес, который видит NAT, и часто расходится с HTTP через прокси.
@@ -75,7 +78,7 @@ public sealed class IpComparisonCheck(IHttpProbe http) : ICheck
             var endpoint = await StunClient.BindAsync(server, timeout, ct).ConfigureAwait(false);
             if (endpoint is null) continue;
             seen.Add(($"STUN {server.Split(':')[0]}", endpoint.Address.ToString()));
-            context.CollectIp($"STUN · {server.Split(':')[0]}", endpoint.Address.ToString(), null, "UDP-путь");
+            context.CollectIp($"STUN · {server.Split(':')[0]}", endpoint.Address.ToString(), null, "UDP-путь", IpChannel.Udp);
             break;
         }
 
@@ -102,29 +105,28 @@ public sealed class IpComparisonCheck(IHttpProbe http) : ICheck
             metrics.Add(new Metric(Masking.Ip(group.Key), string.Join(", ", group.Select(g => g.Source))));
         }
 
+        var comparison = IpConsensusBuilder.Build(seen.Select(s => new IpObservation(s.Source, s.Ip, null,
+            Channel: s.Source.StartsWith("STUN", StringComparison.Ordinal) ? IpChannel.Udp : IpChannel.Web)).ToArray());
+        var comparableCount = seen.GroupBy(s => IPAddress.Parse(s.Ip).AddressFamily).Max(g => g.Count());
         CheckStatus status;
-        if (distinct.Count == 1)
+        if (comparableCount < 2)
         {
-            findings.Add(Finding.Info("Все источники видят один адрес", Masking.Ip(distinct[0]), "признак «прямого» выхода"));
+            findings.Add(Finding.Info("Недостаточно сопоставимых источников",
+                "IPv4 и IPv6 не сравниваются друг с другом; нужно минимум два наблюдения одного семейства."));
+            status = CheckStatus.Skipped;
+        }
+        else if (!comparison.IsSplit)
+        {
+            findings.Add(Finding.Info("Нет расхождений внутри одного семейства IP",
+                "IPv4 и IPv6 не сравниваются друг с другом; один источник на семейство не подтверждает совпадение."));
             status = CheckStatus.Clean;
         }
         else
         {
-            findings.Add(Finding.Warning(
-                "Источники видят разные IP",
-                "Расхождение означает, что часть трафика идёт разными маршрутами: split tunneling, цепочка прокси или прозрачный перехват.",
+            findings.Add(Finding.Warning("Источники видят разные IP одного семейства",
+                "Возможны разные маршруты, балансировка, NAT или настройки прокси. По одному расхождению причину установить нельзя.",
                 string.Join("; ", seen.Select(s => $"{s.Source}={Masking.Ip(s.Ip)}"))));
-
-            var httpAddresses = seen.Where(s => !s.Source.StartsWith("STUN", StringComparison.Ordinal))
-                .Select(s => s.Ip).Distinct().ToList();
-            if (httpAddresses.Count == 1 && distinct.Count > 1)
-            {
-                findings.Add(Finding.Notice(
-                    "UDP и TCP выходят через разные адреса",
-                    "STUN (UDP) и HTTP (TCP) возвращают разные адреса — характерно для прокси, перехватывающего только TCP.",
-                    Masking.Ip(httpAddresses[0])));
-            }
-            status = CheckStatus.Detected;
+            status = CheckStatus.NeedsReview;
         }
 
         return new CheckResult

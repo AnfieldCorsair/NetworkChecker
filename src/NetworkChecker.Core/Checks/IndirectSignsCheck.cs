@@ -63,7 +63,7 @@ public sealed class IndirectSignsCheck(IPlatformProbe platform) : ICheck
         {
             findings.Add(Finding.Critical(
                 $"Маршрут по умолчанию идёт через {tunnelDefault.InterfaceName}",
-                "Весь трафик направлен в туннель — полный перехват, а не выборочный.",
+                "Маршрут по умолчанию связан с этим интерфейсом; отдельные маршруты и настройки приложений могут отличаться.",
                 $"gateway={tunnelDefault.Gateway}, metric={tunnelDefault.Metric}"));
         }
 
@@ -87,7 +87,7 @@ public sealed class IndirectSignsCheck(IPlatformProbe platform) : ICheck
         {
             findings.Add(Finding.Critical(
                 "DNS указывает на loopback",
-                "Локальный DNS-резолвер (127.0.0.1 или ::1) — признак локального прокси/DNS-туннеля.",
+                "Локальный DNS-резолвер может использоваться обычными защитными или сетевыми программами; сам по себе он не доказывает туннель.",
                 string.Join(", ", loopbackDns)));
         }
 
@@ -106,8 +106,8 @@ public sealed class IndirectSignsCheck(IPlatformProbe platform) : ICheck
         var tunnelDns = adapters.Where(a => a.Kind == Models.AdapterKind.Tunnel).SelectMany(a => a.DnsServers).Distinct().ToList();
         if (tunnelDns.Count > 0)
         {
-            findings.Add(Finding.Warning("DNS туннеля перекрывает системный",
-                "Туннельный адаптер публикует собственные DNS-серверы — трафик резолвинга идёт внутрь туннеля.",
+            findings.Add(Finding.Warning("DNS-серверы туннельного интерфейса",
+                "Адаптер публикует DNS-серверы; фактический выбор зависит от маршрутов и политик DNS.",
                 string.Join(", ", tunnelDns)));
         }
         if (dns.NameResolutionPolicy.Count > 0)

@@ -22,6 +22,17 @@ public sealed class CallTransportCheck(IHttpProbe http) : ICheck
     public async Task<CheckResult> RunAsync(CheckContext context, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
+        if (context.Options.OfflineMode)
+            return new CheckResult
+            {
+                Category = Category,
+                Title = Title,
+                Subtitle = Subtitle,
+                Weight = Weight,
+                Status = CheckStatus.Skipped,
+                Findings = [Finding.Info("Офлайн-режим", "Внешние сетевые проверки отключены.")],
+                Duration = sw.Elapsed,
+            };
         var findings = new List<Finding>();
         var metrics = new List<Metric>();
         var timeout = TimeSpan.FromSeconds(context.Options.RequestTimeoutSeconds);
@@ -34,7 +45,7 @@ public sealed class CallTransportCheck(IHttpProbe http) : ICheck
             var endpoint = await StunClient.BindAsync(server, timeout, ct).ConfigureAwait(false);
             if (endpoint is null) continue;
             working.Add((server, endpoint));
-            context.CollectIp($"STUN · {server.Split(':')[0]}", endpoint.Address.ToString(), null, "UDP-выход");
+            context.CollectIp($"STUN · {server.Split(':')[0]}", endpoint.Address.ToString(), null, "UDP-выход", IpChannel.Udp);
         }
 
         metrics.Add(new Metric("STUN-серверов ответило", $"{working.Count} из {context.Options.StunServers.Count}"));
@@ -46,14 +57,14 @@ public sealed class CallTransportCheck(IHttpProbe http) : ICheck
 
         if (working.Count == 0)
         {
-            findings.Add(Finding.Warning("UDP полностью недоступен",
-                "Ни один STUN-сервер не ответил. Так бывает при блокировке UDP оператором или при прокси, который заворачивает только TCP.",
+            findings.Add(Finding.Warning("STUN-серверы не ответили",
+                "Отсутствие ответов STUN не доказывает, что весь UDP недоступен; возможны таймауты, настройки сети или недоступность серверов.",
                 string.Join(", ", context.Options.StunServers)));
         }
         else
         {
             findings.Add(Finding.Info("UDP-транспорт работает",
-                $"Ответили {working.Count} STUN-серверов. Голосовые вызовы и QUIC пойдут напрямую."));
+                $"Ответили {working.Count} STUN-серверов. Это не устанавливает маршрут других UDP-приложений."));
         }
 
         // Порт в ответе STUN: если порт сильно отличается от 51820/4500/3478 — NAT не «симметричный», но это лишь информативно.
@@ -64,7 +75,7 @@ public sealed class CallTransportCheck(IHttpProbe http) : ICheck
             if (ports > 1)
             {
                 findings.Add(Finding.Notice("STUN-серверы видят разные порты",
-                    "Разные внешние порты для одного узла — симметричный NAT. Нормально для мобильных операторов, нетипично для домашнего Wi-Fi.",
+                    "Разные внешние порты встречаются при разных настройках NAT; этот тест не определяет тип NAT.",
                     string.Join(", ", working.Select(w => w.Server + "=" + w.Endpoint.Port))));
             }
             if (addresses > 1)
@@ -80,16 +91,16 @@ public sealed class CallTransportCheck(IHttpProbe http) : ICheck
         var httpInfo = httpResult.Success && httpResult.Body is not null ? GeoIpParser.Parse(httpResult.Body) : null;
         if (httpInfo?.Ip is not null)
         {
-            context.CollectIp("HTTPS (TCP) · ipify", httpInfo.Ip, null, "TCP-путь");
+            context.CollectIp("HTTPS (TCP) · ipify", httpInfo.Ip, null, "TCP-путь", IpChannel.Web);
             metrics.Add(new Metric("Внешний адрес (TCP)", Masking.Ip(httpInfo.Ip), "адрес для HTTP(S)"));
             if (working.Count > 0)
             {
                 var udpIp = working[0].Endpoint.Address.ToString();
-                if (udpIp != httpInfo.Ip)
+                if (IPAddress.TryParse(httpInfo.Ip, out var tcpIp) && working[0].Endpoint.Address.AddressFamily == tcpIp.AddressFamily && !working[0].Endpoint.Address.Equals(tcpIp))
                 {
-                    findings.Add(Finding.Critical(
-                        "TCP и UDP выходят через разные адреса",
-                        "Классическая утечка: прокси перехватывает только TCP, UDP уходит напрямую с домашнего IP.",
+                    findings.Add(Finding.Warning(
+                        "TCP и UDP видят разные адреса",
+                        "Различие может быть связано с маршрутами, NAT или прокси. Тест не устанавливает, является ли какой-либо адрес домашним или это утечка.",
                         $"UDP={Masking.Ip(udpIp)}, TCP={Masking.Ip(httpInfo.Ip)}"));
                 }
             }
@@ -97,7 +108,7 @@ public sealed class CallTransportCheck(IHttpProbe http) : ICheck
 
         // MTProto-проба Telegram (доступность DC) — как индикатор прямого доступа.
         var mtprotoOk = await ProbeMtProtoAsync(ct).ConfigureAwait(false);
-        metrics.Add(new Metric("Telegram DC (MTProto)", mtprotoOk ? "доступен" : "не ответил"));
+        metrics.Add(new Metric("Telegram DC (TCP :443)", mtprotoOk ? "соединение установлено" : "не ответил"));
 
         var detected = findings.Any(f => f.Severity == Severity.Critical);
         var review = findings.Any(f => f.Severity == Severity.Warning);

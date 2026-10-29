@@ -32,11 +32,13 @@ public sealed class CheckContext
 
     public void Progress(string message) => Report?.Invoke(message);
 
-    public void CollectIp(string source, string ip, bool? isRussian, string? note = null)
+    public void CollectIp(string source, string ip, bool? isRussian, string? note = null, IpChannel channel = IpChannel.Unknown)
     {
-        if (string.IsNullOrWhiteSpace(ip)) return;
-        lock (_ipLock) _ipObservations.Add(new IpObservation(source, ip.Trim(), isRussian, note));
-        IpObserved?.Invoke(new IpObservation(source, ip.Trim(), isRussian, note));
+        if (!System.Net.IPAddress.TryParse(ip?.Trim(), out var parsed)) return;
+        if (parsed.IsIPv4MappedToIPv6) parsed = parsed.MapToIPv4();
+        var observation = new IpObservation(source, parsed.ToString(), isRussian, note, channel);
+        lock (_ipLock) _ipObservations.Add(observation);
+        IpObserved?.Invoke(observation);
     }
 
     public IReadOnlyList<IpObservation> IpObservations

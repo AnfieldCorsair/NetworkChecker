@@ -13,6 +13,7 @@ public sealed class HistoryRepository(IDbContextFactory<AppDbContext> factory)
 
     public async Task SaveAsync(CheckRunResult result, CancellationToken ct = default)
     {
+        if (result.Environment.PrivacyMode) result = PrivateRunProjection.Create(result);
         await using var db = await _factory.CreateDbContextAsync(ct).ConfigureAwait(false);
         var record = new RunRecord
         {
@@ -71,6 +72,7 @@ public sealed class HistoryRepository(IDbContextFactory<AppDbContext> factory)
             {
                 Level = (RiskLevel)record.RiskLevel,
                 Score = record.Score,
+                ScoreAvailable = checks.Any(c => c.Weight > 0 && c.Status is not CheckStatus.Skipped and not CheckStatus.Failed),
                 Headline = record.Headline,
                 Summary = record.Summary,
                 Reasons = reasons,

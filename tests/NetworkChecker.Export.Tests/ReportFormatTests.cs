@@ -39,7 +39,7 @@ public class ReportFormatTests
         Assert.EndsWith(extension, file.FileName);
         Assert.True(file.Content.Length > 200, $"{format}: слишком маленький файл");
         Assert.False(string.IsNullOrWhiteSpace(file.MimeType));
-        Assert.Contains("rkn-hardering-", file.FileName);
+        Assert.Contains("networkchecker-", file.FileName);
     }
 
     [Fact]

@@ -6,11 +6,11 @@ namespace NetworkChecker.Core.Comparison;
 /// <summary>Направление изменения между двумя прогонами.</summary>
 public enum ChangeDirection
 {
-    /// <summary>Стало лучше (риск снизился).</summary>
+    /// <summary>Стало меньше сигналов.</summary>
     Better,
     /// <summary>Ничего не изменилось.</summary>
     Same,
-    /// <summary>Стало хуже (риск вырос).</summary>
+    /// <summary>Стало больше сигналов.</summary>
     Worse,
     /// <summary>Сравнивать нечего: модуль появился, исчез или не запускался.</summary>
     Unknown,
@@ -86,6 +86,8 @@ public static class RunComparer
             var appeared = newFindings.Except(oldFindings, StringComparer.Ordinal).ToList();
             var disappeared = oldFindings.Except(newFindings, StringComparer.Ordinal).ToList();
 
+            var oldSignals = old.Findings.Where(f => f.Severity >= Severity.Warning).Select(f => f.Title).ToHashSet(StringComparer.Ordinal);
+            var newSignals = current.Findings.Where(f => f.Severity >= Severity.Warning).Select(f => f.Title).ToHashSet(StringComparer.Ordinal);
             changes.Add(new CheckChange
             {
                 Title = title,
@@ -93,7 +95,9 @@ public static class RunComparer
                 After = current.Status,
                 Appeared = appeared,
                 Disappeared = disappeared,
-                Direction = DirectionOf(old.Status, current.Status, appeared.Count, disappeared.Count),
+                Direction = DirectionOf(old.Status, current.Status,
+                    newSignals.Except(oldSignals, StringComparer.Ordinal).Count(),
+                    oldSignals.Except(newSignals, StringComparer.Ordinal).Count()),
             });
         }
 
@@ -102,10 +106,11 @@ public static class RunComparer
         var better = changes.Count(c => c.Direction == ChangeDirection.Better);
         var unknown = changes.Count(c => c.Direction == ChangeDirection.Unknown);
 
+        var scoresComparable = before.Verdict.ScoreAvailable && after.Verdict.ScoreAvailable;
         var direction = worse > better ? ChangeDirection.Worse
             : better > worse ? ChangeDirection.Better
             : worse == 0 && better == 0 && unknown > 0 ? ChangeDirection.Unknown
-            : Math.Abs(delta) >= 5 ? (delta > 0 ? ChangeDirection.Worse : ChangeDirection.Better)
+            : scoresComparable && Math.Abs(delta) >= 5 ? (delta > 0 ? ChangeDirection.Worse : ChangeDirection.Better)
             : ChangeDirection.Same;
 
         return new RunComparison
@@ -117,7 +122,7 @@ public static class RunComparer
                 .ThenBy(c => c.Title, StringComparer.Ordinal)
                 .ToList(),
             Direction = direction,
-            Summary = BuildSummary(delta, worse, better, unknown),
+            Summary = BuildSummary(scoresComparable ? delta : null, worse, better, unknown),
         };
     }
 
@@ -145,13 +150,14 @@ public static class RunComparer
         _ => 0,
     };
 
-    private static string BuildSummary(int delta, int worse, int better, int unknown)
+    private static string BuildSummary(int? delta, int worse, int better, int unknown)
     {
         var speed = delta switch
         {
-            > 0 => $"оценка риска выросла на {delta.ToString(CultureInfo.InvariantCulture)}",
-            < 0 => $"оценка риска снизилась на {Math.Abs(delta).ToString(CultureInfo.InvariantCulture)}",
-            _ => "оценка риска не изменилась",
+            > 0 => $"условный индекс вырос на {delta.Value.ToString(CultureInfo.InvariantCulture)}",
+            < 0 => $"условный индекс снизился на {Math.Abs(delta.Value).ToString(CultureInfo.InvariantCulture)}",
+            0 => "условный индекс не изменился",
+            _ => "индекс одного из прогонов недоступен",
         };
 
         if (worse == 0 && better == 0 && unknown > 0)
@@ -160,9 +166,9 @@ public static class RunComparer
                    "в одном из прогонов (офлайн-режим или недоступные источники).";
         }
 
-        if (worse == 0 && better == 0) return $"Состояние не изменилось: {speed}.";
-        if (worse > 0 && better == 0) return $"Стало хуже: {speed}, модулей с ухудшением — {worse.ToString(CultureInfo.InvariantCulture)}.";
-        if (better > 0 && worse == 0) return $"Стало лучше: {speed}, модулей с улучшением — {better.ToString(CultureInfo.InvariantCulture)}.";
-        return $"Смешанные изменения: {speed}, ухудшилось {worse.ToString(CultureInfo.InvariantCulture)}, улучшилось {better.ToString(CultureInfo.InvariantCulture)}.";
+        if (worse == 0 && better == 0) return $"По сопоставимым статусам изменений не обнаружено: {speed}.";
+        if (worse > 0 && better == 0) return $"Больше сигналов: {speed}, модулей с увеличением — {worse.ToString(CultureInfo.InvariantCulture)}. Это не оценка безопасности.";
+        if (better > 0 && worse == 0) return $"Меньше сигналов: {speed}, модулей с уменьшением — {better.ToString(CultureInfo.InvariantCulture)}. Это не оценка безопасности.";
+        return $"Смешанные изменения: {speed}, больше сигналов {worse.ToString(CultureInfo.InvariantCulture)}, меньше {better.ToString(CultureInfo.InvariantCulture)}.";
     }
 }
