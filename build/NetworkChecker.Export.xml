@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetworkChecker.Export</name>
+    </assembly>
+    <members>
+        <member name="T:NetworkChecker.Export.Formats.CsvExporter">
+            <summary>CSV для Excel/Google Sheets: одна строка — одна находка, плюс строка на модуль без находок.</summary>
+        </member>
+        <member name="T:NetworkChecker.Export.Formats.DocxExporter">
+            <summary>DOCX: обычный документ, который можно открыть в Word и распечатать.</summary>
+        </member>
+        <member name="T:NetworkChecker.Export.Formats.HtmlExporter">
+            <summary>
+            Один HTML-файл — весь отчёт. Стили и данные внутри, внешних ссылок и скриптов нет:
+            файл открывается в любом браузере, его можно отправить письмом или приложить к обращению.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Export.Formats.HtmlExporter.E(System.String)">
+            <summary>HTML-экранирование: в отчёт попадают строки из системы (имена, маршруты, hosts).</summary>
+        </member>
+        <member name="T:NetworkChecker.Export.Formats.PdfExporter">
+            <summary>
+            PDF-отчёт: титул с вердиктом, таблица проверок, находки. Шрифт DejaVu Sans встроен —
+            иначе кириллица в PDF не отрисуется на машинах без нужных системных шрифтов.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Export.Formats.PdfExporter.FontsAvailable">
+            <summary>Проверка, что шрифты действительно встроены (используется в тестах).</summary>
+        </member>
+        <member name="T:NetworkChecker.Export.Formats.XlsxExporter">
+            <summary>XLSX с четырьмя листами: итог, проверки, находки, наблюдения по IP.</summary>
+        </member>
+        <member name="T:NetworkChecker.Export.ReportFormat">
+            <summary>Форматы отчёта, которые понимает обычный пользователь.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Pdf">
+            <summary>PDF — читать и печатать.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Docx">
+            <summary>DOCX — править в Word.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Xlsx">
+            <summary>XLSX — таблицы с фильтрами.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Csv">
+            <summary>CSV — открыть где угодно, вплоть до блокнота.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Markdown">
+            <summary>Markdown — для git/вики/issue.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Json">
+            <summary>JSON — для автоматизации.</summary>
+        </member>
+        <member name="F:NetworkChecker.Export.ReportFormat.Html">
+            <summary>HTML — один файл, который открывается в любом браузере.</summary>
+        </member>
+        <member name="T:NetworkChecker.Export.ReportExporter">
+            <summary>Единая точка экспорта: формат → готовый файл.</summary>
+        </member>
+    </members>
+</doc>

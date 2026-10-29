@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetworkChecker.Platform.Windows</name>
+    </assembly>
+    <members>
+        <member name="T:NetworkChecker.Platform.Windows.PowerShell">
+            <summary>
+            Тонкая обёртка над powershell.exe. Возвращает JSON и никогда не бросает:
+            на не-Windows среде просто отдаёт пустой результат.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Platform.Windows.WindowsObservationService">
+            <summary>WFP и ETW: только чтение/подписка, без изменения фильтров и без пакетов.</summary>
+        </member>
+        <member name="T:NetworkChecker.Platform.Windows.WindowsPlatformProbe">
+            <summary>
+            Реализация платформенного слоя для Windows.
+            На не-Windows среде методы деградируют: сетевые интерфейсы и DNS читаются кроссплатформенно,
+            реестр/PowerShell-часть помечается как недоступная.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Platform.Windows.WindowsPlatformProbe.#ctor(NetworkChecker.Core.Options.VpnClientCatalog)">
+            <summary>
+            Реализация платформенного слоя для Windows.
+            На не-Windows среде методы деградируют: сетевые интерфейсы и DNS читаются кроссплатформенно,
+            реестр/PowerShell-часть помечается как недоступная.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Platform.Windows.WindowsPlatformProbe.ReadWinHttpProxy">
+            <summary>
+            Машинный прокси WinHTTP (его используют службы, Windows Update, фоновые агенты).
+            В реестре это бинарный WinHttpSettings: 12 байт заголовка, дальше две UTF-16 строки —
+            «сервер» и «список исключений». Флаг включения — бит 0x02 в байте 8.
+            </summary>
+        </member>
+    </members>
+</doc>

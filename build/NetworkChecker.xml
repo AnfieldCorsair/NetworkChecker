@@ -1,0 +1,1279 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetworkChecker</name>
+    </assembly>
+    <members>
+        <member name="T:NetworkChecker.App.Icons">
+            <summary>Векторные иконки (path data) — не зависят от шрифтов и системы.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.Localization.Localizer">
+            <summary>Экспериментальный перевод оболочки. Язык системы и CurrentUICulture не изменяются.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.Startup.AppServices">
+            <summary>Сборка приложения: Microsoft.Extensions.Hosting + DI, Serilog, проверки, EF Core.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.Startup.IFileDialogService.SaveBytesAsync(System.String,System.Byte[],System.String,System.String)">
+            <summary>Сохранить произвольный файл (PDF, DOCX, XLSX, CSV…).</summary>
+        </member>
+        <member name="T:NetworkChecker.App.Ui">
+            <summary>Кэш кистей для цветов из ViewModel.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewLocator">
+            <summary>
+            Given a view model, returns the corresponding view if possible.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.Converters">
+            <summary>Мелкие конвертеры, которых нет в Avalonia из коробки.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.Converters.DefaultRouteBrush">
+            <summary>Маршрут по умолчанию подсвечивается акцентным цветом.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.CheckCardViewModel">
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.CheckCardViewModel.IsExpanded">
+            <inheritdoc/>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.CheckCardViewModel.toggleCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.CheckCardViewModel.ToggleCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.CheckCardViewModel.ToggleCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.CheckCardViewModel.Toggle"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.FactViewModel">
+            <summary>Строка простого режима: вопрос и понятный ответ.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.FactViewModel.#ctor(NetworkChecker.Core.Plain.PlainFact)">
+            <summary>Строка простого режима: вопрос и понятный ответ.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.PlainCheckViewModel">
+            <summary>Строка простого режима: модуль проверки человеческим языком.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.PlainCheckViewModel.#ctor(NetworkChecker.Core.Plain.PlainCheck)">
+            <summary>Строка простого режима: модуль проверки человеческим языком.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.DashboardViewModel">
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.Verdict">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.IsRunning">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.Progress">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.StatusLine">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.ProgressText">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.CheckCount">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.LastRunText">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PrivacyMode">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.OfflineMode">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.SaveMessage">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.HasResult">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainHeadline">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainMeaning">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainAdvice">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainConfiguration">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainAccent">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainAccentBrush">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.PlainSoftBrush">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.ShowPlainDetails">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.LastResult">
+            <summary>
+            Показывает готовый прогон (например, выбранный в истории) без повторного запуска проверок.
+            </summary>
+            <summary>Последний прогон — для повторного экспорта и предпросмотра отчёта.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.ExportFormats">
+            <summary>Доступные форматы отчёта (PDF, Word, Excel, CSV, Markdown, JSON).</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.SelectedFormat">
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.DashboardViewModel.GoPro">
+            <summary>Переключить на подробный режим (кнопка «Нужны детали»).</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.DashboardViewModel.Dispose">
+            <summary>Освобождает незавершённый прогон (например, при закрытии окна во время проверки).</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.DashboardViewModel.OnVerdictChanged(NetworkChecker.App.ViewModels.VerdictViewModel)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.Verdict"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.Verdict"/> is changed.</remarks>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.DashboardViewModel.OnPrivacyModeChanged(System.Boolean)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.PrivacyMode"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.PrivacyMode"/> is changed.</remarks>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.DashboardViewModel.OnOfflineModeChanged(System.Boolean)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.OfflineMode"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.OfflineMode"/> is changed.</remarks>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.DashboardViewModel.runCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.RunCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.RunCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.DashboardViewModel.RunAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.DashboardViewModel.cancelCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.CancelCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.CancelCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.DashboardViewModel.Cancel"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.DashboardViewModel.exportReportCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.ExportReportCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.ExportReportCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.DashboardViewModel.ExportReportAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.DashboardViewModel.togglePlainDetailsCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.TogglePlainDetailsCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.TogglePlainDetailsCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.DashboardViewModel.TogglePlainDetails"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.DashboardViewModel.goProCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.GoProCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.GoProCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.DashboardViewModel.GoPro"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.DashboardViewModel.copySummaryCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.DashboardViewModel.CopySummaryCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.DashboardViewModel.CopySummaryCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.DashboardViewModel.CopySummaryAsync"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.ExportFormatOption">
+            <summary>Пункт выпадающего списка форматов отчёта.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.ExportFormatOption.#ctor(NetworkChecker.Export.ReportFormat,System.String,System.String,System.String)">
+            <summary>Пункт выпадающего списка форматов отчёта.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.GuideViewModel">
+            <summary>Вкладка-справочник: что именно делает каждый модуль и как читать результат.</summary>
+            <inheritdoc/>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.GuideViewModel.toggleSectionCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.GuideViewModel.ToggleSectionCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.GuideViewModel.ToggleSectionCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand`1"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.GuideViewModel.ToggleSection(NetworkChecker.App.ViewModels.GuideSection)"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.ComparisonRowViewModel">
+            <summary>Строка сравнения прогонов: что стало с одним модулем.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.ComparisonRowViewModel.#ctor(NetworkChecker.Core.Comparison.CheckChange)">
+            <summary>Строка сравнения прогонов: что стало с одним модулем.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.HistoryViewModel">
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.Selected">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.Status">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.DetailHeadline">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.DetailSummary">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.HasDetail">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.HasComparison">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.ComparisonSummary">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.ComparisonHeadline">
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.HistoryViewModel.CompareWithPreviousAsync">
+            <summary>
+            Сравнивает выбранный прогон с предыдущим по времени. Список отсортирован от новых к старым,
+            поэтому «предыдущий» — это следующий элемент в списке.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.HistoryViewModel.OnSelectedChanged(NetworkChecker.App.ViewModels.HistoryRowViewModel)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.Selected"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.Selected"/> is changed.</remarks>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.HistoryViewModel.refreshCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.RefreshCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.RefreshCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.HistoryViewModel.RefreshAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.HistoryViewModel.compareWithPreviousCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.CompareWithPreviousCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.CompareWithPreviousCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.HistoryViewModel.CompareWithPreviousAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.HistoryViewModel.closeComparisonCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.CloseComparisonCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.CloseComparisonCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.HistoryViewModel.CloseComparison"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.HistoryViewModel.deleteCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.DeleteCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.DeleteCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand`1"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.HistoryViewModel.DeleteAsync(NetworkChecker.App.ViewModels.HistoryRowViewModel)"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.HistoryViewModel.clearCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.HistoryViewModel.ClearCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.HistoryViewModel.ClearCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.HistoryViewModel.ClearAsync"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.MainWindowViewModel">
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.CurrentPage">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.CurrentNav">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.IsNavExpanded">
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.MainWindowViewModel.SwitchMode(System.String)">
+            <summary>Переключатель в шапке: "simple" или "pro".</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.MainWindowViewModel.Dispose">
+            <summary>Останавливает незавершённые операции на всех экранах.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.MainWindowViewModel.navigateCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.MainWindowViewModel.NavigateCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.NavigateCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand`1"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.MainWindowViewModel.Navigate(NetworkChecker.App.ViewModels.NavItem)"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.MainWindowViewModel.toggleNavCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.MainWindowViewModel.ToggleNavCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.ToggleNavCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.MainWindowViewModel.ToggleNav"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.MainWindowViewModel.setProModeCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.MainWindowViewModel.SetProModeCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.SetProModeCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand`1"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.MainWindowViewModel.SetProMode(System.Boolean)"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.MainWindowViewModel.switchModeCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.MainWindowViewModel.SwitchModeCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.MainWindowViewModel.SwitchModeCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand`1"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.MainWindowViewModel.SwitchMode(System.String)"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.TraceHopViewModel">
+            <summary>Хоп для таблицы и схемы: одинаковый ASN получает одинаковый цвет.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.TraceHopViewModel.#ctor(NetworkChecker.Core.Net.TraceHop)">
+            <summary>Хоп для таблицы и схемы: одинаковый ASN получает одинаковый цвет.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.SimpleNetFact">
+            <summary>Понятный факт о сети для простого режима.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.SimpleNetFact.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>Понятный факт о сети для простого режима.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.NetworkViewModel">
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.ShowTechnicalOverview">
+            <summary>Технические таблицы показываем только в подробном режиме.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.SimpleSummary">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.SimpleTone">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.SimpleToneBrush">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.ShowTabs">
+            <summary>В простом режиме вкладки диагностики и трассировки скрыты.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.NetworkViewModel.Dispose">
+            <summary>Освобождает незавершённый прогон (например, при закрытии окна во время проверки).</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.TraceTarget">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._traceTarget"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.IsLoadingOverview">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._isLoadingOverview"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.IsRunningDiagnostics">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._isRunningDiagnostics"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.IsTracing">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._isTracing"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.StatusLine">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._statusLine"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.OverviewRefreshed">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._overviewRefreshed"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.DiagnosticsRefreshed">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._diagnosticsRefreshed"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.TraceStatus">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._traceStatus"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.ExternalIp">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._externalIp"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.ExternalDetails">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._externalDetails"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.StunText">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._stunText"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.ProxyText">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._proxyText"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.DnsText">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._dnsText"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.GatewayText">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._gatewayText"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.MtuText">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._mtuText"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.AdaptersCountText">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._adaptersCountText"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.ActiveTab">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.NetworkViewModel._activeTab"/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.NetworkViewModel.OnActiveTabChanged(System.String)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.ActiveTab"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.ActiveTab"/> is changed.</remarks>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.NetworkViewModel.selectTabCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.SelectTabCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.SelectTabCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand`1"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.NetworkViewModel.SelectTab(System.String)"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.NetworkViewModel.refreshOverviewCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.RefreshOverviewCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.RefreshOverviewCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.NetworkViewModel.RefreshOverviewAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.NetworkViewModel.runDiagnosticsCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.RunDiagnosticsCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.RunDiagnosticsCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.NetworkViewModel.RunDiagnosticsAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.NetworkViewModel.runTraceCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.RunTraceCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.RunTraceCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.NetworkViewModel.RunTraceAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.NetworkViewModel.cancelTraceCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.NetworkViewModel.CancelTraceCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NetworkViewModel.CancelTraceCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.NetworkViewModel.CancelTrace"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.ObservationViewModel">
+            <summary>Наблюдение по явному запросу, результаты не сохраняются в историю.</summary>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.ObservationViewModel.#ctor(NetworkChecker.Core.Observation.IObservationService)">
+            <summary>Наблюдение по явному запросу, результаты не сохраняются в историю.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.IsRunning">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.ObservationViewModel._isRunning"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.Consented">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.ObservationViewModel._consented"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.Status">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.ObservationViewModel._status"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.WfpStatus">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.ObservationViewModel._wfpStatus"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.SnapshotStatus">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.ObservationViewModel._snapshotStatus"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.EtwStatus">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.ObservationViewModel._etwStatus"/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.ObservationViewModel.OnIsRunningChanged(System.Boolean)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.ObservationViewModel.IsRunning"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.ObservationViewModel.IsRunning"/> is changed.</remarks>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.ObservationViewModel.OnConsentedChanged(System.Boolean)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.ObservationViewModel.Consented"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.ObservationViewModel.Consented"/> is changed.</remarks>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.ObservationViewModel.startCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.ObservationViewModel.StartCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.StartCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.ObservationViewModel.StartAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.ObservationViewModel.stopCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.ObservationViewModel.StopCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ObservationViewModel.StopCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.ObservationViewModel.Stop"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.SettingsViewModel">
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.Language">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.RequestTimeout">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.MaxParallelChecks">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.PrivacyMode">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.OfflineMode">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.SaveHistory">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.MaxTraceHops">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.DefaultTraceTarget">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.GeoIpProviders">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.ReachabilityTargets">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.RttRussianHosts">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.RttForeignHosts">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.SettingsViewModel._rttForeignHosts"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.StunServers">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.SettingsViewModel._stunServers"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.LocalProxyPorts">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.SettingsViewModel._localProxyPorts"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.Theme">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.SettingsViewModel._theme"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.SaveStatus">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.SettingsViewModel._saveStatus"/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.DbStatus">
+            <inheritdoc cref="F:NetworkChecker.App.ViewModels.SettingsViewModel._dbStatus"/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.SettingsViewModel.OnThemeChanged(System.String)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.SettingsViewModel.Theme"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.SettingsViewModel.Theme"/> is changed.</remarks>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.SettingsViewModel.saveCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.SettingsViewModel.SaveCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.SaveCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.SettingsViewModel.SaveAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.SettingsViewModel.resetToDefaultsCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.SettingsViewModel.ResetToDefaultsCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.ResetToDefaultsCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.SettingsViewModel.ResetToDefaults"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.SettingsViewModel.clearHistoryCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.SettingsViewModel.ClearHistoryCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.ClearHistoryCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.SettingsViewModel.ClearHistoryAsync"/>.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.SettingsViewModel.openDataFolderCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.SettingsViewModel.OpenDataFolderCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SettingsViewModel.OpenDataFolderCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.SettingsViewModel.OpenDataFolder"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.SiteRowViewModel">
+            <summary>Строка визитной карточки: подпись, значение, пояснение и цветной маркер.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.SiteRowViewModel.#ctor(NetworkChecker.Core.SiteView.SiteViewRow)">
+            <summary>Строка визитной карточки: подпись, значение, пояснение и цветной маркер.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.SiteSignalViewModel">
+            <summary>Вывод сайта: короткий заголовок, объяснение и «вес» признака.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.SiteSignalViewModel.#ctor(NetworkChecker.Core.SiteView.SiteViewSignal)">
+            <summary>Вывод сайта: короткий заголовок, объяснение и «вес» признака.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.HeaderRowViewModel">
+            <summary>Заголовок HTTP-запроса в том виде, в котором его получает сервер.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.HeaderRowViewModel.#ctor(System.String,System.String)">
+            <summary>Заголовок HTTP-запроса в том виде, в котором его получает сервер.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.SiteViewModel">
+            <summary>
+            Экран «Глазами сайта»: что о вас узнаёт российский сайт (ВК, Яндекс, банк) с первого же запроса.
+            Данные берутся из ответа GeoIP-сервиса и из локальных настроек — на серверы сайтов ничего не уходит.
+            </summary>
+            <inheritdoc/>
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.ShowRawRequest">
+            <summary>Сырые заголовки — только в подробном режиме: обычному пользователю они не нужны.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.ShowNoSignals">
+            <summary>«Всё сходится» показываем только когда действительно есть что оценивать.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.Headline">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.Summary">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.ExposureText">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.IpText">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.AccentBrush">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.AccentSoftBrush">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.RequestLine">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.StatusLine">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.ErrorText">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.HasError">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.HasReport">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.IsBusy">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.UpdatedText">
+            <inheritdoc/>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.PendingTask">
+            <summary>Задача текущего осмотра: нужна тестам и снятию скриншотов, чтобы дождаться результата.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.SiteViewModel.EnsureLoaded">
+            <summary>Первый вход на вкладку сам запускает осмотр — лишний клик никому не нужен.</summary>
+        </member>
+        <member name="F:NetworkChecker.App.ViewModels.SiteViewModel.refreshCommand">
+            <summary>The backing field for <see cref="P:NetworkChecker.App.ViewModels.SiteViewModel.RefreshCommand"/>.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.SiteViewModel.RefreshCommand">
+            <summary>Gets an <see cref="T:CommunityToolkit.Mvvm.Input.IAsyncRelayCommand"/> instance wrapping <see cref="M:NetworkChecker.App.ViewModels.SiteViewModel.RefreshAsync(System.Threading.CancellationToken)"/>.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.UiModeService">
+            <summary>
+            Режим интерфейса. Проект двойного назначения: «Просто» — понятные ответы для обычных
+            пользователей, «Подробно» — метрики, находки и сырые данные для тех, кому нужны детали.
+            </summary>
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.UiModeService.#ctor(NetworkChecker.Core.Options.UiOptions,NetworkChecker.Data.SettingsStore)">
+            <summary>
+            Режим интерфейса. Проект двойного назначения: «Просто» — понятные ответы для обычных
+            пользователей, «Подробно» — метрики, находки и сырые данные для тех, кому нужны детали.
+            </summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.UiModeService.IsSimple">
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.UiModeService.OnIsSimpleChanged(System.Boolean)">
+            <summary>Executes the logic for when <see cref="P:NetworkChecker.App.ViewModels.UiModeService.IsSimple"/> just changed.</summary>
+            <param name="value">The new property value that was set.</param>
+            <remarks>This method is invoked right after the value of <see cref="P:NetworkChecker.App.ViewModels.UiModeService.IsSimple"/> is changed.</remarks>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.ViewModelBase.Icon">
+            <summary>Path data иконки.</summary>
+        </member>
+        <member name="T:NetworkChecker.App.ViewModels.NavItem">
+            <summary>Элемент боковой навигации.</summary>
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.ViewModels.NavItem.#ctor(NetworkChecker.App.ViewModels.ViewModelBase)">
+            <summary>Элемент боковой навигации.</summary>
+        </member>
+        <member name="P:NetworkChecker.App.ViewModels.NavItem.IsSelected">
+            <inheritdoc/>
+        </member>
+        <member name="M:NetworkChecker.App.Views.DashboardView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.GuideView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.HistoryView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.MainWindow.OnClosed(System.Object,System.EventArgs)">
+            <summary>Закрытие окна должно остановить незавершённый прогон, а не оставить его в фоне.</summary>
+        </member>
+        <member name="M:NetworkChecker.App.Views.MainWindow.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.NetworkView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.ObservationView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.SettingsView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="M:NetworkChecker.App.Views.SiteView.InitializeComponent(System.Boolean)">
+            <summary>
+            Wires up the controls and optionally loads XAML markup and attaches dev tools (if Avalonia.Diagnostics package is referenced).
+            </summary>
+            <param name="loadXaml">Should the XAML be loaded into the component.</param>
+        </member>
+        <member name="T:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs">
+            <summary>
+            A helper type providing cached, reusable <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instances
+            for all properties generated with <see cref="T:CommunityToolkit.Mvvm.ComponentModel.ObservablePropertyAttribute"/>.
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsExpanded">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsExpanded" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Verdict">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Verdict" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsRunning">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsRunning" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Progress">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Progress" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.StatusLine">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "StatusLine" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ProgressText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ProgressText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.CheckCount">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "CheckCount" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.LastRunText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "LastRunText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PrivacyMode">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PrivacyMode" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.OfflineMode">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "OfflineMode" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SaveMessage">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SaveMessage" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.HasResult">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "HasResult" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainHeadline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainHeadline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainMeaning">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainMeaning" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainAdvice">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainAdvice" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainConfiguration">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainConfiguration" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainAccent">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainAccent" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainAccentBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainAccentBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.PlainSoftBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "PlainSoftBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ShowPlainDetails">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ShowPlainDetails" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SelectedFormat">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SelectedFormat" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Selected">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Selected" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Status">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Status" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.DetailHeadline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "DetailHeadline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.DetailSummary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "DetailSummary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.HasDetail">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "HasDetail" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.HasComparison">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "HasComparison" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ComparisonSummary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ComparisonSummary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ComparisonHeadline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ComparisonHeadline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.CurrentPage">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "CurrentPage" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.CurrentNav">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "CurrentNav" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsNavExpanded">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsNavExpanded" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SimpleSummary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SimpleSummary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SimpleTone">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SimpleTone" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SimpleToneBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SimpleToneBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.TraceTarget">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "TraceTarget" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsLoadingOverview">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsLoadingOverview" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsRunningDiagnostics">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsRunningDiagnostics" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsTracing">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsTracing" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.OverviewRefreshed">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "OverviewRefreshed" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.DiagnosticsRefreshed">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "DiagnosticsRefreshed" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.TraceStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "TraceStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ExternalIp">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ExternalIp" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ExternalDetails">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ExternalDetails" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.StunText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "StunText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ProxyText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ProxyText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.DnsText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "DnsText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.GatewayText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "GatewayText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.MtuText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "MtuText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.AdaptersCountText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "AdaptersCountText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ActiveTab">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ActiveTab" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Consented">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Consented" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.WfpStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "WfpStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SnapshotStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SnapshotStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.EtwStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "EtwStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Language">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Language" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.RequestTimeout">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "RequestTimeout" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.MaxParallelChecks">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "MaxParallelChecks" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SaveHistory">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SaveHistory" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.MaxTraceHops">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "MaxTraceHops" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.DefaultTraceTarget">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "DefaultTraceTarget" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.GeoIpProviders">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "GeoIpProviders" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ReachabilityTargets">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ReachabilityTargets" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.RttRussianHosts">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "RttRussianHosts" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.RttForeignHosts">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "RttForeignHosts" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.StunServers">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "StunServers" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.LocalProxyPorts">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "LocalProxyPorts" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Theme">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Theme" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.SaveStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "SaveStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.DbStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "DbStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Headline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Headline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.Summary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "Summary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ExposureText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ExposureText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IpText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IpText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.AccentBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "AccentBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.AccentSoftBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "AccentSoftBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.RequestLine">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "RequestLine" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.ErrorText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "ErrorText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.HasError">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "HasError" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.HasReport">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "HasReport" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsBusy">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsBusy" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.UpdatedText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "UpdatedText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsSimple">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsSimple" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangingArgs.IsSelected">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangingEventArgs"/> instance for all "IsSelected" generated properties.</summary>
+        </member>
+        <member name="T:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs">
+            <summary>
+            A helper type providing cached, reusable <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instances
+            for all properties generated with <see cref="T:CommunityToolkit.Mvvm.ComponentModel.ObservablePropertyAttribute"/>.
+            </summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsExpanded">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsExpanded" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Verdict">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Verdict" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsRunning">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsRunning" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Progress">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Progress" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.StatusLine">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "StatusLine" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ProgressText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ProgressText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.CheckCount">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "CheckCount" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.LastRunText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "LastRunText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PrivacyMode">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PrivacyMode" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.OfflineMode">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "OfflineMode" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SaveMessage">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SaveMessage" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.HasResult">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "HasResult" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainHeadline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainHeadline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainMeaning">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainMeaning" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainAdvice">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainAdvice" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainConfiguration">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainConfiguration" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainAccent">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainAccent" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainAccentBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainAccentBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.PlainSoftBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "PlainSoftBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ShowPlainDetails">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ShowPlainDetails" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SelectedFormat">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SelectedFormat" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Selected">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Selected" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Status">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Status" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DetailHeadline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "DetailHeadline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DetailSummary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "DetailSummary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.HasDetail">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "HasDetail" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.HasComparison">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "HasComparison" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ComparisonSummary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ComparisonSummary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ComparisonHeadline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ComparisonHeadline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.CurrentPage">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "CurrentPage" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.CurrentNav">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "CurrentNav" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsNavExpanded">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsNavExpanded" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SimpleSummary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SimpleSummary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SimpleTone">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SimpleTone" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SimpleToneBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SimpleToneBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.TraceTarget">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "TraceTarget" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsLoadingOverview">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsLoadingOverview" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsRunningDiagnostics">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsRunningDiagnostics" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsTracing">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsTracing" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.OverviewRefreshed">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "OverviewRefreshed" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DiagnosticsRefreshed">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "DiagnosticsRefreshed" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.TraceStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "TraceStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ExternalIp">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ExternalIp" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ExternalDetails">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ExternalDetails" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.StunText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "StunText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ProxyText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ProxyText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DnsText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "DnsText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.GatewayText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "GatewayText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.MtuText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "MtuText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.AdaptersCountText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "AdaptersCountText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ActiveTab">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ActiveTab" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Consented">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Consented" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.WfpStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "WfpStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SnapshotStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SnapshotStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.EtwStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "EtwStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Language">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Language" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.RequestTimeout">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "RequestTimeout" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.MaxParallelChecks">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "MaxParallelChecks" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SaveHistory">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SaveHistory" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.MaxTraceHops">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "MaxTraceHops" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DefaultTraceTarget">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "DefaultTraceTarget" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.GeoIpProviders">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "GeoIpProviders" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ReachabilityTargets">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ReachabilityTargets" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.RttRussianHosts">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "RttRussianHosts" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.RttForeignHosts">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "RttForeignHosts" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.StunServers">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "StunServers" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.LocalProxyPorts">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "LocalProxyPorts" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Theme">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Theme" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.SaveStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "SaveStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.DbStatus">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "DbStatus" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Headline">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Headline" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.Summary">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "Summary" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ExposureText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ExposureText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IpText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IpText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.AccentBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "AccentBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.AccentSoftBrush">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "AccentSoftBrush" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.RequestLine">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "RequestLine" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.ErrorText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "ErrorText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.HasError">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "HasError" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.HasReport">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "HasReport" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsBusy">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsBusy" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.UpdatedText">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "UpdatedText" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsSimple">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsSimple" generated properties.</summary>
+        </member>
+        <member name="F:CommunityToolkit.Mvvm.ComponentModel.__Internals.__KnownINotifyPropertyChangedArgs.IsSelected">
+            <summary>The cached <see cref="T:System.ComponentModel.PropertyChangedEventArgs"/> instance for all "IsSelected" generated properties.</summary>
+        </member>
+    </members>
+</doc>

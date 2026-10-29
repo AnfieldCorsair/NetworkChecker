@@ -1,0 +1,1047 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetworkChecker.Core</name>
+    </assembly>
+    <members>
+        <member name="T:NetworkChecker.Core.Abstractions.IPlatformProbe">
+            <summary>Платформенный слой: всё, что зависит от ОС.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Abstractions.CheckContext">
+            <summary>Контекст выполнения прогона: отмена, прогресс, сбор IP-наблюдений.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Abstractions.ICheck">
+            <summary>Модуль проверки. Все модули запускаются параллельно и независимо.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Abstractions.ICheck.Weight">
+            <summary>Вес в итоговом вердикте. 0 — чисто диагностическая проверка.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Abstractions.IHttpProbe">
+            <summary>Провайдер актуального прокси-окружения для HTTP-запросов.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Abstractions.IHttpProbe.UserAgent">
+            <summary>Строка User-Agent, которую отправляет зонд. Нужна экрану «глазами сайта».</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Abstractions.IHttpProbe.GetAsync(System.Uri,System.TimeSpan,System.Boolean,System.Threading.CancellationToken)">
+            <summary>GET с таймаутом; игнорирует системный прокси, если ignoreProxy = true.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.CheckRunner">
+            <summary>Оркестратор прогона: параллельный запуск модулей, консенсус IP, вердикт.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.CheckRunner.#ctor(System.Collections.Generic.IEnumerable{NetworkChecker.Core.Abstractions.ICheck},NetworkChecker.Core.Abstractions.IPlatformProbe)">
+            <summary>Оркестратор прогона: параллельный запуск модулей, консенсус IP, вердикт.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.BypassCheck">
+            <summary>
+            Локальные средства обхода: открытые порты прокси на loopback, SOCKS5/HTTP-прокси,
+            предположительные локальные API. Одного ответа недостаточно для установления программы.
+            Аналог BypassChecker (Android).
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.BypassCheck.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>
+            Локальные средства обхода: открытые порты прокси на loopback, SOCKS5/HTTP-прокси,
+            предположительные локальные API. Одного ответа недостаточно для установления программы.
+            Аналог BypassChecker (Android).
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.CallTransportCheck">
+            <summary>
+            STUN/MTProto: доступность UDP-транспорта и внешний адрес по UDP.
+            Если TCP-путь проксирован, а UDP отвечает напрямую — это утечка, которую методика ловит.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.CallTransportCheck.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>
+            STUN/MTProto: доступность UDP-транспорта и внешний адрес по UDP.
+            Если TCP-путь проксирован, а UDP отвечает напрямую — это утечка, которую методика ловит.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.CdnPullingCheck">
+            <summary>
+            CDN/redirector/echo-эндпоинты: сравнивает то, что сервис видит о клиенте
+            (country, ip, colo, proxy-заголовки), и ищет расхождения с GeoIP.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.CdnPullingCheck.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>
+            CDN/redirector/echo-эндпоинты: сравнивает то, что сервис видит о клиенте
+            (country, ip, colo, proxy-заголовки), и ищет расхождения с GeoIP.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.DirectSignsCheck">
+            <summary>
+            Прямые признаки на ПК: системный прокси, TUN/TAP-адаптеры, VPN-подключения ОС,
+            запущенные клиенты обхода, установленные приложения и правила файрвола (kill switch).
+            Аналог DirectSignsChecker (Android: NetworkCapabilities, VpnService, список пакетов).
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.DirectSignsCheck.#ctor(NetworkChecker.Core.Abstractions.IPlatformProbe,NetworkChecker.Core.Options.VpnClientCatalog,NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>
+            Прямые признаки на ПК: системный прокси, TUN/TAP-адаптеры, VPN-подключения ОС,
+            запущенные клиенты обхода, установленные приложения и правила файрвола (kill switch).
+            Аналог DirectSignsChecker (Android: NetworkCapabilities, VpnService, список пакетов).
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.DirectSignsCheck.AnalyzePacAsync(NetworkChecker.Core.Abstractions.CheckContext,NetworkChecker.Core.Platform.ProxySettings,System.Threading.CancellationToken)">
+            <summary>
+            Скачивает PAC-файл и разбирает его. Ошибки не считаем провалом проверки:
+            PAC может быть недоступен (нет сети, требует авторизации) — это просто отсутствие данных.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.DomainReachabilityCheck">
+            <summary>
+            DNS → TCP → TLS pipeline по набору доменов. Позволяет отличить блокировку DPI от
+            отсутствия маршрута и от подмены сертификата (MITM-прокси).
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.GeoIpCheck">
+            <summary>
+            GeoIP + hosting/proxy-сигналы. Паритет с GeoIpChecker (Android):
+            несколько независимых провайдеров, majority vote по hosting, «хоть один» по proxy.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.GeoIpCheck.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>
+            GeoIP + hosting/proxy-сигналы. Паритет с GeoIpChecker (Android):
+            несколько независимых провайдеров, majority vote по hosting, «хоть один» по proxy.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.IcmpSpoofingCheck">
+            <summary>
+            ICMP-спуфинг оператора: если «заблокированный» внешний хост отвечает ICMP,
+            но TCP/TLS к нему не устанавливается — ответ подделан промежуточным узлом.
+            Дополнительно сверяются TTL и задержка ICMP против TCP.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.IndirectSignsCheck">
+            <summary>
+            Косвенные признаки: интерфейсы, маршруты по умолчанию, DNS (включая split-DNS),
+            hosts-файл, MTU туннелей. Аналог IndirectSignsChecker (Android).
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.IndirectSignsCheck.#ctor(NetworkChecker.Core.Abstractions.IPlatformProbe)">
+            <summary>
+            Косвенные признаки: интерфейсы, маршруты по умолчанию, DNS (включая split-DNS),
+            hosts-файл, MTU туннелей. Аналог IndirectSignsChecker (Android).
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.InterfaceNaming">
+            <summary>Эвристики имён сетевых интерфейсов (порт NetworkInterfacePatterns с Android-версии).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.IpComparisonCheck">
+            <summary>
+            Сравнение IP-ответов разных источников. Диагностический модуль (weight = 0):
+            напрямую в вердикт не входит, но питает IpConsensusBuilder и выявляет расщепление трафика.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.IpComparisonCheck.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>
+            Сравнение IP-ответов разных источников. Диагностический модуль (weight = 0):
+            напрямую в вердикт не входит, но питает IpConsensusBuilder и выявляет расщепление трафика.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.NetworkHeuristics">
+            <summary>
+            Небольшие эвристики «это нормально или это повод присмотреться», вынесенные из чекеров,
+            чтобы их можно было покрыть тестами по отдельности.
+            </summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Checks.NetworkHeuristics.StandardHostNames">
+            <summary>Стандартные имена из штатного hosts (Linux, Windows, macOS, Docker) — не повод для тревоги.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.NetworkHeuristics.IsSuspiciousHostRoute(System.String)">
+            <summary>
+            Хостовый маршрут (/32 или адрес без маски) на конкретный адрес. Служебные адреса
+            (link-local, multicast, loopback, ограниченный broadcast) сюда не попадают: их ставят
+            автоматически DHCP/ND, а не программы обхода.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.NetworkHeuristics.IsBenignHostsEntry(NetworkChecker.Core.Platform.HostsEntry)">
+            <summary>Запись hosts безобидна: либо комментарий наш, либо служебное имя и служебный адрес.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Checks.NetworkHeuristics.IsServiceAddress(System.Net.IPAddress)">
+            <summary>Адрес из диапазонов, которые ОС назначает сама (или которые заведомо не «внешний адрес»).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Checks.RttTriangulationCheck">
+            <summary>
+            RTT-триангуляция (β): сравнение задержек, не определяет географию маршрута.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Comparison.ChangeDirection">
+            <summary>Направление изменения между двумя прогонами.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Comparison.ChangeDirection.Better">
+            <summary>Стало меньше сигналов.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Comparison.ChangeDirection.Same">
+            <summary>Ничего не изменилось.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Comparison.ChangeDirection.Worse">
+            <summary>Стало больше сигналов.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Comparison.ChangeDirection.Unknown">
+            <summary>Сравнивать нечего: модуль появился, исчез или не запускался.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Comparison.CheckChange">
+            <summary>Изменение одного модуля между прогонами.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Comparison.RunComparison">
+            <summary>Итог сравнения двух прогонов.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Comparison.RunComparer">
+            <summary>
+            Сравнение двух прогонов: что изменилось в конфигурации между проверками.
+            Полезно, когда пользователь что-то включил или выключил и хочет увидеть эффект.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Comparison.RunComparer.Risk(NetworkChecker.Core.Models.CheckStatus)">
+            <summary>Числовая оценка «плохости» статуса — только для сравнения, не для вердикта.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Export.ResultExport">
+            <summary>
+            Markdown/JSON-представление прогона. Форматирование всегда инвариантное:
+            отчёт должен одинаково читаться машиной при любой локали ОС.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.Metric">
+            <summary>Пара «подпись — значение» для плиток метрик в UI.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Models.Metric.#ctor(System.String,System.String,System.String)">
+            <summary>Пара «подпись — значение» для плиток метрик в UI.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.CheckResult">
+            <summary>Результат работы одного модуля проверки.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Models.CheckResult.Weight">
+            <summary>Вес модуля в итоговом вердикте (0 — не влияет, только диагностика).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.IpChannel">
+            <summary>Одно наблюдение IP-адреса от конкретного источника.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.IpConsensus">
+            <summary>Кросс-модульный консенсус по внешнему IP.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.EnvironmentSnapshot">
+            <summary>Снимок окружения, на котором выполнялся прогон.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Models.EnvironmentSnapshot.IsElevated">
+            <summary>Запущено с правами администратора — часть данных и проверок доступна только так.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Models.EnvironmentSnapshot.WindowsBuild">
+            <summary>Сборка Windows (например, 26100), если ОС — Windows.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.CheckRunResult">
+            <summary>Полный результат одного прогона.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.Severity">
+            <summary>Уровень серьёзности отдельной находки.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.Severity.Info">
+            <summary>Информация, не влияет на вердикт.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.Severity.Notice">
+            <summary>Косвенный признак, требует внимания.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.Severity.Warning">
+            <summary>Сильный сигнал, требует интерпретации.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.Severity.Critical">
+            <summary>Высокая важность находки, но не безусловное доказательство.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.CheckStatus">
+            <summary>Статус отдельной проверки.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.CheckStatus.Clean">
+            <summary>Признаки не обнаружены.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.CheckStatus.NeedsReview">
+            <summary>Есть косвенные данные, методика требует ручной интерпретации.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.CheckStatus.Detected">
+            <summary>Признак обнаружен.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.CheckStatus.Skipped">
+            <summary>Проверка невозможна в текущем окружении.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.CheckStatus.Failed">
+            <summary>Ошибка выполнения.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.CheckCategory">
+            <summary>Идентификаторы модулей проверки (паритет с Android-версией).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.RiskLevel">
+            <summary>Итоговый вердикт.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.RiskLevel.Clean">
+            <summary>Признаков обхода не найдено.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.RiskLevel.NeedsReview">
+            <summary>Есть неоднозначные сигналы или недостаточно данных.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.Models.RiskLevel.Detected">
+            <summary>Подтверждён факт настроенного прокси или подключенного Windows VPN; маршрут браузера отдельно не проверен.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.AdapterKind">
+            <summary>Тип сетевого интерфейса с точки зрения методики обнаружения.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.EvidenceKind">
+            <summary>Структурированный вид доказательства; не зависит от текста и языка.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.Finding">
+            <summary>Одна находка внутри результата проверки.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Models.Finding.Evidence">
+            <summary>Сырые данные/доказательство: имя интерфейса, порт, IP, строка вывода.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.PrivateRunProjection">
+            <summary>
+            Консервативная проекция для приватной записи/экспорта: никаких произвольных строк
+            проб, IP, путей, имён интерфейсов и прокси. Не является гарантией анонимности.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Models.VerdictResult">
+            <summary>Итоговый вердикт методики.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Models.VerdictResult.Score">
+            <summary>Условный индекс сигналов 0–100; не вероятность и не измерение точности.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.ConnectivityProbes">
+            <summary>TCP/TLS-пробы без использования системного прокси: показывают, что реально видит сеть.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.ConnectivityProbes.IsSocks5Async(System.String,System.Int32,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>Проверка, что на порту действительно SOCKS5 (приветствие 0x05 0x01 0x00).</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.ConnectivityProbes.IsHttpProxyAsync(System.String,System.Int32,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>Проверка HTTP-прокси через CONNECT.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.ConnectivityProbes.ReadBannerAsync(System.String,System.Int32,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>Читает баннер (например, «SSH»/«HTTP») для идентификации сервиса на localhost.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.StunClient">
+            <summary>STUN binding-запрос: какой внешний адрес видит сеть при UDP.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.DnsWire">
+            <summary>Минимальный DNS-клиент (UDP + TCP fallback) — нужен для запросов к конкретному серверу.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.DnsClientLite">
+            <summary>Запросы к конкретному DNS-серверу: UDP, при обрезке — TCP, плюс DoH.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.DnsClientLite.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe)">
+            <summary>Запросы к конкретному DNS-серверу: UDP, при обрезке — TCP, плюс DoH.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.DnsClientLite.QueryDohAsync(System.String,NetworkChecker.Core.Net.DnsRecordType,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>DNS-over-HTTPS запрос (Cloudflare JSON API).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.Masking">
+            <summary>Маскирование и форматирование значений с учётом режима приватности.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.GeoIpParser">
+            <summary>Разбор ответов GeoIP-провайдеров с разной схемой JSON.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.GeoCountries">
+            <summary>Мини-конвертер названий стран в ISO-коды (используется в вердикте и GeoIP).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.HttpProbe">
+            <summary>Аккуратный HTTP-зонд: без редиректов «в бесконечность», с честным таймаутом и User-Agent.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.PacInspector">
+            <summary>
+            Разбор PAC-файла (Proxy Auto-Config). Полноценный JS-движок здесь не нужен:
+            задача — понять, что скрипт вообще делает с трафиком, и вытащить адреса,
+            на которые он отправляет запросы. Этого достаточно, чтобы отличить
+            «корпоративный PAC» от «PAC локального клиента обхода».
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.PacInspector.PacProxy">
+            <summary>Один прокси-сервер, упомянутый в PAC.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PacInspector.PacProxy.#ctor(System.String,System.String,System.Int32)">
+            <summary>Один прокси-сервер, упомянутый в PAC.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.PacInspector.PacAnalysis">
+            <summary>Результат разбора PAC-скрипта.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PacInspector.ProxyDirectiveRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>(?&lt;kind&gt;PROXY|SOCKS5|SOCKS4|SOCKS|HTTPS)\\s+(?&lt;host&gt;\\[[0-9a-fA-F:]+\\]|[A-Za-z0-9._-]+)\\s*:\\s*(?&lt;port&gt;\\d{1,5})</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ "kind" capture group.<br/>
+                ○ Match with 3 alternative expressions.<br/>
+                    ○ Match a sequence of expressions.<br/>
+                        ○ Match a character in the set [Pp].<br/>
+                        ○ Match a character in the set [Rr].<br/>
+                        ○ Match a character in the set [Oo].<br/>
+                        ○ Match a character in the set [Xx].<br/>
+                        ○ Match a character in the set [Yy].<br/>
+                    ○ Match a sequence of expressions.<br/>
+                        ○ Match a character in the set [Ss].<br/>
+                        ○ Match a character in the set [Oo].<br/>
+                        ○ Match a character in the set [Cc].<br/>
+                        ○ Match a character in the set [Kk\u212A].<br/>
+                        ○ Match with 3 alternative expressions.<br/>
+                            ○ Match a sequence of expressions.<br/>
+                                ○ Match a character in the set [Ss].<br/>
+                                ○ Match '5'.<br/>
+                            ○ Match a sequence of expressions.<br/>
+                                ○ Match a character in the set [Ss].<br/>
+                                ○ Match '4'.<br/>
+                            ○ Match a character in the set [Ss].<br/>
+                    ○ Match a sequence of expressions.<br/>
+                        ○ Match a character in the set [Hh].<br/>
+                        ○ Match a character in the set [Tt] exactly 2 times.<br/>
+                        ○ Match a character in the set [Pp].<br/>
+                        ○ Match a character in the set [Ss].<br/>
+            ○ Match a whitespace character atomically at least once.<br/>
+            ○ "host" capture group.<br/>
+                ○ Match with 2 alternative expressions.<br/>
+                    ○ Match a sequence of expressions.<br/>
+                        ○ Match '['.<br/>
+                        ○ Match a character in the set [0-:A-Fa-f] atomically at least once.<br/>
+                        ○ Match ']'.<br/>
+                    ○ Match a character in the set [\-.0-9A-Z_a-z\u212A] atomically at least once.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ Match ':'.<br/>
+            ○ Match a whitespace character atomically any number of times.<br/>
+            ○ "port" capture group.<br/>
+                ○ Match a Unicode digit atomically at least 1 and at most 5 times.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PacInspector.PacSignatureRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bFindProxyForURL\\b</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at a word boundary.<br/>
+            ○ Match a character in the set [Ff].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Nn].<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Pp].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Xx].<br/>
+            ○ Match a character in the set [Yy].<br/>
+            ○ Match a character in the set [Ff].<br/>
+            ○ Match a character in the set [Oo].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Uu].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Ll].<br/>
+            ○ Match if at a word boundary.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PacInspector.DirectRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bDIRECT\\b</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at a word boundary.<br/>
+            ○ Match a character in the set [Dd].<br/>
+            ○ Match a character in the set [Ii].<br/>
+            ○ Match a character in the set [Rr].<br/>
+            ○ Match a character in the set [Ee].<br/>
+            ○ Match a character in the set [Cc].<br/>
+            ○ Match a character in the set [Tt].<br/>
+            ○ Match if at a word boundary.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PacInspector.HelperRegex">
+            <remarks>
+            Pattern:<br/>
+            <code>\\bisInNet\\s*\\(|isResolvable\\s*\\(|dnsResolve\\s*\\(</code><br/>
+            Options:<br/>
+            <code>RegexOptions.IgnoreCase</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match with 3 alternative expressions, atomically.<br/>
+                ○ Match a sequence of expressions.<br/>
+                    ○ Match if at a word boundary.<br/>
+                    ○ Match a character in the set [Ii].<br/>
+                    ○ Match a character in the set [Ss].<br/>
+                    ○ Match a character in the set [Ii].<br/>
+                    ○ Match a character in the set [Nn] exactly 2 times.<br/>
+                    ○ Match a character in the set [Ee].<br/>
+                    ○ Match a character in the set [Tt].<br/>
+                    ○ Match a whitespace character atomically any number of times.<br/>
+                    ○ Match '('.<br/>
+                ○ Match a sequence of expressions.<br/>
+                    ○ Match a character in the set [Ii].<br/>
+                    ○ Match a character in the set [Ss].<br/>
+                    ○ Match a character in the set [Rr].<br/>
+                    ○ Match a character in the set [Ee].<br/>
+                    ○ Match a character in the set [Ss].<br/>
+                    ○ Match a character in the set [Oo].<br/>
+                    ○ Match a character in the set [Ll].<br/>
+                    ○ Match a character in the set [Vv].<br/>
+                    ○ Match a character in the set [Aa].<br/>
+                    ○ Match a character in the set [Bb].<br/>
+                    ○ Match a character in the set [Ll].<br/>
+                    ○ Match a character in the set [Ee].<br/>
+                    ○ Match a whitespace character atomically any number of times.<br/>
+                    ○ Match '('.<br/>
+                ○ Match a sequence of expressions.<br/>
+                    ○ Match a character in the set [Dd].<br/>
+                    ○ Match a character in the set [Nn].<br/>
+                    ○ Match a character in the set [Ss].<br/>
+                    ○ Match a character in the set [Rr].<br/>
+                    ○ Match a character in the set [Ee].<br/>
+                    ○ Match a character in the set [Ss].<br/>
+                    ○ Match a character in the set [Oo].<br/>
+                    ○ Match a character in the set [Ll].<br/>
+                    ○ Match a character in the set [Vv].<br/>
+                    ○ Match a character in the set [Ee].<br/>
+                    ○ Match a whitespace character atomically any number of times.<br/>
+                    ○ Match '('.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.PingTools">
+            <summary>ICMP-инструменты: пинг, трассировка по TTL, проба пути MTU.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PingTools.TraceAsync(System.String,System.Int32,System.TimeSpan,System.Func{System.Int32,System.Threading.Tasks.Task},System.Threading.CancellationToken)">
+            <summary>Трассировка по ICMP с нарастающим TTL (работает без прав администратора).</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PingTools.ProbePathMtuAsync(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Бинарный поиск MTU пути при помощи ICMP с флагом Don't Fragment.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PingTools.SampleLatencyAsync(System.String,System.Int32,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>N пингов подряд: значение для оценки jitter и стабильности.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.PingTools.SampleLatencyOrTcpAsync(System.String,System.Int32,System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>
+            Латентность «как получится»: ICMP, а при его блокировке — TCP :443.
+            Возвращает метод, которым измерено, чтобы UI не врал.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.AsnLookup">
+            <summary>Определение ASN по IP через DNS-сервис Team Cymru (без внешних API-ключей).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.RawIcmp">
+            <summary>
+            ICMP через raw-сокет. На Windows требует прав администратора (и часто блокируется),
+            на Linux/macOS нужен CAP_NET_RAW. Если недоступен — вызывающий код использует Ping.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.RawIcmp.SendEcho(System.String,System.Int32,System.Int32,System.Int32)">
+            <summary>Эхо-запрос с заданным TTL. Блокирующий, вызывать из фонового потока.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.TraceTool">
+            <summary>
+            Трассировка: raw ICMP, если он доступен, иначе последовательный Ping с нарастающим TTL.
+            Второй режим не требует прав и работает везде, где ICMP не запрещён файрволом.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Net.TraceGraph">
+            <summary>Стабильное представление ASN для карты хопов, без географических предположений.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Net.TraceGraph.ColorForAsn(System.String)">
+            <summary>Цвет — группировка, не оценка риска; у разных ASN возможны совпадения палитры.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.NetInfo.NetworkInfoService">
+            <summary>Вкладка «Сеть»: обзор, диагностика и трассировка. Всё локально, без агентов.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.NetInfo.NetworkInfoService.#ctor(NetworkChecker.Core.Abstractions.IPlatformProbe,NetworkChecker.Core.Abstractions.IHttpProbe,NetworkChecker.Core.Net.DnsClientLite)">
+            <summary>Вкладка «Сеть»: обзор, диагностика и трассировка. Всё локально, без агентов.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.NetInfo.NetworkInfoService.TraceAsync(System.String,System.Int32,System.IProgress{NetworkChecker.Core.Net.TraceHop},System.Threading.CancellationToken)">
+            <summary>
+            Трассировка — чистая операция над целью: не зависит от состояния сервиса,
+            поэтому статическая (единственное «состояние» — прогресс-колбэк).
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Observation.ObservationEvent">
+            <summary>Ограниченное наблюдение; не является доказательством перехвата.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Observation.ObservationEvent.#ctor(System.String,System.String,System.String,System.DateTimeOffset)">
+            <summary>Ограниченное наблюдение; не является доказательством перехвата.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Observation.ObservationBuffer">
+            <summary>Потокобезопасная ограниченная запись событий без сетевых адресов и содержимого пакетов.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Observation.ObservationBuffer.#ctor(System.Int32)">
+            <summary>Потокобезопасная ограниченная запись событий без сетевых адресов и содержимого пакетов.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Options.RknOptions">
+            <summary>Настройки прогона и списки целей. Сохраняются в settings.json.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.RequestTimeoutSeconds">
+            <summary>Таймаут одного сетевого запроса, секунды.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.MaxParallelChecks">
+            <summary>Сколько модулей проверки запускать одновременно.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.PrivacyMode">
+            <summary>Маскировать IP/MAC в UI, логах и экспорте.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.OfflineMode">
+            <summary>Не выполнять запросы к внешним сервисам (только локальные данные).</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.SaveHistory">
+            <summary>Сохранять историю прогонов в SQLite.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.ReachabilityTargets">
+            <summary>Домены, доступность которых проверяет DomainReachabilityChecker (DNS → TCP → TLS).</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.CdnProbeUrls">
+            <summary>CDN/redirector-эндпоинты для CdnPullingChecker.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.StunServers">
+            <summary>STUN-серверы для CallTransportChecker (host:port).</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.RttRussianHosts">
+            <summary>Российские узлы для RTT-триангуляции.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.RttForeignHosts">
+            <summary>Иностранные узлы для RTT-триангуляции.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.IcmpSpoofTargets">
+            <summary>Хосты для проверки ICMP-спуфинга оператора.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.LocalProxyPorts">
+            <summary>Порты локальных прокси, которые сканирует BypassChecker.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.DnsLeakTestDomains">
+            <summary>Домены для DNS-проверки утечек.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.DefaultTraceTarget">
+            <summary>Узлы для трассировки по умолчанию.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.RknOptions.MaxTraceHops">
+            <summary>Максимум хопов в трассировке.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Options.UiOptions">
+            <summary>Настройки интерфейса.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.UiOptions.ProModeByDefault">
+            <summary>Открывать приложение в подробном режиме (по умолчанию — простой).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Options.VpnClientCatalog">
+            <summary>
+            Каталог маркеров, по которым ищутся клиенты обхода блокировок.
+            Аналог VpnAppCatalog/VpnAppClassifier из Android-версии, адаптированный под Windows.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Options.VpnClientCatalog.Match(System.String)">
+            <summary>Возвращает совпавшую запись каталога либо null.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Options.VpnClientCatalog.AllMarkers">
+            <summary>Маркеры для поиска в именах служб и драйверов.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Plain.PlainFact">
+            <summary>Ответ на простой вопрос: «всё хорошо», «есть нюанс» или «плохо».</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainFact.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>Ответ на простой вопрос: «всё хорошо», «есть нюанс» или «плохо».</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Plain.PlainFacts">
+            <summary>
+            Пять понятных ответов для простого режима: интернет-адрес, VPN, прокси, программы обхода, отклик сети.
+            Чистая функция от результата прогона — поэтому покрывается тестами без сети.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainFacts.OverallConfiguration(NetworkChecker.Core.Models.CheckRunResult)">
+            <summary>Короткая строка «конфигурация обычная/странная» для заголовка простого режима.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Plain.PlainExplanation">
+            <summary>Объяснение «человеческим языком»: что проверяли, что это значит и что делать.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainExplanation.#ctor(System.String,System.String,System.String)">
+            <summary>Объяснение «человеческим языком»: что проверяли, что это значит и что делать.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Plain.PlainLanguage">
+            <summary>
+            Слой перевода технических результатов в понятные фразы.
+            Используется простым режимом интерфейса и отчётами, чтобы отчёт читал не только инженер.
+            Здесь нет обращения к сети и времени — только чистые функции, поэтому всё покрыто тестами.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainLanguage.ForVerdict(NetworkChecker.Core.Models.VerdictResult,System.Collections.Generic.IReadOnlyList{NetworkChecker.Core.Models.CheckResult})">
+            <summary>Короткая оценка «конфигурация в порядке или нет» для верхней карточки.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainLanguage.WhatWeChecked(NetworkChecker.Core.Models.CheckCategory)">
+            <summary>Простое описание модуля проверки.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainLanguage.StatusInPlainWords(NetworkChecker.Core.Models.CheckStatus)">
+            <summary>Простой статус модуля.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainLanguage.AdviceFor(NetworkChecker.Core.Models.CheckResult)">
+            <summary>Что сделать, если модуль что-то нашёл.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainLanguage.ToPlain(NetworkChecker.Core.Models.CheckResult)">
+            <summary>Итог одной проверки в формате простого режима.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Plain.PlainCheck">
+            <summary>Готовая строка простого режима (сериализуется в отчёты как есть).</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Plain.PlainCheck.#ctor(System.String,System.String,System.String,System.String,System.String,System.Int32)">
+            <summary>Готовая строка простого режима (сериализуется в отчёты как есть).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.AdapterInfo">
+            <summary>Сетевой адаптер в терминах методики обнаружения.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Platform.AdapterInfo.DriverVendor">
+            <summary>Драйвер/вендор, если платформа позволяет (Windows: PnP-устройство).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.RouteInfo">
+            <summary>Запись таблицы маршрутизации.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.ProxySettings">
+            <summary>
+            Системные настройки прокси. Три независимых уровня Windows:
+            WinINET (пользовательские приложения), WinHTTP (службы и системные компоненты),
+            переменные окружения (консольные инструменты). Плюс PAC-автоконфигурация.
+            </summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Platform.ProxySettings.WinHttpProxy">
+            <summary>Прокси машинного уровня (WinHTTP): его видят службы, обновления и фоновые агенты.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Platform.ProxySettings.Source">
+            <summary>Источник данных: WinINET, WinHTTP, env, GNOME/KDE.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Platform.ProxySettings.HasMachineWideProxy">
+            <summary>Прокси задан на машинном уровне, а не только в профиле пользователя.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Platform.ProxySettings.PacPointsToLocalhost">
+            <summary>PAC-файл указывает на локальный адрес — типично для клиентов обхода.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.InstalledApp">
+            <summary>Установленное приложение (клиент обхода или обычное).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.ServiceInfo">
+            <summary>Служба/драйвер, связанный с туннелем.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.VpnConnectionInfo">
+            <summary>Активное VPN-подключение ОС (RAS / Windows VPN profile).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.ProcessInfo">
+            <summary>Запущенный процесс, потенциально прокси-клиент.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.FirewallRuleInfo">
+            <summary>Правило системного файрвола (для детекта kill switch).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.OsInfo">
+            <summary>Информация об ОС.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.HostsEntry">
+            <summary>Строка файла hosts.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.Platform.HostsEntry.#ctor(System.String,System.String,System.String)">
+            <summary>Строка файла hosts.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Platform.DnsConfiguration">
+            <summary>DNS-конфигурация, включая политики раздельного разрешения.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.Platform.DnsConfiguration.NameResolutionPolicy">
+            <summary>Windows NRPT (раздельное разрешение через VPN).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteEyeService">
+            <summary>
+            Осматривает посетителя «глазами сайта»: спрашивает внешний адрес у GeoIP-сервиса
+            и добавляет то, что знает только эта машина (часовой пояс, язык, клиент).
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteEyeService.#ctor(NetworkChecker.Core.Abstractions.IHttpProbe,NetworkChecker.Core.Options.RknOptions)">
+            <summary>
+            Осматривает посетителя «глазами сайта»: спрашивает внешний адрес у GeoIP-сервиса
+            и добавляет то, что знает только эта машина (часовой пояс, язык, клиент).
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteEyeService.LocalProfile(System.String)">
+            <summary>Локальный профиль: то, что сайт узнаёт из заголовков и скриптов на странице.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteGeoParser">
+            <summary>
+            Разбор ответа GeoIP-сервиса в «то, что видит сайт». Ключи у провайдеров разные
+            (ipapi.is, ipwho.is, ipinfo.io, 2ip), поэтому ищем по именам полей рекурсивно,
+            а не по жёсткой схеме — иначе половина сервисов молча теряется.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteGeoParser.FindTimezone(System.Text.Json.JsonElement)">
+            <summary>Часовой пояс бывает строкой («Europe/Moscow») или объектом (ipwho.is: `timezone.id`).</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteGeoParser.TryFind(System.Text.Json.JsonElement,System.String,System.Text.Json.JsonElement@,System.Int32)">
+            <summary>Ищет поле по имени на любом уровне вложенности (но не глубже трёх — этого хватает всем провайдерам).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteViewAnalyzer">
+            <summary>
+            Собирает «визитную карточку посетителя» так, как её видит сервер российского сайта:
+            адрес, география, тип сети, часовой пояс, язык, клиент. Ничего не запрашивает сам —
+            на вход только уже полученные данные, поэтому логику можно проверять тестами целиком.
+            </summary>
+        </member>
+        <member name="F:NetworkChecker.Core.SiteView.SiteViewAnalyzer.VpnLikeThreshold">
+            <summary>Порог «похоже на VPN» по накопленным признакам.</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.SiteView.SiteViewAnalyzer.ReviewThreshold">
+            <summary>Порог «есть что записать в профиль».</summary>
+        </member>
+        <member name="F:NetworkChecker.Core.SiteView.SiteViewAnalyzer.TimeZoneSuspicionHours">
+            <summary>Разница часовых поясов, после которой сайт считает данные несогласованными.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteViewAnalyzer.BuildRequest(System.String,NetworkChecker.Core.SiteView.SiteLocalProfile)">
+            <summary>
+            Заголовки, которые действительно уходят в запросе от приложения.
+            Формат — как в HTTP/1.1, чтобы было видно, что сервер получает буквально.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteViewAnalyzer.FormatOffset(System.TimeSpan)">
+            <summary>Смещение в виде UTC+3 / UTC−7 (минус — типографский, чтобы не путать с дефисом).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteViewTone">
+            <summary>Оценка того, как выглядит факт для сайта: нейтрально, обычно, подозрительно, плохо.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteViewRow">
+            <summary>Строка «визитной карточки»: что именно сервер запишет о посетителе.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteViewRow.#ctor(System.String,System.String,System.String,NetworkChecker.Core.SiteView.SiteViewTone)">
+            <summary>Строка «визитной карточки»: что именно сервер запишет о посетителе.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteViewSignal">
+            <summary>Вывод, который делает сайт (или его антибот) на основе одного или нескольких фактов.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteViewSignal.#ctor(System.String,System.String,NetworkChecker.Core.SiteView.SiteViewTone,System.Int32)">
+            <summary>Вывод, который делает сайт (или его антибот) на основе одного или нескольких фактов.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteViewRequest">
+            <summary>Сырой запрос: ровно то, что уходит на сервер.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteViewRequest.#ctor(System.String,System.Collections.Generic.IReadOnlyList{System.Collections.Generic.KeyValuePair{System.String,System.String}})">
+            <summary>Сырой запрос: ровно то, что уходит на сервер.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteGeo">
+            <summary>
+            Данные, которые сервер узнаёт о посетителе по одному HTTP-запросу.
+            Источник — GeoIP-база, которая отвечает про внешний адрес.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteGeo.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.String)">
+            <summary>
+            Данные, которые сервер узнаёт о посетителе по одному HTTP-запросу.
+            Источник — GeoIP-база, которая отвечает про внешний адрес.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteLocalProfile">
+            <summary>
+            То, что видно только на стороне пользователя: системный часовой пояс, язык, клиент.
+            Сайт узнаёт это из заголовков (язык, клиент) и из JS (часовой пояс), поэтому пары
+            «адрес ↔ система» и сравниваются.
+            </summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteLocalProfile.#ctor(System.String,System.TimeSpan,System.String,System.String,System.String)">
+            <summary>
+            То, что видно только на стороне пользователя: системный часовой пояс, язык, клиент.
+            Сайт узнаёт это из заголовков (язык, клиент) и из JS (часовой пояс), поэтому пары
+            «адрес ↔ система» и сравниваются.
+            </summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.SiteViewReport">
+            <summary>Итог осмотра: что сайт видит и насколько это похоже на VPN.</summary>
+        </member>
+        <member name="M:NetworkChecker.Core.SiteView.SiteViewReport.#ctor(System.DateTimeOffset,System.String,System.Collections.Generic.IReadOnlyList{NetworkChecker.Core.SiteView.SiteViewRow},System.Collections.Generic.IReadOnlyList{NetworkChecker.Core.SiteView.SiteViewSignal},NetworkChecker.Core.SiteView.SiteViewRequest,System.Int32,System.String,System.String,System.String,System.Boolean)">
+            <summary>Итог осмотра: что сайт видит и насколько это похоже на VPN.</summary>
+        </member>
+        <member name="P:NetworkChecker.Core.SiteView.SiteViewReport.HasGeo">
+            <summary>Есть ли данные о внешнем адресе (иначе показаны только локальные факты).</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.SiteView.ISiteEyeService">
+            <summary>Осмотр «глазами сайта»: внешний адрес + локальный профиль.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Verdict.IpConsensusBuilder">
+            <summary>Диагностическое сравнение адресов: разные семейства не являются конфликтом.</summary>
+        </member>
+        <member name="T:NetworkChecker.Core.Verdict.VerdictEngine">
+            <summary>
+            Итоговый вердикт. Логика повторяет идею VerdictEngine из Android-версии:
+            эвристическая оценка: один критический признак тоже может дать «Обнаружено».
+            Это не подтверждает перехват или активный обход.
+            </summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the ProxyDirectiveRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.ProxyDirectiveRegex_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PacSignatureRegex_1">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the PacSignatureRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PacSignatureRegex_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.DirectRegex_2">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the DirectRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.DirectRegex_2.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DirectRegex_2.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.DirectRegex_2.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DirectRegex_2.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.DirectRegex_2.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DirectRegex_2.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DirectRegex_2.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.DirectRegex_2.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.HelperRegex_3">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the HelperRegex method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.HelperRegex_3.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.HelperRegex_3.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.HelperRegex_3.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.HelperRegex_3.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.HelperRegex_3.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.HelperRegex_3.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.HelperRegex_3.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.HelperRegex_3.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsBoundaryWordChar(System.Char)">
+            <summary>Determines whether the specified index is a boundary word character.</summary>
+            <remarks>This is the same as \w plus U+200C ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.</remarks>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsPostWordCharBoundary(System.ReadOnlySpan{System.Char},System.Int32)">
+            <summary>Determines whether the specified index is a boundary.</summary>
+            <remarks>This variant is only employed when the previous character has already been validated as a word character.</remarks>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsPreWordCharBoundary(System.ReadOnlySpan{System.Char},System.Int32)">
+            <summary>Determines whether the specified index is a boundary.</summary>
+            <remarks>This variant is only employed when the subsequent character will separately be validated as a word character.</remarks>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.WordCategoriesMask">
+            <summary>Provides a mask of Unicode categories that combine to form [\w].</summary>
+        </member>
+        <member name="P:System.Text.RegularExpressions.Generated.Utilities.WordCharBitmap">
+            <summary>Gets a bitmap for whether each character 0 through 127 is in [\w]</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_asciiLettersAndDigitsAndDashDotUnderscoreKelvinSign">
+            <summary>Supports searching for characters in or not in "-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyzK".</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_FF077E0000007E000000">
+            <summary>Supports searching for characters in or not in "0123456789:ABCDEFabcdef".</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_indexOfAnyStrings_OrdinalIgnoreCase_153689D536555995ED9A572CE19F4C8C229687E4CA0F40ECBF190EFF57D40BED">
+            <summary>Supports searching for the specified strings.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_indexOfAnyStrings_OrdinalIgnoreCase_238034DA8220B2D9C2DE1856D1A48BB7670DB09107EAC695E4F3B14D3E4266E7">
+            <summary>Supports searching for the specified strings.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_indexOfString_direct_OrdinalIgnoreCase">
+            <summary>Supports searching for the string "direct".</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_indexOfString_findproxyforurl_OrdinalIgnoreCase">
+            <summary>Supports searching for the string "findproxyforurl".</summary>
+        </member>
+    </members>
+</doc>

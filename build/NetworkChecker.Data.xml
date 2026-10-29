@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NetworkChecker.Data</name>
+    </assembly>
+    <members>
+        <member name="T:NetworkChecker.Data.Entities.RunRecord">
+            <summary>Сохранённый прогон проверки.</summary>
+        </member>
+        <member name="T:NetworkChecker.Data.Entities.LogRecord">
+            <summary>Запись журнала событий приложения (диагностика).</summary>
+        </member>
+        <member name="T:NetworkChecker.Data.HistoryRepository">
+            <summary>Локальная история прогонов в SQLite. Сервер не нужен — всё лежит в %LOCALAPPDATA%.</summary>
+        </member>
+        <member name="M:NetworkChecker.Data.HistoryRepository.#ctor(Microsoft.EntityFrameworkCore.IDbContextFactory{NetworkChecker.Data.AppDbContext})">
+            <summary>Локальная история прогонов в SQLite. Сервер не нужен — всё лежит в %LOCALAPPDATA%.</summary>
+        </member>
+        <member name="T:NetworkChecker.Data.SettingsStore">
+            <summary>Настройки приложения в %LOCALAPPDATA%\NetworkChecker\settings.json.</summary>
+        </member>
+        <member name="M:NetworkChecker.Data.SettingsStore.Save(NetworkChecker.Core.Options.RknOptions,NetworkChecker.Core.Options.UiOptions)">
+            <summary>
+            Сохраняет явно переданные экземпляры. Страховка от рассинхронизации: если настройки
+            в UI живут в другом объекте, чем <see cref="P:NetworkChecker.Data.SettingsStore.Options"/>, они всё равно попадут в файл,
+            а не будут молча затёрты дефолтами.
+            </summary>
+        </member>
+    </members>
+</doc>
