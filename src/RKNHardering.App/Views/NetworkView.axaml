@@ -1,0 +1,322 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RKNHardering.App.ViewModels"
+             xmlns:ni="using:RKNHardering.Core.NetInfo"
+             xmlns:net="using:RKNHardering.Core.Net"
+             xmlns:local="using:RKNHardering.App"
+             x:Class="RKNHardering.App.Views.NetworkView"
+             x:DataType="vm:NetworkViewModel">
+
+  <Grid RowDefinitions="Auto,Auto,*">
+
+    <!-- Панель управления -->
+    <Border Grid.Row="0" Classes="card" Margin="24,18,24,0" Padding="14">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+          <Button Content="Овервью" Command="{Binding SelectTabCommand}" CommandParameter="Овервью" FontSize="12"
+                  Padding="12,6" Classes.primary="{Binding ShowOverview}" />
+          <Button Content="Диагностика" Command="{Binding SelectTabCommand}" CommandParameter="Диагностика" FontSize="12"
+                  Padding="12,6" Classes.primary="{Binding ShowDiagnostics}" />
+          <Button Content="Трассировка" Command="{Binding SelectTabCommand}" CommandParameter="Трассировка" FontSize="12"
+                  Padding="12,6" Classes.primary="{Binding ShowTrace}" />
+        </StackPanel>
+        <TextBlock Grid.Column="2" Text="{Binding StatusLine}" Classes="muted" VerticalAlignment="Center"
+                   HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="1" />
+        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8">
+          <Button Classes="ghost" Command="{Binding RefreshOverviewCommand}" FontSize="12" Padding="12,6">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Path Data="{x:Static local:Icons.Refresh}" Stretch="Uniform" Width="12" Height="12"
+                    Stroke="{DynamicResource TextPrimary}" StrokeThickness="1.7" VerticalAlignment="Center" />
+              <TextBlock Text="Обновить обзор" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <Button Classes="primary" Command="{Binding RunDiagnosticsCommand}" FontSize="12" Padding="12,6"
+                  Content="Диагностика" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ================= Овервью ================= -->
+    <ScrollViewer Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowOverview}">
+      <StackPanel Margin="24,16,24,28" Spacing="16">
+
+        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+          <Border Grid.Column="0" Classes="card" Padding="16">
+            <StackPanel Spacing="4">
+              <TextBlock Text="ВНЕШНИЙ IP" Classes="overline" />
+              <TextBlock Text="{Binding ExternalIp}" FontSize="19" FontWeight="SemiBold" Classes="mono" />
+              <TextBlock Text="{Binding ExternalDetails}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Classes="card" Padding="16">
+            <StackPanel Spacing="4">
+              <TextBlock Text="UDP-ВЫХОД (STUN)" Classes="overline" />
+              <TextBlock Text="{Binding StunText}" FontSize="19" FontWeight="SemiBold" Classes="mono" />
+              <TextBlock Text="адрес, который видит NAT" Classes="muted" FontSize="10.5" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="2" Classes="card" Padding="16">
+            <StackPanel Spacing="4">
+              <TextBlock Text="ПРОКСИ СИСТЕМЫ" Classes="overline" />
+              <TextBlock Text="{Binding ProxyText}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+              <TextBlock Text="WinINET + переменные окружения" Classes="muted" FontSize="10.5" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="3" Classes="card" Padding="16">
+            <StackPanel Spacing="4">
+              <TextBlock Text="АДАПТЕРЫ / MTU" Classes="overline" />
+              <TextBlock Text="{Binding AdaptersCountText}" FontSize="19" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding MtuText, StringFormat='MTU основного: {0}'}" Classes="muted" FontSize="10.5" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+          <!-- Ключевые параметры -->
+          <Border Grid.Column="0" Classes="card">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="ПАРАМЕТРЫ" Classes="overline" />
+                <TextBlock Grid.Column="1" Text="{Binding OverviewRefreshed}" Classes="muted" FontSize="10.5" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Overview}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:KeyValueRow">
+                    <Grid ColumnDefinitions="190,*" Margin="0,5">
+                      <TextBlock Grid.Column="0" Text="{Binding Key}" Classes="muted" FontSize="12" />
+                      <StackPanel Grid.Column="1" Spacing="1">
+                        <TextBlock Text="{Binding Value}" FontSize="12" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="10" IsVisible="{Binding Hint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <!-- Маршруты -->
+          <Border Grid.Column="1" Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="МАРШРУТЫ" Classes="overline" />
+              <Grid ColumnDefinitions="112,120,*,52">
+                <TextBlock Grid.Column="0" Text="Назначение" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="1" Text="Шлюз" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="2" Text="Интерфейс" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="3" Text="Метр." Classes="muted" FontSize="10.5" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding DefaultRoutes}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RouteRowViewModel">
+                    <Grid ColumnDefinitions="112,120,*,52" Margin="0,3">
+                      <TextBlock Grid.Column="0" Text="{Binding Destination}" Classes="mono" FontSize="11"
+                                 Foreground="{Binding IsDefault, Converter={x:Static vm:Converters.DefaultRouteBrush}}" />
+                      <TextBlock Grid.Column="1" Text="{Binding GatewayText}" Classes="mono" FontSize="11" />
+                      <TextBlock Grid.Column="2" Text="{Binding InterfaceName}" FontSize="11" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="3" Text="{Binding MetricText}" Classes="mono" FontSize="11"
+                                 Foreground="{DynamicResource TextMuted}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <!-- Адаптеры -->
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="СЕТЕВЫЕ ИНТЕРФЕЙСЫ" Classes="overline" />
+            <Grid ColumnDefinitions="150,80,150,130,44,150,1.4*">
+              <TextBlock Grid.Column="0" Text="Имя" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="1" Text="Тип" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="2" Text="Адрес" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="3" Text="Шлюз" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="4" Text="MTU" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="5" Text="DNS" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="6" Text="Описание" Classes="muted" FontSize="10.5" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding Adapters}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AdapterRowViewModel">
+                  <Grid ColumnDefinitions="150,80,150,130,44,150,1.4*" Margin="0,4">
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                      <Ellipse Width="6" Height="6" Fill="{Binding KindBrush}" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Name}" FontSize="11.5" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding KindText}" FontSize="11" Foreground="{Binding KindBrush}" />
+                    <TextBlock Grid.Column="2" Text="{Binding AddressText}" Classes="mono" FontSize="10.5"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="3" Text="{Binding GatewayText}" Classes="mono" FontSize="10.5"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="4" Text="{Binding MtuText}" Classes="mono" FontSize="10.5" />
+                    <TextBlock Grid.Column="5" Text="{Binding DnsText}" Classes="mono" FontSize="10.5"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="6" Text="{Binding Description}" Classes="muted" FontSize="10.5"
+                               TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ================= Диагностика ================= -->
+    <ScrollViewer Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowDiagnostics}">
+      <StackPanel Margin="24,16,24,28" Spacing="16">
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+          <Border Grid.Column="0" Classes="card">
+            <StackPanel Spacing="10">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="ЗАДЕРЖКИ И ПОТЕРИ" Classes="overline" />
+                <TextBlock Grid.Column="1" Text="{Binding DiagnosticsRefreshed}" Classes="muted" FontSize="10.5" />
+              </Grid>
+              <Grid ColumnDefinitions="1.2*,1.2*,80,70,60,60,70">
+                <TextBlock Grid.Column="0" Text="Хост" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="1" Text="Адрес" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="2" Text="Медиана" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="3" Text="Jitter" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="4" Text="Потери" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="5" Text="Метод" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="6" Text="Статус" Classes="muted" FontSize="10.5" />
+              </Grid>
+              <ItemsControl ItemsSource="{Binding Latency}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="ni:HostLatency">
+                    <Grid ColumnDefinitions="1.2*,1.2*,80,70,60,60,70" Margin="0,4">
+                      <TextBlock Grid.Column="0" Text="{Binding Host}" FontSize="11.5" />
+                      <TextBlock Grid.Column="1" Text="{Binding Address}" Classes="mono" FontSize="10.5" />
+                      <TextBlock Grid.Column="2" Text="{Binding MedianText}" Classes="mono" FontSize="11" />
+                      <TextBlock Grid.Column="3" Text="{Binding JitterText}" Classes="mono" FontSize="10.5"
+                                 Foreground="{DynamicResource TextMuted}" />
+                      <TextBlock Grid.Column="4" Text="{Binding LossText}" Classes="mono" FontSize="10.5" />
+                      <TextBlock Grid.Column="5" Text="{Binding MethodText}" FontSize="10"
+                                 Foreground="{DynamicResource TextMuted}" />
+                      <TextBlock Grid.Column="6" Text="{Binding StatusText}" FontSize="10.5"
+                                 Foreground="{DynamicResource TextMuted}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <Border Height="1" Background="{DynamicResource BorderBrush2}" Margin="0,4" />
+              <TextBlock Text="MTU ПУТИ (ICMP DF)" Classes="overline" />
+              <ItemsControl ItemsSource="{Binding Mtu}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="ni:MtuProbe">
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,3">
+                      <TextBlock Grid.Column="0" Text="{Binding Target}" FontSize="11.5" />
+                      <TextBlock Grid.Column="1" Text="{Binding ResultText}" Classes="mono" FontSize="11" Margin="0,0,10,0" />
+                      <Border Grid.Column="2" Classes="chip" IsVisible="{Binding Suspicious}">
+                        <TextBlock Text="нетипично" FontSize="9.5" Foreground="{DynamicResource NoticeBrush}" />
+                      </Border>
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <StackPanel Grid.Column="1" Spacing="16">
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="DNS-РЕЗОЛВЕРЫ" Classes="overline" />
+                <Grid ColumnDefinitions="1.3*,1*,90,60">
+                  <TextBlock Grid.Column="0" Text="Сервер" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="1" Text="Ответ" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="2" Text="Время" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="3" Text="Статус" Classes="muted" FontSize="10.5" />
+                </Grid>
+                <ItemsControl ItemsSource="{Binding Dns}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="ni:DnsProbeResult">
+                      <Grid ColumnDefinitions="1.3*,1*,90,60" Margin="0,4">
+                        <TextBlock Grid.Column="0" Text="{Binding Server}" Classes="mono" FontSize="10.5"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Grid.Column="1" Text="{Binding Answer}" Classes="mono" FontSize="10.5" />
+                        <TextBlock Grid.Column="2" Text="{Binding ElapsedMs, StringFormat='{}{0:F0} мс'}" Classes="mono" FontSize="10.5" />
+                        <TextBlock Grid.Column="3" Text="{Binding StatusText}" FontSize="10.5"
+                                   Foreground="{DynamicResource TextMuted}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="card">
+              <StackPanel Spacing="10">
+                <TextBlock Text="TLS-СЕРТИФИКАТЫ" Classes="overline" />
+                <ItemsControl ItemsSource="{Binding Tls}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="ni:TlsProbe">
+                      <StackPanel Spacing="1" Margin="0,4">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock Grid.Column="0" Text="{Binding Host}" FontSize="11.5" FontWeight="SemiBold" />
+                          <TextBlock Grid.Column="1" Text="{Binding Protocol}" Classes="muted" FontSize="10" />
+                        </Grid>
+                        <TextBlock Text="{Binding IssuerShort}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ================= Трассировка ================= -->
+    <Grid Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowTrace}" RowDefinitions="Auto,*" Margin="24,16,24,28">
+      <Border Grid.Row="0" Classes="card" Padding="14">
+        <Grid ColumnDefinitions="Auto,240,Auto,*,Auto">
+          <TextBlock Grid.Column="0" Text="Цель" Classes="muted" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <TextBox Grid.Column="1" Text="{Binding TraceTarget}" PlaceholderText="1.1.1.1" FontSize="12" />
+          <Button Grid.Column="2" Classes="primary" Command="{Binding RunTraceCommand}" Margin="10,0,0,0" FontSize="12">
+            <StackPanel Orientation="Horizontal" Spacing="7">
+              <Path Data="{x:Static local:Icons.Trace}" Stretch="Uniform" Width="12" Height="12"
+                    Stroke="White" StrokeThickness="1.7" VerticalAlignment="Center" />
+              <TextBlock Text="Трассировать" Foreground="White" FontSize="12" />
+            </StackPanel>
+          </Button>
+          <TextBlock Grid.Column="3" Text="{Binding TraceStatus}" Classes="muted" VerticalAlignment="Center"
+                     HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
+          <Button Grid.Column="4" Classes="danger" Command="{Binding CancelTraceCommand}" FontSize="12" Content="Стоп" />
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Classes="card" Margin="0,16,0,0">
+        <Grid RowDefinitions="Auto,*">
+          <Grid Grid.Row="0" ColumnDefinitions="44,180,110,90,2*" Margin="0,0,0,8">
+            <TextBlock Grid.Column="0" Text="#" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="1" Text="Узел" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="2" Text="Лучший RTT" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="3" Text="ASN" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="4" Text="Оператор" Classes="muted" FontSize="10.5" />
+          </Grid>
+          <ScrollViewer Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding Hops}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="net:TraceHop">
+                  <Grid ColumnDefinitions="44,180,110,90,2*" Margin="0,4">
+                    <TextBlock Grid.Column="0" Text="{Binding Index}" Classes="mono" FontSize="11"
+                               Foreground="{DynamicResource TextMuted}" />
+                    <TextBlock Grid.Column="1" Text="{Binding HostText}" Classes="mono" FontSize="11" />
+                    <TextBlock Grid.Column="2" Text="{Binding RttText}" Classes="mono" FontSize="11" />
+                    <TextBlock Grid.Column="3" Text="{Binding Asn}" Classes="mono" FontSize="11"
+                               Foreground="{DynamicResource TextMuted}" />
+                    <TextBlock Grid.Column="4" Text="{Binding AsName}" FontSize="11"
+                               TextTrimming="CharacterEllipsis" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

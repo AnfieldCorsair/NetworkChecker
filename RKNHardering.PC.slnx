@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RKNHardering.App/RKNHardering.App.csproj" />
+    <Project Path="src/RKNHardering.Core/RKNHardering.Core.csproj" />
+    <Project Path="src/RKNHardering.Data/RKNHardering.Data.csproj" />
+    <Project Path="src/RKNHardering.Platform.Windows/RKNHardering.Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RKNHardering.Core.Tests/RKNHardering.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/RKNHardering.Screenshots/RKNHardering.Screenshots.csproj" />
+  </Folder>
+</Solution>

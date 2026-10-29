@@ -1,0 +1,87 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RKNHardering.App.ViewModels"
+        xmlns:local="using:RKNHardering.App"
+        x:Class="RKNHardering.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="RKNHardering PC — обнаружение VPN и прокси"
+        Width="1400" Height="900" MinWidth="1080" MinHeight="720"
+        Background="{DynamicResource AppBackground}"
+        WindowStartupLocation="CenterScreen"
+        TransparencyLevelHint="None"
+        ExtendClientAreaToDecorationsHint="False">
+
+  <Grid ColumnDefinitions="252,*">
+    <!-- ======================= Sidebar ======================= -->
+    <Border Grid.Column="0" Background="{DynamicResource SidebarBackground}" BorderBrush="{DynamicResource BorderBrush2}"
+            BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="0,18,0,14">
+        <!-- Логотип -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,0,16,22" Spacing="11">
+          <Border Background="{DynamicResource AccentSoft}" CornerRadius="10" Width="38" Height="38">
+            <Path Data="{x:Static local:Icons.ShieldCheck}" Stretch="Uniform" Width="20" Height="20"
+                  Fill="{DynamicResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  />
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="RKNHardering" FontSize="14" FontWeight="SemiBold" />
+            <TextBlock Text="PC · методика РКН" Classes="muted" FontSize="10.5" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Навигация -->
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding NavItems}" Margin="10,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:NavItem">
+              <Button Classes="nav" Classes.selected="{Binding IsSelected}"
+                      Command="{Binding Command}" CommandParameter="{Binding}"
+                      Margin="0,1" HorizontalAlignment="Stretch">
+                <Grid ColumnDefinitions="24,*">
+                  <Path Grid.Column="0" Data="{Binding IconGeometry}" Stretch="Uniform" Width="15" Height="15"
+                        Stroke="{Binding $parent[Button].Foreground}" StrokeThickness="1.6"
+                        VerticalAlignment="Center" HorizontalAlignment="Left" />
+                  <TextBlock Grid.Column="1" Text="{Binding Title}" VerticalAlignment="Center" Margin="6,0,0,0"
+                             Foreground="{Binding $parent[Button].Foreground}" />
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Футер -->
+        <StackPanel Grid.Row="2" Margin="20,0,16,0" Spacing="6">
+          <Border Height="1" Background="{DynamicResource BorderBrush2}" Margin="0,0,0,10" />
+          <TextBlock Text="Модулей в наборе" Classes="overline" />
+          <TextBlock Text="10 проверок · 3 сетевых режима" Classes="muted" />
+          <TextBlock Text="v1.0 · Avalonia 12 · .NET 10" Classes="muted" FontSize="10.5" Margin="0,6,0,0" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ======================= Content ======================= -->
+    <Grid Grid.Column="1" RowDefinitions="Auto,*">
+      <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}"
+              BorderThickness="0,0,0,1" Padding="26,16">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Grid.Column="0" Spacing="2">
+            <TextBlock Text="{Binding CurrentPage.Title}" Classes="h1" />
+            <TextBlock Text="{Binding CurrentPage.Description}" Classes="muted" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Border Classes="chip">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Ellipse Width="7" Height="7" Fill="{DynamicResource CleanBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="локально, без сервера" FontSize="11" />
+              </StackPanel>
+            </Border>
+            <Border Classes="chip">
+              <TextBlock Text="Windows" FontSize="11" />
+            </Border>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <ContentControl Grid.Row="1" Content="{Binding CurrentPage}" Margin="0" />
+    </Grid>
+  </Grid>
+</Window>

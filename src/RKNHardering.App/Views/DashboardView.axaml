@@ -1,0 +1,230 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RKNHardering.App.ViewModels"
+             xmlns:local="using:RKNHardering.App"
+             x:Class="RKNHardering.App.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+  <ScrollViewer>
+    <StackPanel Margin="24,20,24,28" Spacing="16">
+
+      <!-- ============ Верхний блок: вердикт + запуск ============ -->
+      <Grid ColumnDefinitions="*,332" ColumnSpacing="16">
+
+        <!-- Вердикт -->
+        <Border Grid.Column="0" Classes="card" Padding="0">
+          <Grid ColumnDefinitions="6,*">
+            <Border Grid.Column="0" CornerRadius="12,0,0,12"
+                    Background="{Binding Verdict.ColorBrush, FallbackValue={DynamicResource AccentBrush}}" />
+            <StackPanel Grid.Column="1" Margin="20,18,20,18" Spacing="12">
+
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="4">
+                  <TextBlock Text="ИТОГОВЫЙ ВЕРДИКТ" Classes="overline" />
+                  <TextBlock Classes="h1"
+                             Text="{Binding Verdict.Headline, FallbackValue='Проверка ещё не запускалась'}" />
+                </StackPanel>
+                <Border Grid.Column="1" CornerRadius="10" Padding="12,8" VerticalAlignment="Top"
+                        Background="{Binding Verdict.SoftBrush, FallbackValue={DynamicResource SurfaceAltBrush}}">
+                  <StackPanel Spacing="1">
+                    <TextBlock Text="{Binding Verdict.ScoreText, FallbackValue='—'}" FontSize="18" FontWeight="Bold"
+                               HorizontalAlignment="Center" Foreground="{Binding Verdict.ColorBrush}" />
+                    <TextBlock Text="{Binding Verdict.LevelText, FallbackValue='нет данных'}" Classes="muted"
+                               FontSize="10.5" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </Grid>
+
+              <TextBlock Text="{Binding Verdict.Summary, FallbackValue='Запустите проверку: десять модулей прочитают сетевую конфигурацию, локальные прокси и внешние признаки. Все данные остаются на этом компьютере.'}"
+                         Foreground="{DynamicResource TextMuted}" MaxWidth="640" HorizontalAlignment="Left" />
+
+              <!-- Шкала -->
+              <Border Height="6" CornerRadius="3" Background="{DynamicResource SurfaceAltBrush}">
+                <Border HorizontalAlignment="Left" CornerRadius="3" Width="{Binding Verdict.ScoreWidth, FallbackValue=0}"
+                        Background="{Binding Verdict.ColorBrush, FallbackValue={DynamicResource AccentBrush}}" />
+              </Border>
+
+              <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="18" IsVisible="{Binding HasResult}">
+                <StackPanel Grid.Column="0" Spacing="2">
+                  <TextBlock Text="ВНЕШНИЙ IP" Classes="overline" />
+                  <TextBlock Text="{Binding Verdict.IpText}" Classes="mono" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2">
+                  <TextBlock Text="ИСТОЧНИКОВ IP" Classes="overline" />
+                  <TextBlock Text="{Binding Verdict.ObservedCount}" Classes="mono" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="2">
+                  <TextBlock Text="ДЛИТЕЛЬНОСТЬ" Classes="overline" />
+                  <TextBlock Text="{Binding Verdict.DurationText}" Classes="mono" />
+                </StackPanel>
+              </Grid>
+
+              <ItemsControl ItemsSource="{Binding Verdict.Reasons}" IsVisible="{Binding HasResult}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Grid ColumnDefinitions="Auto,*" Margin="0,2">
+                      <Ellipse Grid.Column="0" Width="4" Height="4" Fill="{DynamicResource NoticeBrush}"
+                               VerticalAlignment="Center" Margin="0,0,8,0" />
+                      <TextBlock Grid.Column="1" Text="{Binding}" Classes="muted" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Запуск -->
+        <Border Grid.Column="1" Classes="card">
+          <StackPanel Spacing="12">
+            <TextBlock Text="ЗАПУСК" Classes="overline" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <Button Grid.Column="0" Classes="primary" Command="{Binding RunCommand}" HorizontalAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Path Data="{x:Static local:Icons.Play}" Stretch="Uniform" Width="12" Height="12"
+                        Fill="White" VerticalAlignment="Center" />
+                  <TextBlock Text="Запустить проверку" Foreground="White" FontWeight="SemiBold" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="1" Classes="danger" Command="{Binding CancelCommand}" Width="42" Padding="0,8">
+                <Path Data="{x:Static local:Icons.Stop}" Stretch="Uniform" Width="11" Height="11"
+                      Fill="{DynamicResource DangerBrush}" />
+              </Button>
+            </Grid>
+
+            <StackPanel Spacing="5">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding StatusLine}" Classes="muted" TextTrimming="CharacterEllipsis"
+                           MaxLines="2" />
+                <TextBlock Grid.Column="1" Text="{Binding ProgressText}" Classes="mono" FontSize="11"
+                           Foreground="{DynamicResource TextMuted}" />
+              </Grid>
+              <ProgressBar Value="{Binding Progress}" Maximum="100" />
+            </StackPanel>
+
+            <Border Classes="inset">
+              <StackPanel Spacing="7">
+                <CheckBox Content="Приватный режим (маскировать IP и MAC)" IsChecked="{Binding PrivacyMode}" FontSize="12" />
+                <CheckBox Content="Офлайн-режим (только локальные данные)" IsChecked="{Binding OfflineMode}" FontSize="12" />
+              </StackPanel>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Grid.Column="0" Classes="ghost" Command="{Binding ExportMarkdownCommand}"
+                      IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="Markdown" FontSize="12" />
+              <Button Grid.Column="1" Classes="ghost" Command="{Binding ExportJsonCommand}"
+                      IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="JSON" FontSize="12" />
+            </Grid>
+            <Button Classes="ghost" Command="{Binding CopySummaryCommand}" IsEnabled="{Binding HasResult}"
+                    HorizontalAlignment="Stretch" Content="Скопировать сводку" FontSize="12" />
+
+            <TextBlock Text="{Binding LastRunText}" Classes="muted" FontSize="11" />
+            <TextBlock Text="{Binding SaveMessage}" Classes="muted" FontSize="11"
+                       Foreground="{DynamicResource CleanBrush}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- ============ Модули ============ -->
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Grid.Column="0" Text="МОДУЛИ ПРОВЕРКИ" Classes="overline" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" Text="нажмите на карточку, чтобы раскрыть находки" Classes="muted" FontSize="11" />
+      </Grid>
+
+      <ItemsControl ItemsSource="{Binding Cards}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CheckCardViewModel">
+            <Border Classes="card" Width="452" Margin="0,0,16,16" Padding="0">
+              <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+                <!-- Заголовок -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="14,13,14,0">
+                  <Border Grid.Column="0" Width="4" Height="30" CornerRadius="2" Background="{Binding StatusBrush}"
+                          VerticalAlignment="Center" Margin="0,0,12,0" />
+                  <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" Classes="h3" />
+                    <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis"
+                               MaxLines="1" />
+                  </StackPanel>
+                  <Border Grid.Column="2" CornerRadius="999" Padding="9,3" VerticalAlignment="Center"
+                          Background="{Binding StatusSoftBrush}">
+                    <TextBlock Text="{Binding StatusText}" FontSize="10.5" FontWeight="SemiBold"
+                               Foreground="{Binding StatusBrush}" />
+                  </Border>
+                </Grid>
+
+                <!-- Метрики -->
+                <ItemsControl Grid.Row="1" ItemsSource="{Binding Metrics}" Margin="14,11,14,0" IsVisible="{Binding HasMetrics}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MetricViewModel">
+                      <Border Classes="inset" Margin="0,0,7,7" Padding="9,6" MaxWidth="200">
+                        <StackPanel Spacing="1">
+                          <TextBlock Text="{Binding Label}" Classes="overline" FontSize="9" />
+                          <TextBlock Text="{Binding Value}" FontSize="12" FontWeight="SemiBold"
+                                     TextTrimming="CharacterEllipsis" MaxWidth="180" />
+                          <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="10" MaxLines="1"
+                                     TextTrimming="CharacterEllipsis" IsVisible="{Binding HasHint}" MaxWidth="180" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Находки -->
+                <TextBlock Grid.Row="2" Text="{Binding EmptyText}" Classes="muted" FontSize="11" Margin="14,2,14,10"
+                           IsVisible="{Binding ShowEmptyText}" />
+                <StackPanel Grid.Row="2" Margin="14,4,14,10" Spacing="6" IsVisible="{Binding IsExpanded}">
+                  <Border Height="1" Background="{DynamicResource BorderBrush2}" Margin="0,4,0,4" />
+                  <ItemsControl ItemsSource="{Binding Findings}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:FindingViewModel">
+                        <Grid ColumnDefinitions="Auto,*" Margin="0,3">
+                          <Border Grid.Column="0" CornerRadius="4" Padding="6,1" VerticalAlignment="Top" Margin="0,0,8,0"
+                                  Background="{Binding SeverityBrush}">
+                            <TextBlock Text="{Binding SeverityText}" FontSize="8.5" FontWeight="Bold" Foreground="#0B0F14" />
+                          </Border>
+                          <StackPanel Grid.Column="1" Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="11"
+                                       IsVisible="{Binding HasDetail}" />
+                            <Border Classes="inset" Padding="7,4" IsVisible="{Binding HasEvidence}">
+                              <TextBlock Text="{Binding Evidence}" Classes="mono" FontSize="10"
+                                         Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                            </Border>
+                          </StackPanel>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Text="{Binding Error}" Classes="muted" FontSize="11" Foreground="{DynamicResource DangerBrush}"
+                             IsVisible="{Binding HasError}" />
+                </StackPanel>
+
+                <!-- Футер -->
+                <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" Margin="14,0,14,11" VerticalAlignment="Bottom">
+                  <TextBlock Grid.Column="0" Text="{Binding FindingsCountText}" Classes="muted" FontSize="10.5"
+                             VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding DurationText}" Classes="mono" FontSize="10"
+                             Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                  <Button Grid.Column="2" Classes="ghost" Command="{Binding ToggleCommand}" Padding="8,3" FontSize="10.5">
+                    <TextBlock Text="детали" FontSize="10.5" />
+                  </Button>
+                </Grid>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

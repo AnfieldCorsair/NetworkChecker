@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:RKNHardering.App.ViewModels"
+             xmlns:local="using:RKNHardering.App"
+             x:Class="RKNHardering.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+  <ScrollViewer>
+    <StackPanel Margin="24,18,24,28" Spacing="16">
+
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+        <!-- Поведение -->
+        <Border Grid.Column="0" Classes="card">
+          <StackPanel Spacing="12">
+            <TextBlock Text="ПОВЕДЕНИЕ" Classes="overline" />
+            <Grid ColumnDefinitions="*,96" Margin="0,2">
+              <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="Таймаут сетевого запроса" FontSize="12.5" />
+                <TextBlock Text="Сколько ждать ответа GeoIP/CDN/STUN, секунды" Classes="muted" FontSize="10.5" />
+              </StackPanel>
+              <NumericUpDown Grid.Column="1" Value="{Binding RequestTimeout}" Minimum="2" Maximum="60" Increment="1"
+                             FormatString="0" FontSize="12" />
+            </Grid>
+            <Grid ColumnDefinitions="*,96" Margin="0,2">
+              <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="Параллельных модулей" FontSize="12.5" />
+                <TextBlock Text="Одновременный запуск проверок" Classes="muted" FontSize="10.5" />
+              </StackPanel>
+              <NumericUpDown Grid.Column="1" Value="{Binding MaxParallelChecks}" Minimum="1" Maximum="12" Increment="1"
+                             FormatString="0" FontSize="12" />
+            </Grid>
+            <Grid ColumnDefinitions="*,96" Margin="0,2">
+              <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="Максимум хопов в трассировке" FontSize="12.5" />
+                <TextBlock Text="Ограничение ICMP traceroute" Classes="muted" FontSize="10.5" />
+              </StackPanel>
+              <NumericUpDown Grid.Column="1" Value="{Binding MaxTraceHops}" Minimum="1" Maximum="64" Increment="1"
+                             FormatString="0" FontSize="12" />
+            </Grid>
+            <Grid ColumnDefinitions="*,220" Margin="0,2">
+              <StackPanel Grid.Column="0" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="Цель трассировки по умолчанию" FontSize="12.5" />
+                <TextBlock Text="Заполняется при открытии вкладки «Сеть»" Classes="muted" FontSize="10.5" />
+              </StackPanel>
+              <TextBox Grid.Column="1" Text="{Binding DefaultTraceTarget}" FontSize="12" />
+            </Grid>
+
+            <Border Height="1" Background="{DynamicResource BorderBrush2}" Margin="0,4" />
+
+            <StackPanel Spacing="8">
+              <CheckBox Content="Приватный режим — маскировать IP и MAC в UI и отчётах" IsChecked="{Binding PrivacyMode}" FontSize="12.5" />
+              <CheckBox Content="Офлайн-режим — только локальные данные, без сетевых запросов" IsChecked="{Binding OfflineMode}" FontSize="12.5" />
+              <CheckBox Content="Сохранять прогоны в локальную историю (SQLite)" IsChecked="{Binding SaveHistory}" FontSize="12.5" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+              <TextBlock Grid.Column="0" Text="Тема" FontSize="12.5" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" Width="150" FontSize="12" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Данные -->
+        <StackPanel Grid.Column="1" Spacing="16">
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="ДАННЫЕ" Classes="overline" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="Каталог приложения" Classes="muted" FontSize="10.5" />
+                <TextBlock Text="{Binding DataDirectory}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Spacing="2">
+                <TextBlock Text="База истории" Classes="muted" FontSize="10.5" />
+                <TextBlock Text="{Binding DatabasePath}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="ghost" Command="{Binding OpenDataFolderCommand}" FontSize="12">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Path Data="{x:Static local:Icons.Folder}" Stretch="Uniform" Width="12" Height="12"
+                          Stroke="{DynamicResource TextPrimary}" StrokeThickness="1.6" VerticalAlignment="Center" />
+                    <TextBlock Text="Открыть папку" FontSize="12" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="danger" Command="{Binding ClearHistoryCommand}" FontSize="12" Content="Очистить историю" />
+              </StackPanel>
+              <TextBlock Text="{Binding DbStatus}" Classes="muted" FontSize="10.5" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="card">
+            <StackPanel Spacing="10">
+              <TextBlock Text="СПИСКИ ЦЕЛЕЙ" Classes="overline" />
+              <TextBlock Text="GeoIP-провайдеры (URL построчно)" Classes="muted" FontSize="10.5" />
+              <TextBox Text="{Binding GeoIpProviders}" AcceptsReturn="True" Height="92" FontSize="11" Classes="mono"
+                       TextWrapping="Wrap" VerticalContentAlignment="Top" />
+              <TextBlock Text="Домены для проверки доступности" Classes="muted" FontSize="10.5" />
+              <TextBox Text="{Binding ReachabilityTargets}" AcceptsReturn="True" Height="86" FontSize="11" Classes="mono"
+                       TextWrapping="Wrap" VerticalContentAlignment="Top" />
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Grid.Column="0" Spacing="4">
+                  <TextBlock Text="RU-хосты (RTT)" Classes="muted" FontSize="10.5" />
+                  <TextBox Text="{Binding RttRussianHosts}" AcceptsReturn="True" Height="76" FontSize="11" Classes="mono"
+                           TextWrapping="Wrap" VerticalContentAlignment="Top" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBlock Text="Иностранные хосты (RTT)" Classes="muted" FontSize="10.5" />
+                  <TextBox Text="{Binding RttForeignHosts}" AcceptsReturn="True" Height="76" FontSize="11" Classes="mono"
+                           TextWrapping="Wrap" VerticalContentAlignment="Top" />
+                </StackPanel>
+              </Grid>
+              <TextBlock Text="STUN-серверы (host:port)" Classes="muted" FontSize="10.5" />
+              <TextBox Text="{Binding StunServers}" AcceptsReturn="True" Height="64" FontSize="11" Classes="mono"
+                       TextWrapping="Wrap" VerticalContentAlignment="Top" />
+              <TextBlock Text="Порты локальных прокси (через запятую)" Classes="muted" FontSize="10.5" />
+              <TextBox Text="{Binding LocalProxyPorts}" FontSize="11" Classes="mono" Height="60" AcceptsReturn="True"
+                       TextWrapping="Wrap" VerticalContentAlignment="Top" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Grid>
+
+      <Border Classes="card" Padding="14">
+        <Grid ColumnDefinitions="*,Auto,Auto">
+          <TextBlock Grid.Column="0" Text="{Binding SaveStatus}" Classes="muted" VerticalAlignment="Center" FontSize="11.5" />
+          <Button Grid.Column="1" Classes="ghost" Command="{Binding ResetToDefaultsCommand}" Content="Сбросить" Margin="0,0,8,0" FontSize="12" />
+          <Button Grid.Column="2" Classes="primary" Command="{Binding SaveCommand}" Content="Сохранить" FontSize="12" />
+        </Grid>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
