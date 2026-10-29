@@ -97,9 +97,9 @@ public sealed partial class HistoryViewModel : ViewModelBase
 
     public UiModeService Mode { get; }
 
-    public override string Title => "История";
+    public override string Title => global::NetworkChecker.App.Localization.Localizer.T("История");
     public override string Icon => global::NetworkChecker.App.Icons.Clock;
-    public override string Description => "Локальные прогоны в SQLite";
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Локальные прогоны в SQLite");
 
     public ObservableCollection<HistoryRowViewModel> Runs { get; } = [];
     public ObservableCollection<CheckCardViewModel> DetailChecks { get; } = [];

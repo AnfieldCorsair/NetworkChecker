@@ -77,6 +77,35 @@ public class SiteViewAnalyzerTests
     }
 
     [Fact]
+    public void Screenshot_offsets_match_los_angeles_daylight_time_in_october()
+    {
+        var geo = Geo(country: "US", timezone: "America/Los_Angeles");
+        var local = Local(zone: "Etc/UTC", offsetHours: 0);
+        var report = SiteViewAnalyzer.Build(geo, local, At);
+        Assert.Contains("UTC−7", Row(report, "Часовой пояс адреса").Value);
+        Assert.Contains("UTC+0", Row(report, "Ваш часовой пояс").Value);
+        Assert.Contains(report.Signals, s => s.Title.Contains("Часовой пояс"));
+    }
+
+    [Theory]
+    [InlineData(120, false)]
+    [InlineData(121, true)]
+    public void Timezone_threshold_uses_unrounded_difference(int minutes, bool expected)
+    {
+        var local = new SiteLocalProfile("local", TimeSpan.FromMinutes(minutes), "ru-RU", "Windows", "Mozilla");
+        var report = SiteViewAnalyzer.Build(Geo(timezone: "zero"), local, At,
+            resolveTimeZone: _ => TimeZoneInfo.Utc);
+        Assert.Equal(expected, report.Signals.Any(s => s.Title.Contains("Часовой пояс не сходится")));
+    }
+
+    [Fact]
+    public void Unknown_timezone_is_neutral_not_good()
+    {
+        var report = SiteViewAnalyzer.Build(Geo(timezone: null), Local(), At, resolveTimeZone: Fixed);
+        Assert.Equal(SiteViewTone.Neutral, Row(report, "Ваш часовой пояс").Tone);
+    }
+
+    [Fact]
     public void Matching_timezone_is_marked_good()
     {
         var report = SiteViewAnalyzer.Build(Geo(), Local(), At, resolveTimeZone: Fixed);

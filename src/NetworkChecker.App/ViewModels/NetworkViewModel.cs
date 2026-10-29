@@ -45,6 +45,19 @@ public sealed class RouteRowViewModel(RouteInfo route)
     public bool IsDefault { get; } = route.IsDefault;
 }
 
+/// <summary>Хоп для таблицы и схемы: одинаковый ASN получает одинаковый цвет.</summary>
+public sealed class TraceHopViewModel(TraceHop hop)
+{
+    public int Index { get; } = hop.Index;
+    public string HostText => hop.Address is null ? "нет ответа" : Masking.Ip(hop.Address);
+    public bool HasPrevious => Index > 1;
+    public string RttText { get; } = hop.RttText;
+    public string Asn { get; } = TraceGraph.NormalizeAsn(hop.Asn) ?? "—";
+    public string AsnLabel => Asn == "—" ? "ASN неизвестен" : Asn;
+    public string AsName { get; } = string.IsNullOrWhiteSpace(hop.AsName) ? "—" : hop.AsName;
+    public Avalonia.Media.IBrush AsnBrush { get; } = Ui.Brush(TraceGraph.ColorForAsn(hop.Asn));
+}
+
 public sealed record KeyValueRow(string Key, string Value, string? Hint = null);
 
 /// <summary>Понятный факт о сети для простого режима.</summary>
@@ -93,9 +106,9 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
 
     public UiModeService Mode { get; }
 
-    public override string Title => "Сеть";
+    public override string Title => global::NetworkChecker.App.Localization.Localizer.T("Сеть");
     public override string Icon => global::NetworkChecker.App.Icons.Globe;
-    public override string Description => "База, диагностика и трассировка";
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("База, диагностика и трассировка");
 
     public ObservableCollection<AdapterRowViewModel> Adapters { get; } = [];
     public ObservableCollection<RouteRowViewModel> DefaultRoutes { get; } = [];
@@ -104,7 +117,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     public ObservableCollection<MtuProbe> Mtu { get; } = [];
     public ObservableCollection<DnsProbeResult> Dns { get; } = [];
     public ObservableCollection<TlsProbe> Tls { get; } = [];
-    public ObservableCollection<TraceHop> Hops { get; } = [];
+    public ObservableCollection<TraceHopViewModel> Hops { get; } = [];
     public ObservableCollection<SimpleNetFact> SimpleFacts { get; } = [];
 
     /// <summary>Технические таблицы показываем только в подробном режиме.</summary>
@@ -350,14 +363,10 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
         Hops.Clear();
         _cts = new CancellationTokenSource();
         TraceStatus = $"трассировка {TraceTarget}...";
-        var progress = new Progress<TraceHop>(hop =>
-        {
-            Hops.Add(hop);
-            TraceStatus = $"хоп {hop.Index}: {hop.HostText}";
-        });
         try
         {
-            var result = await NetworkInfoService.TraceAsync(TraceTarget, _options.MaxTraceHops, progress, _cts.Token).ConfigureAwait(true);
+            var result = await NetworkInfoService.TraceAsync(TraceTarget, _options.MaxTraceHops, null, _cts.Token).ConfigureAwait(true);
+            foreach (var hop in result.Hops) Hops.Add(new TraceHopViewModel(hop));
             TraceStatus = result.Error is null
                 ? $"готово за {result.Duration.TotalSeconds:F1} с · {result.Hops.Count} хопов · режим: {result.Mode}"
                 : "ошибка: " + result.Error;

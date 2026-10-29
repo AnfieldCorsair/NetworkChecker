@@ -196,6 +196,7 @@ public static class TraceTool
                 if (reply.Error == "ttl-expired" && reply.Address is not null)
                 {
                     address = reply.Address;
+                    samples.Add(reply.Roundtrip);
                     break;
                 }
             }

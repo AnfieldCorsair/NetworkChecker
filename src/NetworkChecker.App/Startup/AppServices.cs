@@ -23,6 +23,7 @@ public static class AppServices
     {
         var settings = new SettingsStore();
         var options = settings.Load();
+        Localization.Localizer.Configure(settings.Ui.Culture);
 
         Directory.CreateDirectory(Path.GetDirectoryName(settings.LogPath)!);
         // Путь — обычная строка без форматирования: CA1305 срабатывает на перегрузках Serilog.

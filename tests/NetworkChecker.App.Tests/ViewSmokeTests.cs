@@ -123,6 +123,23 @@ public class ViewSmokeTests
     }
 
     [AvaloniaFact]
+    public void Trace_graph_renders_known_and_unknown_asns()
+    {
+        using var env = new TempEnv();
+        var (window, main, sink) = ShowApp(env);
+        main.Mode.IsPro = true;
+        main.NavigateCommand.Execute(main.NavItems[1]);
+        var network = (NetworkViewModel)main.Pages[1];
+        network.SelectTabCommand.Execute("Трассировка");
+        network.Hops.Add(new TraceHopViewModel(new NetworkChecker.Core.Net.TraceHop(1, "8.8.8.8", [TimeSpan.FromMilliseconds(10)], "15169", "Google")));
+        network.Hops.Add(new TraceHopViewModel(new NetworkChecker.Core.Net.TraceHop(2, null, [], null, null)));
+        Pump(12);
+        using var frame = window.CaptureRenderedFrame();
+        Assert.NotNull(frame);
+        Assert.DoesNotContain(sink.Entries, e => e.StartsWith("Error", StringComparison.Ordinal));
+    }
+
+    [AvaloniaFact]
     public void Result_screen_renders_in_both_modes()
     {
         using var env = new TempEnv();

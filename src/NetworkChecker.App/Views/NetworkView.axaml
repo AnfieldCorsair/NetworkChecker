@@ -13,11 +13,11 @@
     <Border Grid.Row="0" Classes="card" Margin="24,18,24,0" Padding="14" IsVisible="{Binding Mode.IsPro}">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
         <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowTabs}">
-          <Button Content="Овервью" Command="{Binding SelectTabCommand}" CommandParameter="Овервью" FontSize="12"
+          <Button Content="{DynamicResource LocOverview}" Command="{Binding SelectTabCommand}" CommandParameter="Овервью" FontSize="12"
                   Padding="12,6" Classes.primary="{Binding ShowOverview}" />
-          <Button Content="Диагностика" Command="{Binding SelectTabCommand}" CommandParameter="Диагностика" FontSize="12"
+          <Button Content="{DynamicResource LocDiagnostics}" Command="{Binding SelectTabCommand}" CommandParameter="Диагностика" FontSize="12"
                   Padding="12,6" Classes.primary="{Binding ShowDiagnostics}" />
-          <Button Content="Трассировка" Command="{Binding SelectTabCommand}" CommandParameter="Трассировка" FontSize="12"
+          <Button Content="{DynamicResource LocTrace}" Command="{Binding SelectTabCommand}" CommandParameter="Трассировка" FontSize="12"
                   Padding="12,6" Classes.primary="{Binding ShowTrace}" />
         </StackPanel>
         <SelectableTextBlock Grid.Column="2" Text="{Binding StatusLine}" Classes="muted" VerticalAlignment="Center"
@@ -27,11 +27,11 @@
             <StackPanel Orientation="Horizontal" Spacing="7">
               <Path Data="{x:Static local:Icons.Refresh}" Stretch="Uniform" Width="12" Height="12"
                     Stroke="{DynamicResource TextPrimary}" StrokeThickness="1.7" VerticalAlignment="Center" />
-              <TextBlock Text="Обновить обзор" FontSize="12" />
+              <TextBlock Text="{DynamicResource LocRefresh}" FontSize="12" />
             </StackPanel>
           </Button>
           <Button Classes="primary" Command="{Binding RunDiagnosticsCommand}" FontSize="12" Padding="12,6"
-                  Content="Диагностика" IsVisible="{Binding ShowTabs}" />
+                  Content="{DynamicResource LocDiagnostics}" IsVisible="{Binding ShowTabs}" />
         </StackPanel>
       </Grid>
     </Border>
@@ -320,41 +320,65 @@
     <Grid Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowTrace}" RowDefinitions="Auto,*" Margin="24,16,24,28">
       <Border Grid.Row="0" Classes="card" Padding="14">
         <Grid ColumnDefinitions="Auto,240,Auto,*,Auto">
-          <TextBlock Grid.Column="0" Text="Цель" Classes="muted" VerticalAlignment="Center" Margin="0,0,10,0" />
+          <TextBlock Grid.Column="0" Text="{DynamicResource LocTarget}" Classes="muted" VerticalAlignment="Center" Margin="0,0,10,0" />
           <TextBox Grid.Column="1" Text="{Binding TraceTarget}" PlaceholderText="1.1.1.1" FontSize="12" />
           <Button Grid.Column="2" Classes="primary" Command="{Binding RunTraceCommand}" Margin="10,0,0,0" FontSize="12">
             <StackPanel Orientation="Horizontal" Spacing="7">
               <Path Data="{x:Static local:Icons.Trace}" Stretch="Uniform" Width="12" Height="12"
                     Stroke="White" StrokeThickness="1.7" VerticalAlignment="Center" />
-              <TextBlock Text="Трассировать" Foreground="White" FontSize="12" />
+              <TextBlock Text="{DynamicResource LocTraceAction}" Foreground="White" FontSize="12" />
             </StackPanel>
           </Button>
           <SelectableTextBlock Grid.Column="3" Text="{Binding TraceStatus}" Classes="muted" VerticalAlignment="Center"
                      HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" />
-          <Button Grid.Column="4" Classes="danger" Command="{Binding CancelTraceCommand}" FontSize="12" Content="Стоп" />
+          <Button Grid.Column="4" Classes="danger" Command="{Binding CancelTraceCommand}" FontSize="12" Content="{DynamicResource LocStop}" />
         </Grid>
       </Border>
 
       <Border Grid.Row="1" Classes="card" Margin="0,16,0,0">
-        <Grid RowDefinitions="Auto,*">
-          <Grid Grid.Row="0" ColumnDefinitions="44,180,110,90,2*" Margin="0,0,0,8">
+        <Grid RowDefinitions="Auto,Auto,*">
+          <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+            <TextBlock Text="{DynamicResource LocGraph}" Classes="overline" />
+            <TextBlock Text="{DynamicResource LocGraphHint}" Classes="muted" TextWrapping="Wrap" />
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding Hops}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:TraceHopViewModel">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                      <TextBlock Text=" → " Classes="muted" FontSize="16" IsVisible="{Binding HasPrevious}" />
+                      <Border BorderBrush="{Binding AsnBrush}" BorderThickness="1" CornerRadius="8" Padding="10" MinWidth="150" Background="{DynamicResource AppBackground}">
+                        <StackPanel Spacing="3">
+                          <SelectableTextBlock Text="{Binding Index, StringFormat='Хоп {0}'}" Foreground="{Binding AsnBrush}" FontWeight="Bold" FontSize="11" />
+                          <SelectableTextBlock Text="{Binding HostText}" Classes="mono" FontSize="11" />
+                          <SelectableTextBlock Text="{Binding AsnLabel}" Foreground="{Binding AsnBrush}" FontSize="11" />
+                          <SelectableTextBlock Text="{Binding RttText}" Classes="muted" FontSize="10" />
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </StackPanel>
+          <Grid Grid.Row="1" ColumnDefinitions="44,180,110,90,2*" Margin="0,0,0,8">
             <TextBlock Grid.Column="0" Text="#" Classes="muted" FontSize="10.5" />
-            <TextBlock Grid.Column="1" Text="Узел" Classes="muted" FontSize="10.5" />
-            <TextBlock Grid.Column="2" Text="Лучший RTT" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="1" Text="{DynamicResource LocHop}" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="2" Text="{DynamicResource LocRtt}" Classes="muted" FontSize="10.5" />
             <TextBlock Grid.Column="3" Text="ASN" Classes="muted" FontSize="10.5" />
-            <TextBlock Grid.Column="4" Text="Оператор" Classes="muted" FontSize="10.5" />
+            <TextBlock Grid.Column="4" Text="{DynamicResource LocOperator}" Classes="muted" FontSize="10.5" />
           </Grid>
-          <ScrollViewer Grid.Row="1">
+          <ScrollViewer Grid.Row="2">
             <ItemsControl ItemsSource="{Binding Hops}">
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="net:TraceHop">
+                <DataTemplate x:DataType="vm:TraceHopViewModel">
                   <Grid ColumnDefinitions="44,180,110,90,2*" Margin="0,4">
                     <SelectableTextBlock Grid.Column="0" Text="{Binding Index}" Classes="mono" FontSize="11"
                                Foreground="{DynamicResource TextMuted}" />
                     <SelectableTextBlock Grid.Column="1" Text="{Binding HostText}" Classes="mono" FontSize="11" />
                     <SelectableTextBlock Grid.Column="2" Text="{Binding RttText}" Classes="mono" FontSize="11" />
                     <SelectableTextBlock Grid.Column="3" Text="{Binding Asn}" Classes="mono" FontSize="11"
-                               Foreground="{DynamicResource TextMuted}" />
+                               Foreground="{Binding AsnBrush}" />
                     <SelectableTextBlock Grid.Column="4" Text="{Binding AsName}" FontSize="11"
                                TextTrimming="CharacterEllipsis" />
                   </Grid>

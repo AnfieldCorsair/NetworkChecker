@@ -140,9 +140,9 @@ public sealed partial class GuideViewModel : ViewModelBase
         ];
     }
 
-    public override string Title => "Справка";
+    public override string Title => global::NetworkChecker.App.Localization.Localizer.T("Справка");
     public override string Icon => global::NetworkChecker.App.Icons.Book;
-    public override string Description => "Что делает каждый модуль";
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Что делает каждый модуль");
 
     public ObservableCollection<GuideSection> Sections { get; }
 

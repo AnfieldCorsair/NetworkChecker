@@ -86,9 +86,9 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
 
     public UiModeService Mode { get; }
 
-    public override string Title => "Глазами сайта";
+    public override string Title => global::NetworkChecker.App.Localization.Localizer.T("Глазами сайта");
     public override string Icon => global::NetworkChecker.App.Icons.Eye;
-    public override string Description => "Что о вас узнаёт ВК или Яндекс";
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Что о вас узнаёт ВК или Яндекс");
 
     public ObservableCollection<SiteRowViewModel> Rows { get; } = [];
     public ObservableCollection<SiteSignalViewModel> Signals { get; } = [];

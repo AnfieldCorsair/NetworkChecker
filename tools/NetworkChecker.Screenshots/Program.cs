@@ -104,6 +104,16 @@ internal static class Program
         Pump(8);
         Save(window, Path.Combine(output, "07-network-trace.png"));
 
+        // Отдельный демонстрационный кадр схемы: адреса документационные, ASN вымышленные.
+        network.Hops.Clear();
+        network.Hops.Add(new TraceHopViewModel(new NetworkChecker.Core.Net.TraceHop(1, "192.0.2.1", [TimeSpan.FromMilliseconds(12)], "64500", "Пример сети A")));
+        network.Hops.Add(new TraceHopViewModel(new NetworkChecker.Core.Net.TraceHop(2, "192.0.2.2", [TimeSpan.FromMilliseconds(21)], "64500", "Пример сети A")));
+        network.Hops.Add(new TraceHopViewModel(new NetworkChecker.Core.Net.TraceHop(3, null, [], null, null)));
+        network.Hops.Add(new TraceHopViewModel(new NetworkChecker.Core.Net.TraceHop(4, "198.51.100.5", [TimeSpan.FromMilliseconds(38)], "64501", "Пример сети B")));
+        network.TraceStatus = "ДЕМО · вымышленные хопы и ASN";
+        Pump(8);
+        Save(window, Path.Combine(output, "07b-network-trace-demo.png"));
+
         // 9. История
         main.NavigateCommand.Execute(main.NavItems[3]);
         var history = host.Services.GetRequiredService<HistoryViewModel>();

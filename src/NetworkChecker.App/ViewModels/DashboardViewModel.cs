@@ -238,9 +238,9 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         CheckCount = _runner.Checks.Count;
     }
 
-    public override string Title => "Проверка";
+    public override string Title => global::NetworkChecker.App.Localization.Localizer.T("Проверка");
     public override string Icon => global::NetworkChecker.App.Icons.ShieldCheck;
-    public override string Description => "Обнаружение VPN и прокси по методике РКН";
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Обнаружение VPN и прокси по методике РКН");
 
     public UiModeService Mode { get; }
 

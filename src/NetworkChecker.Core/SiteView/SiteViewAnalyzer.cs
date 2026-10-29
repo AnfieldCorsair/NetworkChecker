@@ -167,7 +167,7 @@ public static class SiteViewAnalyzer
                 : sameZone
                     ? "Системный пояс совпадает с поясом по IP; браузер может сообщать другое."
                     : $"Расходится с адресом на {FormatHours(localOffsetDiffHours.Value)} — сайт может заметить расхождение, если браузер сообщит этот пояс.",
-            sameZone ? SiteViewTone.Good : SiteViewTone.Warn);
+            localOffsetDiffHours is null ? SiteViewTone.Neutral : sameZone ? SiteViewTone.Good : SiteViewTone.Warn);
 
         yield return new SiteViewRow("Язык системы", local.CultureName,
             "Язык системы; язык, который отправляет браузер, может отличаться.",
@@ -272,7 +272,7 @@ public static class SiteViewAnalyzer
     private static double? OffsetDiff(TimeSpan? ipOffset, TimeSpan localOffset)
     {
         if (ipOffset is null) return null;
-        return Math.Round(Math.Abs((ipOffset.Value - localOffset).TotalHours), 1);
+        return Math.Abs((ipOffset.Value - localOffset).TotalHours);
     }
 
     private static TimeSpan? ResolveOffset(string? timeZoneId, DateTimeOffset at, Func<string, TimeZoneInfo?> resolve)
@@ -290,6 +290,13 @@ public static class SiteViewAnalyzer
         }
         catch (TimeZoneNotFoundException)
         {
+            // GeoIP обычно отдаёт IANA. На Windows может потребоваться преобразование в Windows ID.
+            if (OperatingSystem.IsWindows() && TimeZoneInfo.TryConvertIanaIdToWindowsId(id, out var windowsId))
+            {
+                try { return TimeZoneInfo.FindSystemTimeZoneById(windowsId); }
+                catch (TimeZoneNotFoundException) { return null; }
+                catch (InvalidTimeZoneException) { return null; }
+            }
             return null;
         }
         catch (InvalidTimeZoneException)
@@ -301,5 +308,5 @@ public static class SiteViewAnalyzer
     private static string FormatHours(double hours) =>
         hours % 1 == 0
             ? hours.ToString("0", CultureInfo.InvariantCulture) + " ч"
-            : hours.ToString("0.#", CultureInfo.InvariantCulture) + " ч";
+            : hours.ToString("0.##", CultureInfo.InvariantCulture) + " ч";
 }

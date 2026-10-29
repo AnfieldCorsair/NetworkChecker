@@ -32,7 +32,7 @@ public static class PingTools
             {
                 IPStatus.Success => new PingResult(true, reply.RoundtripTime >= 0 ? TimeSpan.FromMilliseconds(reply.RoundtripTime) : TimeSpan.Zero,
                     reply.Options?.Ttl ?? ttl, reply.Address?.ToString(), null),
-                IPStatus.TtlExpired => new PingResult(false, TimeSpan.Zero, reply.Options?.Ttl ?? ttl, reply.Address?.ToString(), "ttl-expired"),
+                IPStatus.TtlExpired => new PingResult(false, TimeSpan.FromMilliseconds(Math.Max(0, reply.RoundtripTime)), reply.Options?.Ttl ?? ttl, reply.Address?.ToString(), "ttl-expired"),
                 IPStatus.TimedOut => new PingResult(false, TimeSpan.Zero, ttl, null, "таймаут"),
                 _ => new PingResult(false, TimeSpan.Zero, ttl, reply.Address?.ToString(), reply.Status.ToString()),
             };

@@ -15,7 +15,11 @@ public partial class App : Application
 {
     public static IHost? Host { get; private set; }
 
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+        Localization.Localizer.Configure("ru-RU");
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

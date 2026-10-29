@@ -81,10 +81,10 @@
               <StackPanel Orientation="Horizontal" Spacing="2">
                 <Button Classes="modetab" Classes.selected="{Binding Mode.IsSimple}"
                         Command="{Binding SwitchModeCommand}" CommandParameter="simple"
-                        Content="Просто" FontSize="11.5" />
+                        Content="{DynamicResource LocSimple}" FontSize="11.5" />
                 <Button Classes="modetab" Classes.selected="{Binding Mode.IsPro}"
                         Command="{Binding SwitchModeCommand}" CommandParameter="pro"
-                        Content="Подробно" FontSize="11.5" />
+                        Content="{DynamicResource LocDetailed}" FontSize="11.5" />
               </StackPanel>
             </Border>
           </StackPanel>

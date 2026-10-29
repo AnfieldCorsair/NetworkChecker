@@ -259,6 +259,7 @@ public class MainWindowViewModelTests
         var main = Build(env);
         var settings = (SettingsViewModel)main.Pages[5];
 
+        settings.Language = "en-US";
         settings.RequestTimeout = 17;
         settings.LocalProxyPorts = "1080, 8080, не-число, 70000";
         settings.GeoIpProviders = "https://a.test/\n\nhttps://b.test/";
@@ -267,6 +268,7 @@ public class MainWindowViewModelTests
         var store = env.Store;
         var loaded = store.Load();
         Assert.Equal(17, loaded.RequestTimeoutSeconds);
+        Assert.Equal("en-US", store.Ui.Culture);
         Assert.Equal([1080, 8080], loaded.LocalProxyPorts);
         Assert.Equal(["https://a.test/", "https://b.test/"], loaded.GeoIpProviders);
     }
@@ -325,5 +327,40 @@ public class NetworkOfflineTests
         Assert.Contains("офлайн", network.TraceStatus, StringComparison.OrdinalIgnoreCase);
         Assert.Empty(network.Latency);
         Assert.Empty(network.Hops);
+    }
+}
+
+public class LocalizationTests
+{
+    [Theory]
+    [InlineData("Сеть", "en-US", "Network")]
+    [InlineData("Сеть", "ru-RU", "Сеть")]
+    [InlineData("неизвестная строка", "en-US", "неизвестная строка")]
+    [InlineData("Сеть", null, "Сеть")]
+    public void Preview_translation_and_russian_fallback(string text, string? language, string expected) =>
+        Assert.Equal(expected, NetworkChecker.App.Localization.Localizer.Translate(text, language));
+
+    [AvaloniaFact]
+    public void Preview_language_does_not_change_system_culture()
+    {
+        var before = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            Assert.Equal("Network", NetworkChecker.App.Localization.Localizer.T("Сеть"));
+            Assert.Equal(before, System.Globalization.CultureInfo.CurrentUICulture);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+
+    [Fact]
+    public void Unknown_asn_and_timeout_are_readable()
+    {
+        var hop = new NetworkChecker.App.ViewModels.TraceHopViewModel(
+            new NetworkChecker.Core.Net.TraceHop(1, null, [], null, null));
+        Assert.Equal("нет ответа", hop.HostText);
+        Assert.Equal("ASN неизвестен", hop.AsnLabel);
+        Assert.Equal("—", hop.Asn);
+        Assert.False(hop.HasPrevious);
     }
 }

@@ -17,9 +17,14 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
 
     public UiModeService Mode { get; } = mode;
 
-    public override string Title => "Настройки";
+    public override string Title => global::NetworkChecker.App.Localization.Localizer.T("Настройки");
     public override string Icon => global::NetworkChecker.App.Icons.Sliders;
-    public override string Description => "Таймауты, цели проверок, приватность";
+    public override string Description => global::NetworkChecker.App.Localization.Localizer.T("Таймауты, цели проверок, приватность");
+
+    public ObservableCollection<string> Languages { get; } = ["ru-RU", "en-US"];
+
+    [ObservableProperty]
+    public partial string Language { get; set; } = ui.Culture == "en-US" ? "en-US" : "ru-RU";
 
     public ObservableCollection<string> Themes { get; } = ["Dark", "Light", "System"];
 
@@ -92,9 +97,10 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
             .Where(p => p is > 0 and < 65536)
             .Distinct()];
 
+        _ui.Culture = Language == "en-US" ? "en-US" : "ru-RU";
         Masking.Enabled = PrivacyMode;
         _store.Save(_options, _ui);
-        SaveStatus = $"Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}";
+        SaveStatus = $"Язык применяется после перезапуска. Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}";
         await Task.CompletedTask.ConfigureAwait(true);
     }
 
