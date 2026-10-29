@@ -1,6 +1,8 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Threading;
 using NetworkChecker.App.Tests;
 using NetworkChecker.App.ViewModels;
@@ -69,6 +71,40 @@ public class ViewSmokeTests
         window.Show();
         Pump();
         return (window, main, sink);
+    }
+
+    [AvaloniaFact]
+    public void Selectable_text_uses_global_wrapping_and_displays_multiple_lines()
+    {
+        var text = new SelectableTextBlock
+        {
+            Text = "Длинное описание проверки, которое должно полностью переноситься на несколько строк без сокращения.",
+        };
+        var window = new Window { Width = 180, Height = 240, Content = new Border { Width = 120, Child = text } };
+        window.Show();
+        Pump(12);
+        Assert.Equal(TextWrapping.Wrap, text.TextWrapping);
+        Assert.Equal(TextTrimming.None, text.TextTrimming);
+        Assert.True(text.TextLayout.TextLines.Count > 1);
+        Assert.True(text.Bounds.Height >= text.TextLayout.Height - 1);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Narrow_window_can_scroll_to_wide_page_content()
+    {
+        using var env = new TempEnv();
+        var (window, _, _) = ShowApp(env);
+        window.Width = 760;
+        window.Height = 520;
+        Pump(12);
+        var viewport = window.FindControl<ScrollViewer>("PageViewport");
+        Assert.NotNull(viewport);
+        Assert.True(viewport!.Extent.Width > viewport.Viewport.Width);
+        viewport.Offset = new Vector(viewport.Extent.Width - viewport.Viewport.Width, 0);
+        Pump();
+        Assert.True(viewport.Offset.X > 0);
+        window.Close();
     }
 
     [AvaloniaFact]

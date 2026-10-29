@@ -5,7 +5,7 @@
         x:Class="NetworkChecker.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="NetworkChecker — проверка сети и признаков обхода"
-        Width="1400" Height="900" MinWidth="1080" MinHeight="720"
+        Width="1400" Height="900" MinWidth="760" MinHeight="520"
         Background="{DynamicResource AppBackground}"
         WindowStartupLocation="CenterScreen"
         TransparencyLevelHint="None"
@@ -15,7 +15,8 @@
     <!-- ======================= Sidebar ======================= -->
     <Border Grid.Column="0" Background="{DynamicResource SidebarBackground}" BorderBrush="{DynamicResource BorderBrush2}"
             BorderThickness="0,0,1,0">
-      <Grid RowDefinitions="Auto,*,Auto" Margin="0,18,0,14">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="0,18,0,14" MinHeight="470">
         <!-- Логотип -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="20,0,16,22" Spacing="11">
           <Border Background="{DynamicResource AccentSoft}" CornerRadius="10" Width="38" Height="38">
@@ -56,13 +57,15 @@
           <TextBlock Text="v1.6 · Avalonia 12 · .NET 10" Classes="muted" FontSize="10.5" Margin="0,6,0,0" />
         </StackPanel>
       </Grid>
+      </ScrollViewer>
     </Border>
 
     <!-- ======================= Content ======================= -->
     <Grid Grid.Column="1" RowDefinitions="Auto,*">
       <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}"
               BorderThickness="0,0,0,1" Padding="26,16">
-        <Grid ColumnDefinitions="*,Auto">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <Grid ColumnDefinitions="*,Auto" MinWidth="480">
           <StackPanel Grid.Column="0" Spacing="2">
             <TextBlock Text="{Binding CurrentPage.Title}" Classes="h1" />
             <TextBlock Text="{Binding CurrentPage.Description}" Classes="muted" />
@@ -89,9 +92,13 @@
             </Border>
           </StackPanel>
         </Grid>
+        </ScrollViewer>
       </Border>
 
-      <ContentControl Grid.Row="1" Content="{Binding CurrentPage}" Margin="0" />
+      <!-- Узкие экраны: сохраняем доступ ко всему содержимому горизонтальной прокруткой. -->
+      <ScrollViewer x:Name="PageViewport" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <ContentControl Content="{Binding CurrentPage}" MinWidth="900" Margin="0" />
+      </ScrollViewer>
     </Grid>
   </Grid>
 </Window>

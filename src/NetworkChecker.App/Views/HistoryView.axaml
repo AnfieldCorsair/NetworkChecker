@@ -25,7 +25,7 @@
                 <Grid ColumnDefinitions="3,*,Auto" Margin="0,4">
                   <Border Grid.Column="0" Width="3" CornerRadius="2" Background="{Binding ColorBrush}" />
                   <StackPanel Grid.Column="1" Margin="10,2,0,2" Spacing="2">
-                    <SelectableTextBlock Text="{Binding Headline}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <SelectableTextBlock Text="{Binding Headline}" FontSize="12" FontWeight="SemiBold" />
                     <SelectableTextBlock Text="{Binding When}" Classes="muted" FontSize="10.5" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
@@ -87,7 +87,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:ComparisonRowViewModel">
                   <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,2">
-                    <SelectableTextBlock Grid.Column="0" Text="{Binding Title}" FontSize="11.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <SelectableTextBlock Grid.Column="0" Text="{Binding Title}" FontSize="11.5" />
                     <SelectableTextBlock Grid.Column="1" Text="{Binding BeforeText}" Classes="muted" FontSize="11" Margin="8,0" />
                     <TextBlock Grid.Column="2" Text="→" Classes="muted" FontSize="11" />
                     <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
@@ -112,7 +112,7 @@
                             Margin="0,0,10,0" />
                     <StackPanel Grid.Column="1" Spacing="1">
                       <SelectableTextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" />
-                      <SelectableTextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                      <SelectableTextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="10.5" />
                     </StackPanel>
                     <SelectableTextBlock Grid.Column="2" Text="{Binding FindingsCountText}" Classes="muted" FontSize="10.5"
                                VerticalAlignment="Center" Margin="0,0,10,0" />

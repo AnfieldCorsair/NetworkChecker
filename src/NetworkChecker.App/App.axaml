@@ -53,7 +53,7 @@
     <FluentTheme />
 
     <!-- ===== Типографика ===== -->
-    <Style Selector="TextBlock">
+    <Style Selector=":is(TextBlock)">
       <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="TextWrapping" Value="Wrap" />
