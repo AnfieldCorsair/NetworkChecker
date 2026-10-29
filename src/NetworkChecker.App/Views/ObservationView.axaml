@@ -21,6 +21,21 @@
         <TextBlock Text="WFP" Classes="overline" /><SelectableTextBlock Text="{Binding WfpStatus}" TextWrapping="Wrap" />
         <TextBlock Text="ETW" Classes="overline" /><SelectableTextBlock Text="{Binding EtwStatus}" TextWrapping="Wrap" />
       </StackPanel></Border>
+      <Border Classes="card"><StackPanel Spacing="8">
+        <TextBlock Text="{DynamicResource ObsFilters}" Classes="overline" />
+        <TextBlock Text="{DynamicResource ObsFilterHint}" Classes="muted" TextWrapping="Wrap" />
+        <SelectableTextBlock Text="{Binding SnapshotStatus}" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding Filters}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:WfpFilterRow">
+          <Border Classes="inset" Margin="0,3" Padding="10"><StackPanel Spacing="2">
+            <SelectableTextBlock Text="{Binding Action}" FontWeight="SemiBold" />
+            <SelectableTextBlock Text="{Binding Key, StringFormat='Filter: {0}'}" Classes="mono" FontSize="11" />
+            <SelectableTextBlock Text="{Binding Layer, StringFormat='Layer: {0}'}" Classes="mono" FontSize="11" />
+            <SelectableTextBlock Text="{Binding Provider, StringFormat='Provider: {0}'}" Classes="mono" FontSize="11" />
+            <SelectableTextBlock Text="{Binding Callout, StringFormat='Callout: {0}'}" Classes="mono" FontSize="11" />
+            <SelectableTextBlock Text="{Binding State}" Classes="muted" FontSize="11" />
+          </StackPanel></Border>
+        </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+      </StackPanel></Border>
       <Border Classes="card"><StackPanel Spacing="10">
         <TextBlock Text="{DynamicResource ObsEvents}" Classes="overline" />
         <ItemsControl ItemsSource="{Binding Events}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ObservationRow">

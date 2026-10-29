@@ -22,7 +22,7 @@
                 </StackPanel>
                 <Border Grid.Column="1" CornerRadius="999" Padding="12,6" VerticalAlignment="Top"
                         Background="{Binding PlainSoftBrush}">
-                  <TextBlock Text="простым языком" FontSize="11" Foreground="{Binding PlainAccentBrush}" />
+                  <TextBlock Text="{DynamicResource LocMore0}" FontSize="11" Foreground="{Binding PlainAccentBrush}" />
                 </Border>
               </Grid>
 
@@ -30,7 +30,7 @@
                          LineHeight="21" />
               <Border Classes="inset" Padding="12,10" MaxWidth="820" HorizontalAlignment="Left">
                 <StackPanel Spacing="3">
-                  <TextBlock Text="ЧТО ДЕЛАТЬ" Classes="overline" FontSize="9" />
+                  <TextBlock Text="{DynamicResource LocMore1}" Classes="overline" FontSize="9" />
                   <SelectableTextBlock Text="{Binding PlainAdvice}" FontSize="12.5" />
                 </StackPanel>
               </Border>
@@ -40,7 +40,7 @@
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Path Data="{x:Static local:Icons.Play}" Stretch="Uniform" Width="13" Height="13"
                           Fill="White" VerticalAlignment="Center" />
-                    <TextBlock Text="Проверить компьютер" Foreground="White" FontWeight="SemiBold" FontSize="13.5" />
+                    <TextBlock Text="{DynamicResource LocMore2}" Foreground="White" FontWeight="SemiBold" FontSize="13.5" />
                   </StackPanel>
                 </Button>
                 <Button Grid.Column="1" Classes="ghost" Command="{Binding CancelCommand}" Width="44" Padding="0,10">
@@ -53,7 +53,7 @@
                   <ProgressBar Value="{Binding Progress}" Maximum="100" />
                 </StackPanel>
                 <Button Grid.Column="3" Classes="ghost" Command="{Binding GoProCommand}" FontSize="12"
-                        Content="Нужны детали →" Padding="12,8" />
+                        Content="{DynamicResource LocMore3}" Padding="12,8" />
               </Grid>
             </StackPanel>
           </Grid>
@@ -84,9 +84,9 @@
 
         <!-- Разбор по проверкам -->
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Grid.Column="0" Text="ЧТО ИМЕННО ПРОВЕРЯЛИ" Classes="overline" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{DynamicResource LocMore4}" Classes="overline" VerticalAlignment="Center" />
           <Button Grid.Column="1" Classes="ghost" Command="{Binding TogglePlainDetailsCommand}" FontSize="11"
-                  Content="свернуть / развернуть" Padding="10,4" />
+                  Content="{DynamicResource LocMore5}" Padding="10,4" />
         </Grid>
 
         <Border Classes="card" Padding="8" IsVisible="{Binding ShowPlainDetails}">
@@ -116,12 +116,12 @@
         <Border Classes="card" Padding="14">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
             <StackPanel Grid.Column="0" Spacing="8">
-              <CheckBox Content="Скрывать личные данные в отчётах (IP, имя компьютера)" IsChecked="{Binding PrivacyMode}" FontSize="12" />
-              <CheckBox Content="Не выходить в интернет (только локальные данные)" IsChecked="{Binding OfflineMode}" FontSize="12" />
+              <CheckBox Content="{DynamicResource LocMore6}" IsChecked="{Binding PrivacyMode}" FontSize="12" />
+              <CheckBox Content="{DynamicResource LocMore7}" IsChecked="{Binding OfflineMode}" FontSize="12" />
               <SelectableTextBlock Text="{Binding SaveMessage}" Classes="muted" FontSize="11" Foreground="{DynamicResource CleanBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="6" MinWidth="250">
-              <TextBlock Text="СОХРАНИТЬ ОТЧЁТ" Classes="overline" FontSize="9" />
+              <TextBlock Text="{DynamicResource LocMore8}" Classes="overline" FontSize="9" />
               <ComboBox ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedFormat}"
                         FontSize="12" Width="250">
                 <ComboBox.ItemTemplate>
@@ -153,7 +153,7 @@
               <StackPanel Grid.Column="1" Margin="20,18,20,18" Spacing="12">
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Grid.Column="0" Spacing="4">
-                    <TextBlock Text="ИТОГОВЫЙ ВЕРДИКТ" Classes="overline" />
+                    <TextBlock Text="{DynamicResource LocMore9}" Classes="overline" />
                     <SelectableTextBlock Classes="h1" Text="{Binding Verdict.Headline, FallbackValue='Проверка ещё не запускалась'}" />
                   </StackPanel>
                   <Border Grid.Column="1" CornerRadius="10" Padding="12,8" VerticalAlignment="Top"
@@ -177,15 +177,15 @@
 
                 <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="18" IsVisible="{Binding HasResult}">
                   <StackPanel Grid.Column="0" Spacing="2">
-                    <TextBlock Text="ВНЕШНИЙ IP" Classes="overline" />
+                    <TextBlock Text="{DynamicResource LocMore10}" Classes="overline" />
                     <SelectableTextBlock Text="{Binding Verdict.IpText}" Classes="mono" />
                   </StackPanel>
                   <StackPanel Grid.Column="1" Spacing="2">
-                    <TextBlock Text="ИСТОЧНИКОВ IP" Classes="overline" />
+                    <TextBlock Text="{DynamicResource LocMore11}" Classes="overline" />
                     <SelectableTextBlock Text="{Binding Verdict.ObservedCount}" Classes="mono" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="2">
-                    <TextBlock Text="ДЛИТЕЛЬНОСТЬ" Classes="overline" />
+                    <TextBlock Text="{DynamicResource LocMore12}" Classes="overline" />
                     <SelectableTextBlock Text="{Binding Verdict.DurationText}" Classes="mono" />
                   </StackPanel>
                 </Grid>
@@ -207,13 +207,13 @@
 
           <Border Grid.Column="1" Classes="card">
             <StackPanel Spacing="12">
-              <TextBlock Text="ЗАПУСК" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore13}" Classes="overline" />
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <Button Grid.Column="0" Classes="primary" Command="{Binding RunCommand}" HorizontalAlignment="Stretch">
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <Path Data="{x:Static local:Icons.Play}" Stretch="Uniform" Width="12" Height="12"
                           Fill="White" VerticalAlignment="Center" />
-                    <TextBlock Text="Запустить проверку" Foreground="White" FontWeight="SemiBold" />
+                    <TextBlock Text="{DynamicResource LocMore14}" Foreground="White" FontWeight="SemiBold" />
                   </StackPanel>
                 </Button>
                 <Button Grid.Column="1" Classes="danger" Command="{Binding CancelCommand}" Width="42" Padding="0,8">
@@ -234,12 +234,12 @@
 
               <Border Classes="inset">
                 <StackPanel Spacing="7">
-                  <CheckBox Content="Приватный режим (маскировать IP и MAC)" IsChecked="{Binding PrivacyMode}" FontSize="12" />
-                  <CheckBox Content="Офлайн-режим (только локальные данные)" IsChecked="{Binding OfflineMode}" FontSize="12" />
+                  <CheckBox Content="{DynamicResource LocMore15}" IsChecked="{Binding PrivacyMode}" FontSize="12" />
+                  <CheckBox Content="{DynamicResource LocMore16}" IsChecked="{Binding OfflineMode}" FontSize="12" />
                 </StackPanel>
               </Border>
 
-              <TextBlock Text="ОТЧЁТ" Classes="overline" FontSize="9" />
+              <TextBlock Text="{DynamicResource LocMore17}" Classes="overline" FontSize="9" />
               <ComboBox ItemsSource="{Binding ExportFormats}" SelectedItem="{Binding SelectedFormat}" FontSize="12"
                         HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
@@ -252,7 +252,7 @@
                 <Button Grid.Column="0" Classes="primary" Command="{Binding ExportReportCommand}"
                         IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="{DynamicResource LocExtra26}" FontSize="12" />
                 <Button Grid.Column="1" Classes="ghost" Command="{Binding CopySummaryCommand}"
-                        IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="Копировать" FontSize="12" />
+                        IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="{DynamicResource LocMore18}" FontSize="12" />
               </Grid>
 
               <SelectableTextBlock Text="{Binding LastRunText}" Classes="muted" FontSize="11" />
@@ -263,8 +263,8 @@
         </Grid>
 
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Grid.Column="0" Text="МОДУЛИ ПРОВЕРКИ" Classes="overline" VerticalAlignment="Center" />
-          <TextBlock Grid.Column="1" Text="нажмите «детали», чтобы раскрыть находки" Classes="muted" FontSize="11" />
+          <TextBlock Grid.Column="0" Text="{DynamicResource LocMore19}" Classes="overline" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1" Text="{DynamicResource LocMore20}" Classes="muted" FontSize="11" />
         </Grid>
 
         <ItemsControl ItemsSource="{Binding Cards}">
@@ -348,7 +348,7 @@
                     <SelectableTextBlock Grid.Column="1" Text="{Binding DurationText}" Classes="mono" FontSize="10"
                                Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <Button Grid.Column="2" Classes="ghost" Command="{Binding ToggleCommand}" Padding="8,3" FontSize="10.5">
-                      <TextBlock Text="детали" FontSize="10.5" />
+                      <TextBlock Text="{DynamicResource LocMore21}" FontSize="10.5" />
                     </Button>
                   </Grid>
                 </Grid>

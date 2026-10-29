@@ -14,7 +14,7 @@ public class PlainLanguageTests
         var explanation = PlainLanguage.ForVerdict(run.Verdict, run.Checks);
 
         Assert.Contains("обычно", explanation.Headline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("не в VPN", explanation.Advice);
+        Assert.Contains("не исключает VPN", explanation.Advice);
         Assert.DoesNotContain("Ошибка", explanation.WhatItMeans);
     }
 

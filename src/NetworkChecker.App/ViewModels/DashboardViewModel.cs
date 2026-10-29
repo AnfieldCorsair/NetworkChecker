@@ -3,6 +3,7 @@ using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using NetworkChecker.App.Localization;
 using NetworkChecker.App.Startup;
 using NetworkChecker.Core;
 using NetworkChecker.Core.Models;
@@ -16,7 +17,7 @@ namespace NetworkChecker.App.ViewModels;
 
 public sealed class MetricViewModel(Metric metric)
 {
-    public string Label { get; } = metric.Label;
+    public string Label { get; } = Localizer.T(metric.Label);
     public string Value { get; } = metric.Value;
     public string? Hint { get; } = metric.Hint;
     public bool HasHint => !string.IsNullOrWhiteSpace(Hint);
@@ -24,18 +25,18 @@ public sealed class MetricViewModel(Metric metric)
 
 public sealed class FindingViewModel(Finding finding)
 {
-    public string Title { get; } = finding.Title;
+    public string Title { get; } = Localizer.T(finding.Title);
     public string Detail { get; } = finding.Detail;
     public string? Evidence { get; } = finding.Evidence;
     public bool HasEvidence => !string.IsNullOrWhiteSpace(Evidence);
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
-    public string SeverityText => finding.Severity switch
+    public string SeverityText => Localizer.T(finding.Severity switch
     {
         Severity.Critical => "КРИТИЧНО",
         Severity.Warning => "ВНИМАНИЕ",
         Severity.Notice => "ЗАМЕТКА",
         _ => "ИНФО",
-    };
+    });
     public Avalonia.Media.IBrush SeverityBrush => Ui.Brush(SeverityColor);
 
     public string SeverityColor => finding.Severity switch
@@ -59,12 +60,12 @@ public sealed partial class CheckCardViewModel : ObservableObject
     }
 
     public CheckResult Result { get; }
-    public string Title => Result.Title;
-    public string Subtitle => Result.Subtitle;
-    public string StatusText => Result.StatusText;
+    public string Title => Localizer.T(Result.Title);
+    public string Subtitle => Localizer.T(Result.Subtitle);
+    public string StatusText => Localizer.T(Result.StatusText);
     public string DurationText => $"{Result.Duration.TotalSeconds:F1} с";
     public string FindingsCountText => Result.Findings.Count == 0
-        ? (Result.Status == CheckStatus.Skipped ? "не запускалась" : "находок нет")
+        ? (Result.Status == CheckStatus.Skipped ? Localizer.T("не запускалась") : Localizer.T("находок нет"))
         : $"находок: {Result.Findings.Count}";
     public ObservableCollection<MetricViewModel> Metrics { get; }
     public ObservableCollection<FindingViewModel> Findings { get; }
@@ -72,8 +73,8 @@ public sealed partial class CheckCardViewModel : ObservableObject
     public bool HasFindings => Findings.Count > 0;
     public bool ShowEmptyText => Findings.Count == 0;
     public string EmptyText => Result.Status == CheckStatus.Skipped
-        ? "Ещё не запускалась — нажмите «Запустить проверку»."
-        : "Находок нет: модуль не выявил сигналов.";
+        ? Localizer.T("Ещё не запускалась — нажмите «Запустить проверку».")
+        : Localizer.T("Находок нет: модуль не выявил сигналов.");
     public string? Error => Result.Error;
     public bool HasError => !string.IsNullOrWhiteSpace(Error);
 
@@ -103,11 +104,11 @@ public sealed class VerdictViewModel
 {
     public VerdictViewModel(VerdictResult verdict, IpConsensus consensus, TimeSpan duration)
     {
-        Headline = verdict.Headline;
+        Headline = Localizer.T(verdict.Headline);
         Summary = verdict.Summary;
         Score = verdict.Score;
         ScoreText = $"{verdict.Score} / 100";
-        LevelText = verdict.LevelText;
+        LevelText = Localizer.T(verdict.LevelText);
         Reasons = new ObservableCollection<string>(verdict.Reasons);
         HasReasons = Reasons.Count > 0;
         IpText = consensus.Summary;
@@ -166,9 +167,9 @@ public sealed class FactViewModel(PlainFact fact)
 /// <summary>Строка простого режима: модуль проверки человеческим языком.</summary>
 public sealed class PlainCheckViewModel(PlainCheck check)
 {
-    public string Title { get; } = check.Title;
-    public string WhatWeChecked { get; } = check.WhatWeChecked;
-    public string Status { get; } = check.Status;
+    public string Title { get; } = Localizer.T(check.Title);
+    public string WhatWeChecked { get; } = Localizer.T(check.WhatWeChecked);
+    public string Status { get; } = Localizer.T(check.Status);
     public string Advice { get; } = check.Advice;
     public bool HasAdvice => !string.IsNullOrWhiteSpace(Advice);
     public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(check.Colour switch
@@ -282,13 +283,13 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     public partial bool HasResult { get; set; }
 
     [ObservableProperty]
-    public partial string PlainHeadline { get; set; } = "Проверка ещё не запускалась";
+    public partial string PlainHeadline { get; set; } = Localizer.T("Проверка ещё не запускалась");
 
     [ObservableProperty]
     public partial string PlainMeaning { get; set; } = "Нажмите «Проверить компьютер» — приложение посмотрит настройки сети и объяснит простыми словами, всё ли обычно.";
 
     [ObservableProperty]
-    public partial string PlainAdvice { get; set; } = "Проверка занимает около 10 секунд и ничего не меняет в системе.";
+    public partial string PlainAdvice { get; set; } = Localizer.T("Проверка занимает около 10 секунд и ничего не меняет в системе.");
 
     [ObservableProperty]
     public partial string PlainConfiguration { get; set; } = string.Empty;
@@ -403,9 +404,22 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     private void UpdatePlainView(CheckRunResult result)
     {
         var explanation = PlainLanguage.ForVerdict(result.Verdict, result.Checks);
-        PlainHeadline = explanation.Headline;
+        PlainHeadline = Localizer.T(explanation.Headline);
         PlainMeaning = explanation.WhatItMeans;
         PlainAdvice = explanation.Advice;
+        if (Localizer.Culture == "en-US")
+        {
+            PlainMeaning = result.Verdict.Level switch
+            {
+                RiskLevel.Clean => "The checks found no indicators of a tunnel or proxy. This does not rule out a VPN.",
+                RiskLevel.NeedsReview => "Some observations need review, but they do not prove active bypass.",
+                RiskLevel.Detected => "Some indicators are consistent with a VPN or proxy; other explanations are possible.",
+                _ => "Insufficient data was collected for a conclusion.",
+            };
+            if (result.Checks.Any(c => c.Status is CheckStatus.Failed or CheckStatus.Skipped))
+                PlainMeaning += " Some checks were incomplete; review their individual statuses.";
+            PlainAdvice = "Open Detailed mode to inspect the findings and their limitations.";
+        }
         PlainConfiguration = PlainFacts.OverallConfiguration(result);
         PlainAccent = result.Verdict.Level switch
         {

@@ -48,7 +48,7 @@
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Grid.Column="0" Spacing="2">
                 <TextBlock Text="{DynamicResource LocExtra41}" Classes="overline" />
-                <TextBlock Text="IP и GeoIP — по ответу сервиса; язык и пояс — локальные настройки, не данные браузера" Classes="muted" FontSize="11.5" />
+                <TextBlock Text="{DynamicResource LocMore53}" Classes="muted" FontSize="11.5" />
               </StackPanel>
               <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center">
                 <SelectableTextBlock Text="{Binding IpText}" Classes="mono" FontSize="11" />
@@ -81,13 +81,13 @@
           <StackPanel Spacing="12">
             <StackPanel Spacing="2">
               <TextBlock Text="{DynamicResource LocExtra42}" Classes="overline" />
-              <TextBlock Text="Условная модель приложения, а не вывод конкретного сайта"
+              <TextBlock Text="{DynamicResource LocMore54}"
                          Classes="muted" FontSize="11.5" />
             </StackPanel>
 
-            <TextBlock Text="Ничего подозрительного: набор данных сходится." Classes="muted"
+            <TextBlock Text="{DynamicResource LocMore55}" Classes="muted"
                        IsVisible="{Binding ShowNoSignals}" />
-            <TextBlock Text="Нажмите «Посмотреть» — здесь появятся выводы, которые сделает сайт." Classes="muted"
+            <TextBlock Text="{DynamicResource LocMore56}" Classes="muted"
                        IsVisible="{Binding !HasReport}" />
 
             <ItemsControl ItemsSource="{Binding Signals}">
@@ -124,9 +124,9 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="{DynamicResource LocExtra44}" Classes="overline" />
-          <TextBlock Text="В HTTP-запросе нет списка установленных программ, локальных файлов, паролей или истории браузера. Сайт не получает их просто по IP-адресу." TextWrapping="Wrap" />
-          <TextBlock Text="Но с разрешения пользователя сайт может получить геолокацию, доступ к камере, микрофону или выбранным файлам. Браузерные скрипты могут узнать часовой пояс, размеры экрана и другие признаки отпечатка; cookies, вход в аккаунт и внешние базы дают дополнительные сведения." Classes="muted" TextWrapping="Wrap" />
-          <TextBlock Text="Этот экран не проверяет настройки или отпечаток вашего браузера: его язык и часовой пояс могут отличаться от системных." Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{DynamicResource LocMore57}" TextWrapping="Wrap" />
+          <TextBlock Text="{DynamicResource LocMore58}" Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{DynamicResource LocMore59}" Classes="muted" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
 
@@ -135,7 +135,7 @@
         <StackPanel Spacing="10">
           <StackPanel Spacing="2">
             <TextBlock Text="{DynamicResource LocExtra43}" Classes="overline" />
-            <TextBlock Text="Пример заголовков клиента; фактический запрос и адрес поставщика могут отличаться. Это не запрос браузера."
+            <TextBlock Text="{DynamicResource LocMore60}"
                        Classes="muted" FontSize="11.5" />
           </StackPanel>
 

@@ -1,7 +1,7 @@
 {
-  "id": "3855355d-8e22-4e77-ba19-5c274fad0d99",
-  "startedAt": "2026-10-29T21:31:34.9336307+00:00",
-  "finishedAt": "2026-10-29T21:31:37.1145802+00:00",
+  "id": "f545e90f-5811-4cfc-98b2-154562c12969",
+  "startedAt": "2026-10-29T21:54:24.0909259+00:00",
+  "finishedAt": "2026-10-29T21:54:26.6130864+00:00",
   "checks": [
     {
       "category": 0,
@@ -16,8 +16,8 @@
         }
       ],
       "metrics": [],
-      "startedAt": "2026-10-29T21:31:34.9337475+00:00",
-      "duration": "00:00:00.0000037",
+      "startedAt": "2026-10-29T21:54:24.0910744+00:00",
+      "duration": "00:00:00.0000045",
       "weight": 20,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -38,8 +38,8 @@
         }
       ],
       "metrics": [],
-      "startedAt": "2026-10-29T21:31:34.9340677+00:00",
-      "duration": "00:00:00.0000040",
+      "startedAt": "2026-10-29T21:54:24.0913591+00:00",
+      "duration": "00:00:00.0000041",
       "weight": 0,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -89,8 +89,8 @@
           "value": "0"
         }
       ],
-      "startedAt": "2026-10-29T21:31:34.9349564+00:00",
-      "duration": "00:00:00.0008480",
+      "startedAt": "2026-10-29T21:54:24.0922396+00:00",
+      "duration": "00:00:00.0008395",
       "weight": 30,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -132,8 +132,8 @@
           "hint": "только стандартные"
         }
       ],
-      "startedAt": "2026-10-29T21:31:34.9357748+00:00",
-      "duration": "00:00:00.0007628",
+      "startedAt": "2026-10-29T21:54:24.0930886+00:00",
+      "duration": "00:00:00.0008081",
       "weight": 20,
       "highestSeverity": 2,
       "criticalCount": 0,
@@ -164,8 +164,8 @@
           "hint": "не найдено"
         }
       ],
-      "startedAt": "2026-10-29T21:31:34.9585302+00:00",
-      "duration": "00:00:00.0227097",
+      "startedAt": "2026-10-29T21:54:24.1055351+00:00",
+      "duration": "00:00:00.0124162",
       "weight": 30,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -188,7 +188,7 @@
           "severity": 1,
           "title": "STUN-серверы видят разные порты",
           "detail": "Разные внешние порты для одного узла — симметричный NAT. Нормально для мобильных операторов, нетипично для домашнего Wi-Fi.",
-          "evidence": "stun.l.google.com:19302=38858, stun.cloudflare.com:3478=53376, stun.sipnet.ru:3478=55583"
+          "evidence": "stun.l.google.com:19302=58434, stun.cloudflare.com:3478=59428, stun.sipnet.ru:3478=38227"
         }
       ],
       "metrics": [
@@ -211,8 +211,8 @@
           "value": "доступен"
         }
       ],
-      "startedAt": "2026-10-29T21:31:35.2510256+00:00",
-      "duration": "00:00:00.3087384",
+      "startedAt": "2026-10-29T21:54:24.3698955+00:00",
+      "duration": "00:00:00.2762709",
       "weight": 10,
       "highestSeverity": 1,
       "criticalCount": 0,
@@ -233,8 +233,8 @@
         }
       ],
       "metrics": [],
-      "startedAt": "2026-10-29T21:31:34.9423335+00:00",
-      "duration": "00:00:00.0000022",
+      "startedAt": "2026-10-29T21:54:24.0936568+00:00",
+      "duration": "00:00:00.0000029",
       "weight": 5,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -261,8 +261,8 @@
           "hint": "example.com, ya.ru, discord.com, rutracker.org, linkedin.com, instagram.com"
         }
       ],
-      "startedAt": "2026-10-29T21:31:35.3594172+00:00",
-      "duration": "00:00:00.4170518",
+      "startedAt": "2026-10-29T21:54:24.530969+00:00",
+      "duration": "00:00:00.4372911",
       "weight": 10,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -290,12 +290,12 @@
         },
         {
           "label": "Иностранные медиана",
-          "value": "0 мс",
+          "value": "1 мс",
           "hint": "1.1.1.1, 8.8.8.8, 9.9.9.9, cloudflare.com"
         },
         {
           "label": "Разница",
-          "value": "+2 мс",
+          "value": "+1 мс",
           "hint": "RU минус иностранные"
         },
         {
@@ -308,8 +308,8 @@
           "hint": "ICMP заблокирован, часть замеров сделана по TCP :443"
         }
       ],
-      "startedAt": "2026-10-29T21:31:37.113753+00:00",
-      "duration": "00:00:02.1713519",
+      "startedAt": "2026-10-29T21:54:26.6119235+00:00",
+      "duration": "00:00:02.5181844",
       "weight": 15,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -347,8 +347,8 @@
           "value": "0 мс"
         }
       ],
-      "startedAt": "2026-10-29T21:31:34.9796824+00:00",
-      "duration": "00:00:00.0372484",
+      "startedAt": "2026-10-29T21:54:24.1306955+00:00",
+      "duration": "00:00:00.0369103",
       "weight": 10,
       "highestSeverity": 0,
       "criticalCount": 0,
@@ -481,5 +481,5 @@
     "privacyMode": false,
     "isElevated": false
   },
-  "duration": "00:00:02.1809495"
+  "duration": "00:00:02.5221605"
 }

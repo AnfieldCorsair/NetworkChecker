@@ -166,6 +166,14 @@ internal static class Program
         Pump(8);
         Save(window, Path.Combine(output, "13-observation.png"));
 
+        // Только для демонстрации: идентификаторы вымышлены, реального WFP на Linux нет.
+        var observation = host.Services.GetRequiredService<ObservationViewModel>();
+        observation.Status = "ДЕМО — данные вымышлены";
+        observation.SnapshotStatus = "ДЕМО: пример фильтра callout";
+        observation.Filters.Add(new WfpFilterRow("CALLOUT_INSPECTION", "11111111-2222-3333-4444-555555555555", "11111111-2222-3333-4444-666666666666", "—", "11111111-2222-3333-4444-777777777777", "не помечен отключённым"));
+        Pump(8);
+        Save(window, Path.Combine(output, "13b-observation-demo.png"));
+
         // 12. Демонстрационные отчёты во всех форматах — чтобы формат можно было посмотреть глазами.
         var lastRun = dashboard.LastResult;
         if (lastRun is not null)

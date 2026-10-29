@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using NetworkChecker.App.Localization;
 using NetworkChecker.Core.SiteView;
 
 namespace NetworkChecker.App.ViewModels;
@@ -10,8 +11,8 @@ namespace NetworkChecker.App.ViewModels;
 /// <summary>Строка визитной карточки: подпись, значение, пояснение и цветной маркер.</summary>
 public sealed class SiteRowViewModel(SiteViewRow row)
 {
-    public string Label { get; } = row.Label;
-    public string Value { get; } = row.Value;
+    public string Label { get; } = Localizer.T(row.Label);
+    public string Value { get; } = Localizer.T(row.Value);
     public string Hint { get; } = row.Hint ?? string.Empty;
     public bool HasHint { get; } = !string.IsNullOrWhiteSpace(row.Hint);
     public string Tone { get; } = ToneKey(row.Tone);
@@ -103,7 +104,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
     public bool ShowNoSignals => HasReport && !HasSignals;
 
     [ObservableProperty]
-    public partial string Headline { get; set; } = "Ещё не смотрели";
+    public partial string Headline { get; set; } = Localizer.T("Ещё не смотрели");
 
     [ObservableProperty]
     public partial string Summary { get; set; } = "Нажмите «Посмотреть», и приложение покажет, что о вас узнаёт сайт с первого запроса.";
@@ -112,7 +113,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
     public partial string ExposureText { get; set; } = "—";
 
     [ObservableProperty]
-    public partial string IpText { get; set; } = "адрес ещё не получен";
+    public partial string IpText { get; set; } = Localizer.T("адрес ещё не получен");
 
     [ObservableProperty]
     public partial Avalonia.Media.IBrush AccentBrush { get; set; } = Ui.Brush("#5C7A99");
@@ -202,7 +203,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
         foreach (var header in report.Request.Headers) Headers.Add(new HeaderRowViewModel(header.Key, header.Value));
         RequestLine = report.Request.Line;
 
-        Headline = report.Headline;
+        Headline = Localizer.T(report.Headline);
         Summary = report.Summary;
         ExposureText = report.HasGeo ? report.Exposure.ToString(CultureInfo.InvariantCulture) : "—";
         IpText = report.HasGeo ? report.Ip! : "адрес ещё не получен";

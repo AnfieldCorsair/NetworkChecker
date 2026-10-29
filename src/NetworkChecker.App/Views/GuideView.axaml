@@ -9,7 +9,7 @@
 
       <Border Classes="card" Padding="16">
         <StackPanel Spacing="6">
-          <TextBlock Text="ЗАЧЕМ ЭТА ВКЛАДКА" Classes="overline" />
+          <TextBlock Text="{DynamicResource LocMore61}" Classes="overline" />
           <TextBlock MaxWidth="980" Foreground="{DynamicResource TextMuted}">
             Здесь описано, что именно делает каждый модуль: какие данные читаются, как считается сигнал и что
             означает результат. Проект вдохновлён похожим Android-приложением RKNHardering (https://github.com/xtclovver/RKNHardering), не является его форком. На ПК вместо

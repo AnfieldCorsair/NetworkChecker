@@ -43,9 +43,9 @@
           <Grid ColumnDefinitions="6,*">
             <Border Grid.Column="0" CornerRadius="12,0,0,12" Background="{Binding SimpleToneBrush}" />
             <StackPanel Grid.Column="1" Margin="20,18" Spacing="10">
-              <TextBlock Text="СОСТОЯНИЕ СЕТИ" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore22}" Classes="overline" />
               <SelectableTextBlock Text="{Binding SimpleSummary}" Classes="h1" FontSize="22" />
-              <TextBlock Text="Здесь только понятные факты. Полную картину — маршруты, адаптеры, MTU, трассировку — смотрите в режиме «Подробно»."
+              <TextBlock Text="{DynamicResource LocMore23}"
                          Classes="muted" MaxWidth="780" HorizontalAlignment="Left" />
               <Button Classes="primary" Command="{Binding RefreshOverviewCommand}" HorizontalAlignment="Left" Padding="16,9">
                 <StackPanel Orientation="Horizontal" Spacing="7">
@@ -90,28 +90,28 @@
         <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
           <Border Grid.Column="0" Classes="card" Padding="16">
             <StackPanel Spacing="4">
-              <TextBlock Text="ВНЕШНИЙ IP" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore10}" Classes="overline" />
               <SelectableTextBlock Text="{Binding ExternalIp}" FontSize="19" FontWeight="SemiBold" Classes="mono" />
               <SelectableTextBlock Text="{Binding ExternalDetails}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
             </StackPanel>
           </Border>
           <Border Grid.Column="1" Classes="card" Padding="16">
             <StackPanel Spacing="4">
-              <TextBlock Text="UDP-ВЫХОД (STUN)" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore24}" Classes="overline" />
               <SelectableTextBlock Text="{Binding StunText}" FontSize="19" FontWeight="SemiBold" Classes="mono" />
-              <TextBlock Text="адрес, который видит NAT" Classes="muted" FontSize="10.5" />
+              <TextBlock Text="{DynamicResource LocMore25}" Classes="muted" FontSize="10.5" />
             </StackPanel>
           </Border>
           <Border Grid.Column="2" Classes="card" Padding="16">
             <StackPanel Spacing="4">
-              <TextBlock Text="ПРОКСИ СИСТЕМЫ" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore26}" Classes="overline" />
               <SelectableTextBlock Text="{Binding ProxyText}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
-              <TextBlock Text="WinINET + переменные окружения" Classes="muted" FontSize="10.5" />
+              <TextBlock Text="{DynamicResource LocMore27}" Classes="muted" FontSize="10.5" />
             </StackPanel>
           </Border>
           <Border Grid.Column="3" Classes="card" Padding="16">
             <StackPanel Spacing="4">
-              <TextBlock Text="АДАПТЕРЫ / MTU" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore28}" Classes="overline" />
               <SelectableTextBlock Text="{Binding AdaptersCountText}" FontSize="19" FontWeight="SemiBold" />
               <SelectableTextBlock Text="{Binding MtuText, StringFormat='MTU основного: {0}'}" Classes="muted" FontSize="10.5" />
             </StackPanel>
@@ -123,7 +123,7 @@
           <Border Grid.Column="0" Classes="card">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0" Text="ПАРАМЕТРЫ" Classes="overline" />
+                <TextBlock Grid.Column="0" Text="{DynamicResource LocMore29}" Classes="overline" />
                 <SelectableTextBlock Grid.Column="1" Text="{Binding OverviewRefreshed}" Classes="muted" FontSize="10.5" />
               </Grid>
               <ItemsControl ItemsSource="{Binding Overview}">
@@ -145,12 +145,12 @@
           <!-- Маршруты -->
           <Border Grid.Column="1" Classes="card">
             <StackPanel Spacing="10">
-              <TextBlock Text="МАРШРУТЫ" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore30}" Classes="overline" />
               <Grid ColumnDefinitions="112,120,*,52">
-                <TextBlock Grid.Column="0" Text="Назначение" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="1" Text="Шлюз" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="2" Text="Интерфейс" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="3" Text="Метр." Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="0" Text="{DynamicResource LocMore31}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="1" Text="{DynamicResource LocMore32}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="2" Text="{DynamicResource LocMore33}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="3" Text="{DynamicResource LocMore34}" Classes="muted" FontSize="10.5" />
               </Grid>
               <ItemsControl ItemsSource="{Binding DefaultRoutes}">
                 <ItemsControl.ItemTemplate>
@@ -173,15 +173,15 @@
         <!-- Адаптеры -->
         <Border Classes="card">
           <StackPanel Spacing="10">
-            <TextBlock Text="СЕТЕВЫЕ ИНТЕРФЕЙСЫ" Classes="overline" />
+            <TextBlock Text="{DynamicResource LocMore35}" Classes="overline" />
             <Grid ColumnDefinitions="150,80,150,130,44,150,1.4*">
-              <TextBlock Grid.Column="0" Text="Имя" Classes="muted" FontSize="10.5" />
-              <TextBlock Grid.Column="1" Text="Тип" Classes="muted" FontSize="10.5" />
-              <TextBlock Grid.Column="2" Text="Адрес" Classes="muted" FontSize="10.5" />
-              <TextBlock Grid.Column="3" Text="Шлюз" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="0" Text="{DynamicResource LocMore36}" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource LocMore37}" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="2" Text="{DynamicResource LocMore38}" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="3" Text="{DynamicResource LocMore32}" Classes="muted" FontSize="10.5" />
               <TextBlock Grid.Column="4" Text="MTU" Classes="muted" FontSize="10.5" />
               <TextBlock Grid.Column="5" Text="DNS" Classes="muted" FontSize="10.5" />
-              <TextBlock Grid.Column="6" Text="Описание" Classes="muted" FontSize="10.5" />
+              <TextBlock Grid.Column="6" Text="{DynamicResource LocMore39}" Classes="muted" FontSize="10.5" />
             </Grid>
             <ItemsControl ItemsSource="{Binding Adapters}">
               <ItemsControl.ItemTemplate>
@@ -217,17 +217,17 @@
           <Border Grid.Column="0" Classes="card">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Grid.Column="0" Text="ЗАДЕРЖКИ И ПОТЕРИ" Classes="overline" />
+                <TextBlock Grid.Column="0" Text="{DynamicResource LocMore40}" Classes="overline" />
                 <SelectableTextBlock Grid.Column="1" Text="{Binding DiagnosticsRefreshed}" Classes="muted" FontSize="10.5" />
               </Grid>
               <Grid ColumnDefinitions="1.2*,1.2*,80,70,60,60,70">
-                <TextBlock Grid.Column="0" Text="Хост" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="1" Text="Адрес" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="2" Text="Медиана" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="0" Text="{DynamicResource LocMore41}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="1" Text="{DynamicResource LocMore38}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="2" Text="{DynamicResource LocMore42}" Classes="muted" FontSize="10.5" />
                 <TextBlock Grid.Column="3" Text="Jitter" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="4" Text="Потери" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="5" Text="Метод" Classes="muted" FontSize="10.5" />
-                <TextBlock Grid.Column="6" Text="Статус" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="4" Text="{DynamicResource LocMore43}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="5" Text="{DynamicResource LocMore44}" Classes="muted" FontSize="10.5" />
+                <TextBlock Grid.Column="6" Text="{DynamicResource LocMore45}" Classes="muted" FontSize="10.5" />
               </Grid>
               <ItemsControl ItemsSource="{Binding Latency}">
                 <ItemsControl.ItemTemplate>
@@ -249,7 +249,7 @@
               </ItemsControl>
 
               <Border Height="1" Background="{DynamicResource BorderBrush2}" Margin="0,4" />
-              <TextBlock Text="MTU ПУТИ (ICMP DF)" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocMore46}" Classes="overline" />
               <ItemsControl ItemsSource="{Binding Mtu}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="ni:MtuProbe">
@@ -257,7 +257,7 @@
                       <SelectableTextBlock Grid.Column="0" Text="{Binding Target}" FontSize="11.5" />
                       <SelectableTextBlock Grid.Column="1" Text="{Binding ResultText}" Classes="mono" FontSize="11" Margin="0,0,10,0" />
                       <Border Grid.Column="2" Classes="chip" IsVisible="{Binding Suspicious}">
-                        <TextBlock Text="нетипично" FontSize="9.5" Foreground="{DynamicResource NoticeBrush}" />
+                        <TextBlock Text="{DynamicResource LocMore47}" FontSize="9.5" Foreground="{DynamicResource NoticeBrush}" />
                       </Border>
                     </Grid>
                   </DataTemplate>
@@ -269,12 +269,12 @@
           <StackPanel Grid.Column="1" Spacing="16">
             <Border Classes="card">
               <StackPanel Spacing="10">
-                <TextBlock Text="DNS-РЕЗОЛВЕРЫ" Classes="overline" />
+                <TextBlock Text="{DynamicResource LocMore48}" Classes="overline" />
                 <Grid ColumnDefinitions="1.3*,1*,90,60">
-                  <TextBlock Grid.Column="0" Text="Сервер" Classes="muted" FontSize="10.5" />
-                  <TextBlock Grid.Column="1" Text="Ответ" Classes="muted" FontSize="10.5" />
-                  <TextBlock Grid.Column="2" Text="Время" Classes="muted" FontSize="10.5" />
-                  <TextBlock Grid.Column="3" Text="Статус" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="0" Text="{DynamicResource LocMore49}" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="1" Text="{DynamicResource LocMore50}" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="2" Text="{DynamicResource LocMore51}" Classes="muted" FontSize="10.5" />
+                  <TextBlock Grid.Column="3" Text="{DynamicResource LocMore45}" Classes="muted" FontSize="10.5" />
                 </Grid>
                 <ItemsControl ItemsSource="{Binding Dns}">
                   <ItemsControl.ItemTemplate>
@@ -295,7 +295,7 @@
 
             <Border Classes="card">
               <StackPanel Spacing="10">
-                <TextBlock Text="TLS-СЕРТИФИКАТЫ" Classes="overline" />
+                <TextBlock Text="{DynamicResource LocMore52}" Classes="overline" />
                 <ItemsControl ItemsSource="{Binding Tls}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="ni:TlsProbe">

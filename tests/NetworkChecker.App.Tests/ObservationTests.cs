@@ -74,6 +74,39 @@ public class ObservationTests
         }
     }
 
+    [Fact]
+    public void Native_filter_prefix_action_offset_matches_windows_abi()
+    {
+        var native = typeof(WindowsObservationService).GetNestedType("Native", System.Reflection.BindingFlags.NonPublic)!;
+        var prefix = native.GetNestedType("FilterPrefix", System.Reflection.BindingFlags.NonPublic)!;
+        Assert.Equal(IntPtr.Size == 8 ? 128 : 88, (int)System.Runtime.InteropServices.Marshal.OffsetOf(prefix, "Action"));
+    }
+
+    [AvaloniaFact]
+    public async Task Snapshot_survives_subscribe_failure_and_shows_callout_details()
+    {
+        var vm = new ObservationViewModel(new SnapshotFake()) { Consented = true };
+        await vm.StartCommand.ExecuteAsync(null);
+        Assert.Single(vm.Filters);
+        Assert.Equal("CALLOUT_INSPECTION", vm.Filters[0].Action);
+        Assert.Contains("250", vm.SnapshotStatus);
+        Assert.Contains("ограничен", vm.SnapshotStatus);
+        Assert.Contains("denied", vm.WfpStatus);
+    }
+
+    private sealed class SnapshotFake : IObservationService
+    {
+        public Task<ObservationReport> ObserveAsync(TimeSpan duration, CancellationToken cancellationToken)
+        {
+            var filter = new WfpFilterRecord(Guid.NewGuid(), Guid.NewGuid(), null, "CALLOUT_INSPECTION", false, Guid.NewGuid());
+            var wfp = new ObservationPart("WFP", false, "denied", [], 0)
+            {
+                Snapshot = new WfpSnapshot([filter], 250, 1, true, null),
+            };
+            return Task.FromResult(new ObservationReport(wfp, new ObservationPart("ETW", true, "ok", [], 0)));
+        }
+    }
+
     private sealed class PartialFake : IObservationService
     {
         public Task<ObservationReport> ObserveAsync(TimeSpan duration, CancellationToken cancellationToken) => Task.FromResult(

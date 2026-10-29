@@ -19,8 +19,8 @@ public sealed class WindowsObservationService : IObservationService
         }
 
         duration = TimeSpan.FromSeconds(Math.Clamp(duration.TotalSeconds, 1, 60));
-        var wfp = ObserveWfpAsync(duration, cancellationToken);
-        var etw = ObserveEtwAsync(duration, cancellationToken);
+        var wfp = Task.Run(() => ObserveWfpAsync(duration, cancellationToken), CancellationToken.None);
+        var etw = Task.Run(() => ObserveEtwAsync(duration, cancellationToken), CancellationToken.None);
         return new ObservationReport(await wfp.ConfigureAwait(false), await etw.ConfigureAwait(false));
     }
 
@@ -29,6 +29,7 @@ public sealed class WindowsObservationService : IObservationService
         var buffer = new ObservationBuffer(250);
         IntPtr engine = IntPtr.Zero, subscription = IntPtr.Zero;
         Native.FilterCallback? callback = null;
+        WfpSnapshot? snapshot = null;
         try
         {
             Check(Native.EngineOpen(null, 10, IntPtr.Zero, IntPtr.Zero, out engine), "FwpmEngineOpen0");
@@ -43,20 +44,27 @@ public sealed class WindowsObservationService : IObservationService
                 catch { /* Нельзя допустить исключение через границу native callback. */ }
             };
             var options = new Native.FilterSubscription { Flags = 3 };
-            Check(Native.Subscribe(engine, ref options, callback, IntPtr.Zero, out subscription), "FwpmFilterSubscribeChanges0");
-            await Task.Delay(duration, ct).ConfigureAwait(false);
+            string? subscriptionError = null;
+            try { Check(Native.Subscribe(engine, ref options, callback, IntPtr.Zero, out subscription), "FwpmFilterSubscribeChanges0"); }
+            catch (InvalidOperationException ex) { subscriptionError = ex.Message; }
+            var observationStarted = System.Diagnostics.Stopwatch.StartNew();
+            snapshot = ReadWfpSnapshot(engine, ct);
+            if (subscriptionError is not null)
+                return new ObservationPart("WFP", false, subscriptionError, [], 0) { Snapshot = snapshot };
+            var remaining = duration - observationStarted.Elapsed;
+            if (remaining > TimeSpan.Zero) await Task.Delay(remaining, ct).ConfigureAwait(false);
             var result = buffer.Snapshot();
-            return new ObservationPart("WFP", true, "Подписка выполнена; показаны изменения во время наблюдения, не полный список фильтров.", result.Events, result.Dropped);
+            return new ObservationPart("WFP", true, "Подписка выполнена; изменения видны только во время наблюдения.", result.Events, result.Dropped) { Snapshot = snapshot };
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             var result = buffer.Snapshot();
-            return new ObservationPart("WFP", true, "Наблюдение остановлено пользователем.", result.Events, result.Dropped);
+            return new ObservationPart("WFP", true, "Наблюдение остановлено пользователем.", result.Events, result.Dropped) { Snapshot = snapshot };
         }
         catch (Exception ex)
         {
             var result = buffer.Snapshot();
-            return new ObservationPart("WFP", false, ex.GetBaseException().Message, result.Events, result.Dropped);
+            return new ObservationPart("WFP", false, ex.GetBaseException().Message, result.Events, result.Dropped) { Snapshot = snapshot };
         }
         finally
         {
@@ -65,6 +73,66 @@ public sealed class WindowsObservationService : IObservationService
             GC.KeepAlive(callback);
         }
     }
+
+    // Один ограниченный снимок после подписки; это не периодический опрос.
+    private static WfpSnapshot ReadWfpSnapshot(IntPtr engine, CancellationToken ct)
+    {
+        const int maxScanned = 10000, maxShown = 250, pageSize = 256;
+        var filters = new List<WfpFilterRecord>();
+        var callouts = new List<WfpFilterRecord>();
+        var calloutCount = 0;
+        IntPtr enumerator = IntPtr.Zero;
+        var scanned = 0;
+        var truncated = false;
+        try
+        {
+            Check(Native.CreateEnum(engine, IntPtr.Zero, out enumerator), "FwpmFilterCreateEnumHandle0");
+            while (scanned < maxScanned)
+            {
+                ct.ThrowIfCancellationRequested();
+                var entries = IntPtr.Zero;
+                try
+                {
+                    var request = (uint)Math.Min(pageSize, maxScanned - scanned);
+                    Check(Native.EnumFilters(engine, enumerator, request, out entries, out var count), "FwpmFilterEnum0");
+                    for (var i = 0; i < count; i++)
+                    {
+                        var pointer = Marshal.ReadIntPtr(entries, checked((int)i * IntPtr.Size));
+                        var item = Marshal.PtrToStructure<Native.FilterPrefix>(pointer);
+                        var callout = (item.Action.Type & 0x4000) != 0;
+                        if (callout) calloutCount++;
+                        var target = callout ? callouts : filters;
+                        if (target.Count < maxShown)
+                        {
+                            Guid? provider = item.Provider == IntPtr.Zero ? null : Marshal.PtrToStructure<Guid>(item.Provider);
+                            target.Add(new WfpFilterRecord(item.Key, item.Layer, provider,
+                                ActionName(item.Action.Type), (item.Flags & 0x20) != 0, callout ? item.Action.Key : null));
+                        }
+                        scanned++;
+                        if (scanned > maxShown) truncated = true;
+                    }
+                    if (count < request) break;
+                    if (scanned >= maxScanned) truncated = true;
+                }
+                finally { if (entries != IntPtr.Zero) Native.FreeMemory(ref entries); }
+            }
+            return new WfpSnapshot([.. callouts.Concat(filters).Take(maxShown)], scanned, calloutCount, truncated, null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) { return new WfpSnapshot([.. callouts.Concat(filters).Take(maxShown)], scanned, calloutCount, true, ex.GetBaseException().Message); }
+        finally { if (enumerator != IntPtr.Zero) _ = Native.DestroyEnum(engine, enumerator); }
+    }
+
+    private static string ActionName(uint action) => action switch
+    {
+        0x1001 => "BLOCK",
+        0x1002 => "PERMIT",
+        0x5003 => "CALLOUT_TERMINATING",
+        0x6004 => "CALLOUT_INSPECTION",
+        0x4005 => "CALLOUT_UNKNOWN",
+        0x2006 => "CONTINUE",
+        _ => "0x" + action.ToString("X8", CultureInfo.InvariantCulture),
+    };
 
     private static async Task<ObservationPart> ObserveEtwAsync(TimeSpan duration, CancellationToken ct)
     {
@@ -121,6 +189,22 @@ public sealed class WindowsObservationService : IObservationService
         internal struct FilterSubscription { public IntPtr Template; public uint Flags; public Guid SessionKey; }
         [StructLayout(LayoutKind.Sequential)]
         internal struct FilterChange { public uint Type; public Guid Key; public ulong Id; }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct DisplayData { public IntPtr Name; public IntPtr Description; }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Blob { public uint Size; public IntPtr Data; }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Value { public uint Type; public IntPtr ValuePointer; }
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct Action { public uint Type; public Guid Key; }
+        // Префикс FWPM_FILTER0 до action включительно; остальную часть не читаем.
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct FilterPrefix
+        {
+            public Guid Key; public DisplayData Display; public uint Flags; public IntPtr Provider;
+            public Blob ProviderData; public Guid Layer; public Guid SubLayer; public Value Weight;
+            public uint ConditionCount; public IntPtr Conditions; public Action Action;
+        }
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]
         internal delegate void FilterCallback(IntPtr context, IntPtr change);
 
@@ -129,6 +213,14 @@ public sealed class WindowsObservationService : IObservationService
         internal static extern uint EngineOpen(string? server, uint auth, IntPtr identity, IntPtr session, out IntPtr engine);
         [DllImport("fwpuclnt.dll", EntryPoint = "FwpmEngineClose0")]
         internal static extern uint EngineClose(IntPtr engine);
+        [DllImport("fwpuclnt.dll", EntryPoint = "FwpmFilterCreateEnumHandle0")]
+        internal static extern uint CreateEnum(IntPtr engine, IntPtr template, out IntPtr handle);
+        [DllImport("fwpuclnt.dll", EntryPoint = "FwpmFilterEnum0")]
+        internal static extern uint EnumFilters(IntPtr engine, IntPtr handle, uint requested, out IntPtr entries, out uint returned);
+        [DllImport("fwpuclnt.dll", EntryPoint = "FwpmFilterDestroyEnumHandle0")]
+        internal static extern uint DestroyEnum(IntPtr engine, IntPtr handle);
+        [DllImport("fwpuclnt.dll", EntryPoint = "FwpmFreeMemory0")]
+        internal static extern void FreeMemory(ref IntPtr memory);
         [DllImport("fwpuclnt.dll", EntryPoint = "FwpmFilterSubscribeChanges0")]
         internal static extern uint Subscribe(IntPtr engine, ref FilterSubscription subscription, FilterCallback callback, IntPtr context, out IntPtr handle);
         [DllImport("fwpuclnt.dll", EntryPoint = "FwpmFilterUnsubscribeChanges0")]

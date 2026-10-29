@@ -334,6 +334,8 @@ public class LocalizationTests
 {
     [Theory]
     [InlineData("Сеть", "en-US", "Network")]
+    [InlineData("Прямые признаки", "en-US", "Direct indicators")]
+    [InlineData("Чисто", "en-US", "Clean")]
     [InlineData("Сеть", "ru-RU", "Сеть")]
     [InlineData("неизвестная строка", "en-US", "неизвестная строка")]
     [InlineData("Сеть", null, "Сеть")]

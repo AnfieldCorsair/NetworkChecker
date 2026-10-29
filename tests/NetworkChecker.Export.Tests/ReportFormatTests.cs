@@ -52,9 +52,9 @@ public class ReportFormatTests
     // ------------------------------------------------------------------ ZIP-форматы
 
     [Theory]
-    [InlineData(ReportFormat.Docx, "word/document.xml", "Обнаружен активный обход")]
+    [InlineData(ReportFormat.Docx, "word/document.xml", "Обнаружены признаки возможного обхода")]
     [InlineData(ReportFormat.Xlsx, "xl/workbook.xml", "Итог")]
-    [InlineData(ReportFormat.Xlsx, "xl/sharedStrings.xml", "Обнаружен активный обход")]
+    [InlineData(ReportFormat.Xlsx, "xl/sharedStrings.xml", "Обнаружены признаки возможного обхода")]
     public void OpenXml_formats_are_valid_archives(ReportFormat format, string entryPath, string expectedText)
     {
         var file = ReportExporter.Build(format, Rich);
