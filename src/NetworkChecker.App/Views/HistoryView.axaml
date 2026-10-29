@@ -1,0 +1,130 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels"
+             x:Class="NetworkChecker.App.Views.HistoryView"
+             x:DataType="vm:HistoryViewModel">
+
+  <Grid ColumnDefinitions="392,*" Margin="24,18,24,24">
+
+    <!-- Список прогонов -->
+    <Border Grid.Column="0" Classes="card" Padding="14">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+          <TextBlock Grid.Column="0" Text="ПРОГОНЫ" Classes="overline" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+            <Button Classes="ghost" Command="{Binding RefreshCommand}" FontSize="11" Padding="9,4" Content="Обновить" />
+            <Button Classes="danger" Command="{Binding ClearCommand}" FontSize="11" Padding="9,4" Content="Очистить" />
+          </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1">
+          <ListBox ItemsSource="{Binding Runs}" SelectedItem="{Binding Selected}"
+                   Background="Transparent" BorderThickness="0" Padding="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:HistoryRowViewModel">
+                <Grid ColumnDefinitions="3,*,Auto" Margin="0,4">
+                  <Border Grid.Column="0" Width="3" CornerRadius="2" Background="{Binding ColorBrush}" />
+                  <StackPanel Grid.Column="1" Margin="10,2,0,2" Spacing="2">
+                    <SelectableTextBlock Text="{Binding Headline}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <SelectableTextBlock Text="{Binding When}" Classes="muted" FontSize="10.5" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
+                    <SelectableTextBlock Text="{Binding ScoreText}" Classes="mono" FontSize="11" HorizontalAlignment="Right"
+                               Foreground="{Binding ColorBrush}" />
+                    <SelectableTextBlock Text="{Binding IpText}" Classes="mono" FontSize="9.5" HorizontalAlignment="Right"
+                               Foreground="{DynamicResource TextMuted}" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+
+        <SelectableTextBlock Grid.Row="2" Text="{Binding Status}" Classes="muted" FontSize="10.5" Margin="0,10,0,0" />
+      </Grid>
+    </Border>
+
+    <!-- Детали -->
+    <Border Grid.Column="1" Classes="card" Margin="16,0,0,0">
+      <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+          <StackPanel Grid.Column="0" Spacing="4">
+            <TextBlock Text="ДЕТАЛИ ПРОГОНА" Classes="overline" />
+            <SelectableTextBlock Text="{Binding DetailHeadline}" Classes="h2" />
+            <SelectableTextBlock Text="{Binding DetailSummary}" Classes="muted" IsVisible="{Binding HasDetail}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
+            <Button Classes="ghost" Command="{Binding CompareWithPreviousCommand}" FontSize="11" Padding="10,5"
+                    Content="Сравнить с предыдущим" IsVisible="{Binding HasDetail}" />
+          </StackPanel>
+        </Grid>
+
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding DetailReasons}" Margin="0,6,0,0">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Grid ColumnDefinitions="Auto,*" Margin="0,1">
+                <Ellipse Grid.Column="0" Width="4" Height="4" Fill="{DynamicResource NoticeBrush}"
+                         VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBlock Grid.Column="1" Text="{Binding}" Classes="muted" FontSize="11.5" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border Grid.Row="2" Classes="inset" Margin="0,12,0,0" Padding="14,12"
+                IsVisible="{Binding HasComparison}">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="СРАВНЕНИЕ С ПРЕДЫДУЩИМ ПРОГОНОМ" Classes="overline" />
+                <SelectableTextBlock Text="{Binding ComparisonHeadline}" FontSize="15" FontWeight="SemiBold" />
+                <SelectableTextBlock Text="{Binding ComparisonSummary}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="ghost" Command="{Binding CloseComparisonCommand}"
+                      FontSize="11" Padding="9,4" Content="Скрыть" VerticalAlignment="Top" />
+            </Grid>
+            <ItemsControl ItemsSource="{Binding ComparisonRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ComparisonRowViewModel">
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,2">
+                    <SelectableTextBlock Grid.Column="0" Text="{Binding Title}" FontSize="11.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    <SelectableTextBlock Grid.Column="1" Text="{Binding BeforeText}" Classes="muted" FontSize="11" Margin="8,0" />
+                    <TextBlock Grid.Column="2" Text="→" Classes="muted" FontSize="11" />
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
+                      <SelectableTextBlock Text="{Binding AfterText}" FontSize="11" />
+                      <SelectableTextBlock Text="{Binding DirectionText}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{Binding DirectionBrush}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="3" Margin="0,12,0,0">
+          <ItemsControl ItemsSource="{Binding DetailChecks}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CheckCardViewModel">
+                <Border Classes="inset" Margin="0,0,0,8" Padding="12,10">
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                    <Border Grid.Column="0" Width="3" Height="26" CornerRadius="2" Background="{Binding StatusBrush}"
+                            Margin="0,0,10,0" />
+                    <StackPanel Grid.Column="1" Spacing="1">
+                      <SelectableTextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" />
+                      <SelectableTextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="10.5" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                    </StackPanel>
+                    <SelectableTextBlock Grid.Column="2" Text="{Binding FindingsCountText}" Classes="muted" FontSize="10.5"
+                               VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <SelectableTextBlock Grid.Column="3" Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{Binding StatusBrush}" VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

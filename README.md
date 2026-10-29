@@ -1,4 +1,4 @@
-# RKNHardering PC
+# NetworkChecker
 
 Приложение для Windows, которое проверяет компьютер по методике РКН: ищет признаки включённого VPN, системного прокси, туннелей и локальных клиентов обхода, а также показывает подробную картину сети.
 
@@ -24,6 +24,7 @@
 | Ответ | крупный вердикт человеческим языком + «что делать» | счёт 0–100, причины, наблюдения IP-консенсуса |
 | Модули | карточки «что проверяли» со статусом словами | полный список с метриками, находками и доказательствами |
 | Сеть | полоса тона + 6 фактов (соединение, VPN/туннель, прокси, адрес выхода, DNS, MTU) | адаптеры, маршруты, NRPT, диагностика, трассировка |
+| Глазами сайта | итог словами + список того, что узнаёт сайт | плюс пример заголовков клиента |
 | Настройки | базовое | плюс списки целей: провайдеры GeoIP, домены, STUN, порты |
 
 ## Экспорт отчёта
@@ -38,10 +39,32 @@
 | **CSV** | плоская таблица для своих сводных и скриптов |
 | **Markdown** | отчёт для тикета, wiki или git-репозитория |
 | **JSON** | полный машинный дамп прогона (для автоматизации и сравнения) |
+| **HTML** | один самодостаточный файл: открывается в любом браузере, его не стыдно отправить письмом |
 
 Кириллица в PDF встроена в файл (шрифт DejaVu, лицензия позволяет), внешние шрифты не нужны.
+HTML-отчёт не тянет внешних стилей и скриптов — один файл, который работает и без интернета.
+
+Посмотреть, как выглядит каждый формат, можно без запуска приложения: в папке
+[`samples/`](samples) лежат отчёты об одном и том же прогоне во всех семи форматах —
+`networkchecker-report.pdf`, `.docx`, `.xlsx`, `.csv`, `.md`, `.json`, `.html`.
+Их создаёт тот же код экспорта, что и кнопка «Экспорт».
+
+## Сравнение прогонов
+
+История хранит каждый прогон локально. Кнопка «Сравнить с предыдущим» показывает, что изменилось
+между двумя проверками: оценка риска `до → после`, статусы модулей, появившиеся и исчезнувшие находки,
+и человеческий вывод («стало хуже: риск вырос на 20»). Удобно, когда включил или выключил VPN и хочешь
+увидеть эффект, не читая два отчёта глазами.
 
 ---
+
+## Глазами сайта
+
+Экран показывает модель возможных сведений о посетителе, а не реальный взгляд ВК или Яндекса. IP и GeoIP получены от внешнего сервиса; системный язык и часовой пояс могут отличаться от браузерных. Запросы к самим сайтам не отправляются. Список заголовков — иллюстрация, не перехват фактического запроса браузера. Поясняется, что сайт не получает автоматически и что может получить через скрипты, разрешения или аккаунт.
+
+Баллы — условная эвристика, **не вероятность VPN и не решение конкретного сайта**. Русский язык при IP ряда русскоязычных стран показан как контекст без языкового штрафа. Подробнее о весах, ограничениях и проверке экрана «Сеть»: [docs/REVIEW.md](docs/REVIEW.md). Для копирования значений и результатов выделите текст мышью и нажмите Ctrl+C; чувствительные данные в буфере могут быть доступны другим приложениям.
+
+Самостоятельная [HTML-презентация проекта](presentation.html).
 
 ## Что внутри
 
@@ -49,7 +72,7 @@
 |---|--------|-----------|-----|
 | 1 | **GeoIP и репутация IP** | 4 независимых провайдера, majority vote по `hosting`, «хотя бы один» по `proxy/VPN/Tor`, страна выхода | 20 |
 | 2 | **Сравнение IP-источников** | HTTP vs CDN vs STUN: один ли адрес видят разные пути (диагностика) | 0 |
-| 3 | **Прямые признаки** | Системный прокси (реестр), TUN/TAP-адаптеры, VPN-профили ОС, запущенные клиенты, установленные приложения, kill switch в файрволе | 30 |
+| 3 | **Прямые признаки** | Прокси пользователя (WinINET) **и машины (WinHTTP)**, разбор PAC-скрипта, TUN/TAP-адаптеры, VPN-профили ОС, запущенные клиенты, установленные приложения, kill switch в файрволе | 30 |
 | 4 | **Косвенные признаки** | Маршруты по умолчанию и /32, DNS (loopback, split-DNS/NRPT), MTU туннелей, hosts, виртуальные адаптеры | 20 |
 | 5 | **Локальный обход** | Сканирование 21 порта на 127.0.0.1 (SOCKS5/HTTP-прокси), API Xray :10085, Clash/Mihomo :9090-9091 | 30 |
 | 6 | **UDP / STUN-транспорт** | STUN binding, сравнение UDP- и TCP-адресов (утечка при проксировании только TCP), доступность MTProto | 10 |
@@ -75,6 +98,7 @@
 ## Сборка и запуск
 
 Нужен **.NET 10 SDK** (проверено на 10.0.403). Подробный пошаговый гайд для тех, кто собирает впервые, — в [docs/BUILD.md](docs/BUILD.md).
+Что менялось от версии к версии — в [CHANGELOG.md](CHANGELOG.md).
 
 Самый короткий путь (PowerShell в папке проекта):
 
@@ -82,23 +106,23 @@
 ./build.ps1 -Publish
 ```
 
-Скрипт восстановит пакеты, соберёт, прогонит тесты и положит готовый `RKNHardering.App.exe` в `artifacts/win-x64`.
+Скрипт восстановит пакеты, соберёт, прогонит тесты и положит готовый `NetworkChecker.exe` в `artifacts/win-x64`.
 
 Вручную:
 
 ```powershell
 dotnet restore
 dotnet build
-dotnet test                     # 174 теста во всех четырёх тестовых проектах
-dotnet run --project src/RKNHardering.App
+dotnet test                     # 300 тестов во всех четырёх тестовых проектах
+dotnet run --project src/NetworkChecker.App
 ```
 
 | Тестовый проект | Что покрывает | Тестов |
 |---|---|---|
-| `tests/RKNHardering.Core.Tests` | чекеры, вердикт, консенсус IP, парсеры, DNS-wire, plain-язык, раннер | 120 |
-| `tests/RKNHardering.Export.Tests` | все шесть форматов отчёта, кириллица, содержимое файлов | 20 |
-| `tests/RKNHardering.App.Tests` | ViewModel'и, режимы UI, навигация, рендер всех экранов (headless) | 23 |
-| `tests/RKNHardering.Data.Tests` | история прогонов (EF Core/SQLite), settings.json | 11 |
+| `tests/NetworkChecker.Core.Tests` | чекеры, вердикт, консенсус IP, парсеры, DNS-wire, plain-язык, раннер, PAC, сравнение прогонов, эвристики hosts/маршрутов, разбор GeoIP и анализ «глазами сайта» | 223 |
+| `tests/NetworkChecker.Export.Tests` | все семь форматов отчёта, кириллица, содержимое файлов | 29 |
+| `tests/NetworkChecker.App.Tests` | ViewModel'и, режимы UI, навигация, сравнение прогонов, экран «глазами сайта», рендер экранов (headless) | 37 |
+| `tests/NetworkChecker.Data.Tests` | история прогонов (EF Core/SQLite), settings.json | 11 |
 
 Публикация:
 
@@ -120,13 +144,15 @@ dotnet run --project src/RKNHardering.App
 
 ### Права администратора
 
-Не обязательны. Без них недоступны: raw-ICMP-трассировка (используется fallback через `Ping`), часть данных некоторых служб и правила файрвола других пользователей.
+Не обязательны: без них приложение полностью работоспособно и честно помечает недоступное.
+Что можно получить с правами — raw-ICMP, WFP-фильтры, полный список процессов и служб —
+разобрано в [docs/ADMIN.md](docs/ADMIN.md).
 
 ---
 
 ## Где лежат данные
 
-`%LOCALAPPDATA%\RKNHarderingPC\`
+`%LOCALAPPDATA%\NetworkChecker\`
 
 | Файл | Что внутри |
 |------|-----------|
@@ -142,24 +168,27 @@ dotnet run --project src/RKNHardering.App
 
 ```text
 src/
-├── RKNHardering.Core            # модели, чекеры, вердикт, сетевые примитивы, экспорт
+├── NetworkChecker.Core            # модели, чекеры, вердикт, сетевые примитивы, экспорт
 │   ├── Abstractions/            # ICheck, IPlatformProbe, IHttpProbe, CheckContext
 │   ├── Checks/                  # 10 модулей проверки
 │   ├── Verdict/                 # VerdictEngine, IpConsensusBuilder
-│   ├── Net/                     # HTTP, DNS wire, TCP/TLS, STUN, ICMP, трассировка, ASN
+│   ├── Net/                     # HTTP, DNS wire, TCP/TLS, STUN, ICMP, трассировка, ASN, PAC
+│   ├── Comparison/              # сравнение двух прогонов
+│   ├── SiteView/                # «глазами сайта»: разбор GeoIP, визитная карточка, выводы
 │   ├── NetInfo/                 # сервис вкладки «Сеть» (обзор/диагностика/трасса)
-│   └── Export/                  # Markdown и JSON-отчёты
-├── RKNHardering.Platform.Windows # IPlatformProbe: реестр, PowerShell, сеть, hosts
-├── RKNHardering.Data            # EF Core + SQLite, история, settings.json
-├── RKNHardering.Export          # PDF / DOCX / XLSX / CSV / Markdown / JSON
-└── RKNHardering.App             # Avalonia UI (MVVM, 5 экранов, два режима)
+│   ├── Export/                  # Markdown и JSON-отчёты (основа для остальных форматов)
+│   └── SiteView/                # анализ «что видит сайт» (модели, парсер, анализатор)
+├── NetworkChecker.Platform.Windows # IPlatformProbe: реестр, PowerShell, сеть, hosts
+├── NetworkChecker.Data            # EF Core + SQLite, история, settings.json
+├── NetworkChecker.Export          # PDF / DOCX / XLSX / CSV / Markdown / JSON
+└── NetworkChecker.App             # Avalonia UI (MVVM, 6 экранов, два режима)
 tests/
-├── RKNHardering.TestKit         # общие фейки: платформа, HTTP, чекеры, «эталонные» прогоны
-├── RKNHardering.Core.Tests
-├── RKNHardering.Export.Tests
-├── RKNHardering.App.Tests       # включая headless-рендер экранов
-└── RKNHardering.Data.Tests
-tools/RKNHardering.Screenshots   # рендер реальных экранов в PNG (для ревью UI)
+├── NetworkChecker.TestKit         # общие фейки: платформа, HTTP, чекеры, «эталонные» прогоны
+├── NetworkChecker.Core.Tests
+├── NetworkChecker.Export.Tests
+├── NetworkChecker.App.Tests       # включая headless-рендер экранов
+└── NetworkChecker.Data.Tests
+tools/NetworkChecker.Screenshots   # рендер реальных экранов в PNG (для ревью UI)
 ```
 
 Поток данных: `DashboardViewModel` → `CheckRunner` (параллельно, `MaxParallelChecks`) → `ICheck.RunAsync` → `VerdictEngine` + `IpConsensusBuilder` → `HistoryRepository` → UI/экспорт.
@@ -170,7 +199,7 @@ tools/RKNHardering.Screenshots   # рендер реальных экранов 
 2. Зарегистрировать в `AppServices.Build`: `services.AddSingleton<ICheck, MyCheck>();`
 3. Задать вес в `VerdictEngine.SeverityFactor`, если нужен нестандартный коэффициент.
 4. Добавить описание в `GuideViewModel` (вкладка «Справка»).
-5. Покрыть логику тестом в `tests/RKNHardering.Core.Tests`.
+5. Покрыть логику тестом в `tests/NetworkChecker.Core.Tests`.
 
 ---
 
@@ -199,9 +228,10 @@ tools/RKNHardering.Screenshots   # рендер реальных экранов 
 | **Подробный режим, результат**<br>![](screenshots/03-dashboard-pro-result.png) | **Сеть в простом режиме**<br>![](screenshots/04-network-simple.png) |
 | **Сеть: овервью**<br>![](screenshots/05-network-overview.png) | **Сеть: диагностика**<br>![](screenshots/06-network-diagnostics.png) |
 | **Сеть: трассировка**<br>![](screenshots/07-network-trace.png) | **История**<br>![](screenshots/08-history.png) |
-| **Справка**<br>![](screenshots/09-guide.png) | **Настройки**<br>![](screenshots/10-settings.png) |
+| **Сравнение прогонов**<br>![](screenshots/09-history-compare.png) | **Глазами сайта**<br>![](screenshots/10-site-view.png) |
+| **Справка**<br>![](screenshots/11-guide.png) | **Настройки**<br>![](screenshots/12-settings.png) |
 
-Скриншоты снимаются утилитой `tools/RKNHardering.Screenshots` (headless Avalonia + Skia) из реальных экранов — это не макеты.
+Скриншоты снимаются утилитой `tools/NetworkChecker.Screenshots` (headless Avalonia + Skia) из реальных экранов — это не макеты.
 
 ---
 
@@ -214,9 +244,10 @@ tools/RKNHardering.Screenshots   # рендер реальных экранов 
 
 ## Roadmap
 
-- [ ] WinHTTP-прокси (`netsh winhttp show proxy`) и PAC-разбор
+- [x] WinHTTP-прокси и разбор PAC-скрипта
+- [x] HTML-отчёт одним файлом и сравнение прогонов между собой
+- [ ] Права администратора: raw ICMP, WMI, WFP, ETW — **отложено по решению от 29.10.2026**, полный разбор в [docs/ADMIN.md](docs/ADMIN.md)
 - [ ] WFP-фильтры и ETW-события для детекта перехвата без опроса
-- [ ] HTML-отчёт (для отправки одним файлом) и сравнение прогонов между собой
-- [ ] ICMP raw с авто-повышением прав
 - [ ] Трей-граф с картой хопов и per-hop ASN-цветом
 - [ ] Локализация интерфейса (en)
+- [ ] Подпись сборки и автообновление релизов

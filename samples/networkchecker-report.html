@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetworkChecker · Признаков обхода не обнаружено</title>
+<style>
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body {
+    margin: 0; padding: 32px 16px;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f6f7f9; color: #1b2230; line-height: 1.5;
+}
+main { max-width: 980px; margin: 0 auto; }
+.top { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; }
+.brand { font-weight: 700; font-size: 18px; letter-spacing: .2px; }
+.sub { color: #6b7686; font-size: 13px; }
+section { background: #fff; border: 1px solid #e3e7ee; border-radius: 12px; padding: 20px 22px; margin-bottom: 18px; }
+h1 { font-size: 24px; margin: 0 0 8px; }
+h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: #6b7686; margin: 0 0 14px; }
+p { margin: 0 0 8px; }
+.verdict { display: flex; gap: 22px; align-items: flex-start; border-left: 5px solid #888; }
+.score { font-size: 40px; font-weight: 700; line-height: 1; }
+.score small { font-size: 14px; font-weight: 500; color: #8a93a3; }
+.lead { font-size: 15px; }
+.plain { color: #4a5464; font-size: 14px; }
+.reasons { margin: 0; padding-left: 20px; }
+.reasons li { margin-bottom: 6px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.fact { border: 1px solid #e3e7ee; border-radius: 10px; padding: 12px 14px; background: #fbfcfe; }
+.fact.ok { border-left: 4px solid #2FA36B; }
+.fact.warn { border-left: 4px solid #D79B18; }
+.fact.bad { border-left: 4px solid #D8483F; }
+.fact .q { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #77808f; }
+.fact .a { font-size: 16px; font-weight: 600; margin: 2px 0; }
+.fact .h { font-size: 12.5px; color: #5d6779; }
+.overall { margin-top: 14px; font-size: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eceff3; vertical-align: top; }
+thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: #77808f; border-bottom: 1px solid #dfe4ec; }
+tbody tr:last-child td { border-bottom: none; }
+table.kv th { width: 42%; color: #5d6779; font-weight: 500; }
+.muted { color: #77808f; font-size: 12.5px; }
+.status { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.status.ok { background: rgba(47,163,107,.12); color: #237a50; }
+.status.warn { background: rgba(215,155,24,.14); color: #8f6508; }
+.status.bad { background: rgba(216,72,63,.12); color: #a52f28; }
+.status.skip, .status.err { background: rgba(120,132,150,.14); color: #5d6779; }
+.finding { border: 1px solid #e3e7ee; border-left-width: 4px; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.finding.bad { border-left-color: #D8483F; }
+.finding.warn { border-left-color: #D79B18; }
+.finding.notice { border-left-color: #D7B018; }
+.finding.info { border-left-color: #8d97a8; }
+.finding-head { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
+.sev { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; color: #77808f; }
+pre {
+    white-space: pre-wrap; word-break: break-word; background: #f3f5f9; border-radius: 8px;
+    padding: 10px; font-size: 12.5px; margin: 8px 0; color: #33405a;
+}
+footer { color: #77808f; font-size: 12.5px; text-align: center; padding: 8px 0 24px; }
+@media print {
+    body { background: #fff; padding: 0; }
+    section { border: none; padding: 12px 0; page-break-inside: avoid; }
+    .verdict { border-left-width: 4px; }
+}
+@media (prefers-color-scheme: dark) {
+    body { background: #10151d; color: #e6eaf2; }
+    section, .fact { background: #161d28; border-color: #26303f; }
+    .fact { background: #131a24; }
+    h2, .muted, .sub, footer { color: #9aa5b6; }
+    .plain, table.kv th { color: #b9c2d1; }
+    pre { background: #0d131b; color: #cfd7e4; }
+    thead th { border-color: #26303f; }
+    th, td { border-color: #222b38; }
+}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+<div class="brand">NetworkChecker</div>
+<div class="sub">отчёт о проверке · 29.10.2026 15:31</div>
+</header>
+<section class="verdict" style="border-left-color:#2FA36B">
+<div class="score" style="color:#2FA36B">5<small>/100</small></div>
+<div class="verdict-body"><h1>Признаков обхода не обнаружено</h1>
+<p class="lead">Ни прямые, ни косвенные проверки не нашли следов туннеля, прокси или подмены.</p>
+<p class="plain">Признаков того, что трафик куда-то перенаправляют, не нашлось: ни туннелей, ни прокси, ни программ для обхода. Так выглядит обычное домашнее подключение.</p>
+</div></section>
+<section>
+<h2>Что повлияло на вывод</h2>
+<ul class="reasons">
+<li>Косвенные признаки: DNS туннеля перекрывает системный</li>
+</ul>
+</section>
+<section>
+<h2>Коротко по фактам</h2>
+<div class="facts">
+<div class="fact warn">
+<div class="q">Интернет-адрес</div>
+<div class="a">не удалось узнать</div>
+<div class="h">Скорее всего нет доступа к внешним сервисам или включён офлайн-режим.</div>
+</div>
+<div class="fact ok">
+<div class="q">VPN или туннель</div>
+<div class="a">не найден</div>
+<div class="h">Активных туннелей в системе нет.</div>
+</div>
+<div class="fact ok">
+<div class="q">Прокси в системе</div>
+<div class="a">не настроен</div>
+<div class="h">Ни системного, ни локального прокси нет.</div>
+</div>
+<div class="fact ok">
+<div class="q">Программы для обхода</div>
+<div class="a">не найдены</div>
+<div class="h">Ни запущенных, ни установленных клиентов обхода не видно.</div>
+</div>
+<div class="fact ok">
+<div class="q">Отклик сети</div>
+<div class="a">Россия 2 мс &#183; мир 1 мс</div>
+<div class="h">Отклик обычный для прямого подключения. Замер: TCP.</div>
+</div>
+</div>
+<p class="overall"><strong>Общая картина:</strong> Конфигурация в целом обычная, есть мелочи</p>
+</section>
+<section>
+<h2>Модули проверки</h2>
+<table>
+<thead><tr><th>Модуль</th><th>Статус</th><th>Находок</th><th>Время</th></tr></thead>
+<tbody>
+<tr><td><strong>GeoIP и репутация IP</strong><div class="muted">Страна, hosting, proxy/VPN/Tor по мнению внешних сервисов</div></td>
+<td><span class="status skip">Пропущено</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+<tr><td><strong>Сравнение IP-источников</strong><div class="muted">Один ли адрес видят разные сервисы (HTTP, CDN, STUN)</div></td>
+<td><span class="status skip">Пропущено</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+<tr><td><strong>Прямые признаки</strong><div class="muted">Прокси в системе, TUN-адаптеры, VPN-профили, запущенные клиенты</div></td>
+<td><span class="status ok">Чисто</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+<tr><td><strong>Косвенные признаки</strong><div class="muted">Интерфейсы, маршруты, DNS, MTU, hosts</div></td>
+<td><span class="status warn">Требует проверки</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+<tr><td><strong>Локальный обход</strong><div class="muted">Прокси на 127.0.0.1, Xray/Clash API, tun2socks</div></td>
+<td><span class="status ok">Чисто</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+<tr><td><strong>UDP / STUN-транспорт</strong><div class="muted">Доступность UDP и адрес выхода через STUN</div></td>
+<td><span class="status ok">Чисто</span></td>
+<td>2</td>
+<td class="muted">0.3 с</td></tr>
+<tr><td><strong>CDN и redirector</strong><div class="muted">Что о вас знают edge-сервисы: страна, colo, заголовки</div></td>
+<td><span class="status skip">Пропущено</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+<tr><td><strong>Доступность доменов</strong><div class="muted">DNS → TCP → TLS: где именно ломается доступ</div></td>
+<td><span class="status ok">Чисто</span></td>
+<td>1</td>
+<td class="muted">0.4 с</td></tr>
+<tr><td><strong>RTT-триангуляция (β)</strong><div class="muted">Задержки до RU и иностранных узлов</div></td>
+<td><span class="status ok">Чисто</span></td>
+<td>1</td>
+<td class="muted">2.1 с</td></tr>
+<tr><td><strong>ICMP-спуфинг (β)</strong><div class="muted">Поддельные ICMP-ответы и расхождение с TCP</div></td>
+<td><span class="status ok">Чисто</span></td>
+<td>1</td>
+<td class="muted">0.0 с</td></tr>
+</tbody></table>
+</section>
+<section>
+<h2>Находки</h2>
+<article class="finding warn">
+<div class="finding-head"><span class="sev">ВНИМАНИЕ</span><strong>DNS туннеля перекрывает системный</strong></div>
+<p>Туннельный адаптер публикует собственные DNS-серверы — трафик резолвинга идёт внутрь туннеля.</p>
+<pre>8.8.8.8</pre>
+<div class="muted">модуль: Косвенные признаки</div>
+</article>
+<article class="finding notice">
+<div class="finding-head"><span class="sev">ЗАМЕТКА</span><strong>STUN-серверы видят разные порты</strong></div>
+<p>Разные внешние порты для одного узла — симметричный NAT. Нормально для мобильных операторов, нетипично для домашнего Wi-Fi.</p>
+<pre>stun.l.google.com:19302=37294, stun.cloudflare.com:3478=60976, stun.sipnet.ru:3478=36968</pre>
+<div class="muted">модуль: UDP / STUN-транспорт</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<p>Запросы к GeoIP-провайдерам отключены в настройках.</p>
+<div class="muted">модуль: GeoIP и репутация IP</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<p>Внешние запросы отключены.</p>
+<div class="muted">модуль: Сравнение IP-источников</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Системный прокси не настроен</strong></div>
+<div class="muted">модуль: Прямые признаки</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Локальные прокси не обнаружены</strong></div>
+<p>На типовых портах (1080, 1087, 2080, 7890, 8080, 9050...) никто не ответил.</p>
+<div class="muted">модуль: Локальный обход</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>UDP-транспорт работает</strong></div>
+<p>Ответили 3 STUN-серверов. Голосовые вызовы и QUIC пойдут напрямую.</p>
+<div class="muted">модуль: UDP / STUN-транспорт</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Офлайн-режим</strong></div>
+<div class="muted">модуль: CDN и redirector</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Все проверенные домены доступны</strong></div>
+<p>Ни DNS-, ни TCP-, ни TLS-блокировок не обнаружено. Если VPN активен, значит он не даёт заметного выигрыша по этим целям.</p>
+<div class="muted">модуль: Доступность доменов</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Задержки симметричны</strong></div>
+<p>Разница в пределах нормы: нет признаков &#171;дальнего&#187; маршрута до российских адресов.</p>
+<div class="muted">модуль: RTT-триангуляция (β)</div>
+</article>
+<article class="finding info">
+<div class="finding-head"><span class="sev">ИНФО</span><strong>Аномалий ICMP не обнаружено</strong></div>
+<div class="muted">модуль: ICMP-спуфинг (β)</div>
+</article>
+</section>
+<section>
+<h2>Окружение</h2>
+<table class="kv"><tbody>
+<tr><th>Операционная система</th><td>Debian GNU/Linux 13 (trixie)</td></tr>
+<tr><th>Имя машины</th><td>e2b</td></tr>
+<tr><th>Пользователь</th><td>user</td></tr>
+<tr><th>Права администратора</th><td>нет</td></tr>
+<tr><th>Приватный режим</th><td>выключен</td></tr>
+<tr><th>IP-консенсус</th><td>35.247.94.103</td></tr>
+<tr><th>Длительность</th><td>2.2 с</td></tr>
+</tbody></table>
+</section>
+<footer>
+Отчёт сформирован NetworkChecker. Все данные собраны на этом компьютере, ничего не отправлялось на сервер.
+</footer>
+</main>
+</body>
+</html>

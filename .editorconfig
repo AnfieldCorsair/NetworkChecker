@@ -1,0 +1,41 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{axaml,xml,csproj,props,slnx,yml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+# using-и: System первыми, лишние — ошибка сборки (через EnforceCodeStyleInBuild)
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_diagnostic.IDE0005.severity = warning
+
+# Стиль, который мы уже соблюдаем: не даём ему разъехаться
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = when_multiline:suggestion
+csharp_style_var_for_built_in_types = false:silent
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
+
+# Анализаторы качества
+dotnet_diagnostic.CA2007.severity = none   # ConfigureAwait — управляем вручную
+dotnet_diagnostic.CA1848.severity = none   # логирование — не про нас
+
+# Тестовые проекты: имена тестов читаются с подчёркиваниями — это осознанный стиль.
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none

@@ -1,0 +1,168 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels"
+             xmlns:local="using:NetworkChecker.App"
+             x:Class="NetworkChecker.App.Views.SiteView"
+             x:DataType="vm:SiteViewModel">
+
+  <ScrollViewer>
+    <StackPanel Margin="24,18,24,28" Spacing="14">
+
+      <!-- ===== Итог: как вас видит сайт ===== -->
+      <Border Classes="card" Padding="0">
+        <Grid ColumnDefinitions="6,*,Auto">
+          <Border Grid.Column="0" CornerRadius="12,0,0,12" Background="{Binding AccentBrush}" />
+          <StackPanel Grid.Column="1" Margin="22,18" Spacing="9">
+            <TextBlock Text="ВЗГЛЯД С ТОЙ СТОРОНЫ" Classes="overline" />
+            <SelectableTextBlock Text="{Binding Headline}" Classes="h1" FontSize="24" />
+            <SelectableTextBlock Text="{Binding Summary}" TextWrapping="Wrap" MaxWidth="720" HorizontalAlignment="Left"
+                       Foreground="{DynamicResource TextMuted}" LineHeight="19" />
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+              <Button Classes="primary" Command="{Binding RefreshCommand}" Padding="16,9">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Path Data="{x:Static local:Icons.Refresh}" Stretch="Uniform" Width="12" Height="12"
+                        Stroke="White" StrokeThickness="1.8" VerticalAlignment="Center" />
+                  <TextBlock Text="Посмотреть" Foreground="White" FontSize="12.5" />
+                </StackPanel>
+              </Button>
+              <SelectableTextBlock Text="{Binding StatusLine}" Classes="muted" FontSize="11.5" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Margin="0,18,24,18" Spacing="2" VerticalAlignment="Center" MinWidth="132">
+            <TextBlock Text="УСЛОВНЫЙ БАЛЛ" Classes="overline" HorizontalAlignment="Right" />
+            <TextBlock Text="НЕ ВЕРОЯТНОСТЬ" Classes="overline" HorizontalAlignment="Right" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" Margin="0,4,0,0">
+              <SelectableTextBlock Text="{Binding ExposureText}" FontSize="38" FontWeight="Bold" Foreground="{Binding AccentBrush}" />
+              <TextBlock Text="/100" FontSize="13" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+            </StackPanel>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- ===== Какие данные получает сайт ===== -->
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+
+        <Border Grid.Column="0" Classes="card">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="ДАННЫЕ И ПРЕДПОЛОЖЕНИЯ" Classes="overline" />
+                <TextBlock Text="IP и GeoIP — по ответу сервиса; язык и пояс — локальные настройки, не данные браузера" Classes="muted" FontSize="11.5" />
+              </StackPanel>
+              <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center">
+                <SelectableTextBlock Text="{Binding IpText}" Classes="mono" FontSize="11" />
+              </Border>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Rows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SiteRowViewModel">
+                  <Border BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="0,1,0,0" Padding="0,9">
+                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                      <Ellipse Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Width="7" Height="7"
+                               Fill="{Binding DotBrush}" VerticalAlignment="Top" Margin="0,6,10,0" />
+                      <SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Label}" FontSize="12"
+                                 FontWeight="SemiBold" VerticalAlignment="Center" />
+                      <SelectableTextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Value}" Classes="mono"
+                                 FontSize="11.5" TextWrapping="Wrap" TextAlignment="Right" MaxWidth="300" />
+                      <SelectableTextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Hint}" TextWrapping="Wrap"
+                                 Classes="muted" FontSize="10.5" Margin="0,3,0,0" IsVisible="{Binding HasHint}" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- ===== Выводы ===== -->
+        <Border Grid.Column="1" Classes="card">
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="ЧТО ИЗ ЭТОГО СЛЕДУЕТ" Classes="overline" />
+              <TextBlock Text="Условная модель приложения, а не вывод конкретного сайта"
+                         Classes="muted" FontSize="11.5" />
+            </StackPanel>
+
+            <TextBlock Text="Ничего подозрительного: набор данных сходится." Classes="muted"
+                       IsVisible="{Binding ShowNoSignals}" />
+            <TextBlock Text="Нажмите «Посмотреть» — здесь появятся выводы, которые сделает сайт." Classes="muted"
+                       IsVisible="{Binding !HasReport}" />
+
+            <ItemsControl ItemsSource="{Binding Signals}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SiteSignalViewModel">
+                  <Border Classes="inset" Margin="0,0,0,9" Padding="0">
+                    <Grid ColumnDefinitions="4,*,Auto">
+                      <Border Grid.Column="0" CornerRadius="8,0,0,8" Background="{Binding AccentBrush}" />
+                      <StackPanel Grid.Column="1" Margin="12,10" Spacing="4">
+                        <SelectableTextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" />
+                        <SelectableTextBlock Text="{Binding Detail}" TextWrapping="Wrap" Classes="muted" FontSize="11" />
+                      </StackPanel>
+                      <Border Grid.Column="2" Classes="chip" VerticalAlignment="Top" Margin="0,10,10,0"
+                              IsVisible="{Binding HasPoints}">
+                        <SelectableTextBlock Text="{Binding PointsText}" Classes="mono" FontSize="10"
+                                   Foreground="{Binding AccentBrush}" />
+                      </Border>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Border Classes="inset" IsVisible="{Binding HasError}" Padding="12,10">
+              <StackPanel Spacing="3">
+                <TextBlock Text="ПОЧЕМУ ДАННЫХ МЕНЬШЕ" Classes="overline" FontSize="9" />
+                <SelectableTextBlock Text="{Binding ErrorText}" Classes="muted" FontSize="11" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="ЧЕГО САЙТ НЕ ЗНАЕТ АВТОМАТИЧЕСКИ" Classes="overline" />
+          <TextBlock Text="В HTTP-запросе нет списка установленных программ, локальных файлов, паролей или истории браузера. Сайт не получает их просто по IP-адресу." TextWrapping="Wrap" />
+          <TextBlock Text="Но с разрешения пользователя сайт может получить геолокацию, доступ к камере, микрофону или выбранным файлам. Браузерные скрипты могут узнать часовой пояс, размеры экрана и другие признаки отпечатка; cookies, вход в аккаунт и внешние базы дают дополнительные сведения." Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="Этот экран не проверяет настройки или отпечаток вашего браузера: его язык и часовой пояс могут отличаться от системных." Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- ===== Сырой запрос: только в подробном режиме ===== -->
+      <Border Classes="card" IsVisible="{Binding ShowRawRequest}">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="ЧТО УХОДИТ В ЗАПРОСЕ" Classes="overline" />
+            <TextBlock Text="Пример заголовков клиента; фактический запрос и адрес поставщика могут отличаться. Это не запрос браузера."
+                       Classes="muted" FontSize="11.5" />
+          </StackPanel>
+
+          <Border Classes="inset" Padding="12,10">
+            <StackPanel Spacing="4">
+              <SelectableTextBlock Text="{Binding RequestLine}" Classes="mono" FontSize="11.5" Foreground="{DynamicResource AccentBrush}" />
+              <ItemsControl ItemsSource="{Binding Headers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:HeaderRowViewModel">
+                    <Grid ColumnDefinitions="150,*" Margin="0,1">
+                      <SelectableTextBlock Grid.Column="0" Text="{Binding Name}" Classes="mono" FontSize="11"
+                                 Foreground="{DynamicResource TextMuted}" />
+                      <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="11" TextWrapping="Wrap" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <TextBlock Classes="muted" FontSize="10.5" MaxWidth="980" HorizontalAlignment="Left">
+        Данные собраны здесь же: внешний адрес спрашивается у GeoIP-сервиса, остальное — часовой пояс,
+        язык и клиент — берётся из системы. На серверы ВК, Яндекса и других сайтов ничего не отправляется:
+        это модель того, что они увидят, когда вы сами откроете сайт.
+      </TextBlock>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

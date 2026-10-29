@@ -1,0 +1,485 @@
+{
+  "id": "b096fe6d-bafb-4c8e-9738-70e2c68e0576",
+  "startedAt": "2026-10-29T15:31:10.741104+00:00",
+  "finishedAt": "2026-10-29T15:31:12.9009069+00:00",
+  "checks": [
+    {
+      "category": 0,
+      "title": "GeoIP и репутация IP",
+      "subtitle": "Страна, hosting, proxy/VPN/Tor по мнению внешних сервисов",
+      "status": 3,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Офлайн-режим",
+          "detail": "Запросы к GeoIP-провайдерам отключены в настройках."
+        }
+      ],
+      "metrics": [],
+      "startedAt": "2026-10-29T15:31:10.7412218+00:00",
+      "duration": "00:00:00.0000049",
+      "weight": 20,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Пропущено"
+    },
+    {
+      "category": 1,
+      "title": "Сравнение IP-источников",
+      "subtitle": "Один ли адрес видят разные сервисы (HTTP, CDN, STUN)",
+      "status": 3,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Офлайн-режим",
+          "detail": "Внешние запросы отключены."
+        }
+      ],
+      "metrics": [],
+      "startedAt": "2026-10-29T15:31:10.7415104+00:00",
+      "duration": "00:00:00.0000039",
+      "weight": 0,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Пропущено"
+    },
+    {
+      "category": 2,
+      "title": "Прямые признаки",
+      "subtitle": "Прокси в системе, TUN-адаптеры, VPN-профили, запущенные клиенты",
+      "status": 0,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Системный прокси не настроен",
+          "detail": ""
+        }
+      ],
+      "metrics": [
+        {
+          "label": "Прокси пользователя (WinINET)",
+          "value": "не настроен",
+          "hint": "нет"
+        },
+        {
+          "label": "Активных туннелей",
+          "value": "0"
+        },
+        {
+          "label": "VPN-профили ОС",
+          "value": "0",
+          "hint": "нет"
+        },
+        {
+          "label": "Подозрительных процессов",
+          "value": "0",
+          "hint": "не найдено"
+        },
+        {
+          "label": "Клиентов обхода установлено",
+          "value": "0",
+          "hint": "не найдено"
+        },
+        {
+          "label": "Служб туннелей",
+          "value": "0"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:10.7425266+00:00",
+      "duration": "00:00:00.0009546",
+      "weight": 30,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Чисто"
+    },
+    {
+      "category": 3,
+      "title": "Косвенные признаки",
+      "subtitle": "Интерфейсы, маршруты, DNS, MTU, hosts",
+      "status": 1,
+      "findings": [
+        {
+          "severity": 2,
+          "title": "DNS туннеля перекрывает системный",
+          "detail": "Туннельный адаптер публикует собственные DNS-серверы — трафик резолвинга идёт внутрь туннеля.",
+          "evidence": "8.8.8.8"
+        }
+      ],
+      "metrics": [
+        {
+          "label": "Активных интерфейсов",
+          "value": "2",
+          "hint": "eth0, lo"
+        },
+        {
+          "label": "Маршрутов по умолчанию",
+          "value": "1",
+          "hint": "eth0"
+        },
+        {
+          "label": "DNS-серверы",
+          "value": "8.8.8.8"
+        },
+        {
+          "label": "Записей в hosts",
+          "value": "10",
+          "hint": "только стандартные"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:10.7434888+00:00",
+      "duration": "00:00:00.0009194",
+      "weight": 20,
+      "highestSeverity": 2,
+      "criticalCount": 0,
+      "warningCount": 1,
+      "noticeCount": 0,
+      "statusText": "Требует проверки"
+    },
+    {
+      "category": 4,
+      "title": "Локальный обход",
+      "subtitle": "Прокси на 127.0.0.1, Xray/Clash API, tun2socks",
+      "status": 0,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Локальные прокси не обнаружены",
+          "detail": "На типовых портах (1080, 1087, 2080, 7890, 8080, 9050...) никто не ответил."
+        }
+      ],
+      "metrics": [
+        {
+          "label": "Портов проверено",
+          "value": "20"
+        },
+        {
+          "label": "Открыто на loopback",
+          "value": "0",
+          "hint": "не найдено"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:10.7648454+00:00",
+      "duration": "00:00:00.0213276",
+      "weight": 30,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Чисто"
+    },
+    {
+      "category": 5,
+      "title": "UDP / STUN-транспорт",
+      "subtitle": "Доступность UDP и адрес выхода через STUN",
+      "status": 0,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "UDP-транспорт работает",
+          "detail": "Ответили 3 STUN-серверов. Голосовые вызовы и QUIC пойдут напрямую."
+        },
+        {
+          "severity": 1,
+          "title": "STUN-серверы видят разные порты",
+          "detail": "Разные внешние порты для одного узла — симметричный NAT. Нормально для мобильных операторов, нетипично для домашнего Wi-Fi.",
+          "evidence": "stun.l.google.com:19302=37294, stun.cloudflare.com:3478=60976, stun.sipnet.ru:3478=36968"
+        }
+      ],
+      "metrics": [
+        {
+          "label": "STUN-серверов ответило",
+          "value": "3 из 3"
+        },
+        {
+          "label": "Внешний адрес (UDP)",
+          "value": "35.247.94.103",
+          "hint": "адрес, который видит NAT для UDP"
+        },
+        {
+          "label": "Внешний адрес (TCP)",
+          "value": "35.247.94.103",
+          "hint": "адрес для HTTP(S)"
+        },
+        {
+          "label": "Telegram DC (MTProto)",
+          "value": "доступен"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:11.1084581+00:00",
+      "duration": "00:00:00.3432849",
+      "weight": 10,
+      "highestSeverity": 1,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 1,
+      "statusText": "Чисто"
+    },
+    {
+      "category": 6,
+      "title": "CDN и redirector",
+      "subtitle": "Что о вас знают edge-сервисы: страна, colo, заголовки",
+      "status": 3,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Офлайн-режим",
+          "detail": ""
+        }
+      ],
+      "metrics": [],
+      "startedAt": "2026-10-29T15:31:10.765397+00:00",
+      "duration": "00:00:00.0000027",
+      "weight": 5,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Пропущено"
+    },
+    {
+      "category": 7,
+      "title": "Доступность доменов",
+      "subtitle": "DNS → TCP → TLS: где именно ломается доступ",
+      "status": 0,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Все проверенные домены доступны",
+          "detail": "Ни DNS-, ни TCP-, ни TLS-блокировок не обнаружено. Если VPN активен, значит он не даёт заметного выигрыша по этим целям."
+        }
+      ],
+      "metrics": [
+        {
+          "label": "Доступно",
+          "value": "6/6",
+          "hint": "example.com, ya.ru, discord.com, rutracker.org, linkedin.com, instagram.com"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:11.1878542+00:00",
+      "duration": "00:00:00.4224264",
+      "weight": 10,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Чисто"
+    },
+    {
+      "category": 8,
+      "title": "RTT-триангуляция (β)",
+      "subtitle": "Задержки до RU и иностранных узлов",
+      "status": 0,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Задержки симметричны",
+          "detail": "Разница в пределах нормы: нет признаков «дальнего» маршрута до российских адресов."
+        }
+      ],
+      "metrics": [
+        {
+          "label": "RU медиана",
+          "value": "2 мс",
+          "hint": "ya.ru, mail.ru, vk.com, gosuslugi.ru"
+        },
+        {
+          "label": "Иностранные медиана",
+          "value": "1 мс",
+          "hint": "1.1.1.1, 8.8.8.8, 9.9.9.9, cloudflare.com"
+        },
+        {
+          "label": "Разница",
+          "value": "+1 мс",
+          "hint": "RU минус иностранные"
+        },
+        {
+          "label": "Потери пакетов",
+          "value": "RU 60%, мир 60%"
+        },
+        {
+          "label": "Метод измерения",
+          "value": "TCP",
+          "hint": "ICMP заблокирован, часть замеров сделана по TCP :443"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:12.8999614+00:00",
+      "duration": "00:00:02.1339038",
+      "weight": 15,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Чисто"
+    },
+    {
+      "category": 9,
+      "title": "ICMP-спуфинг (β)",
+      "subtitle": "Поддельные ICMP-ответы и расхождение с TCP",
+      "status": 0,
+      "findings": [
+        {
+          "severity": 0,
+          "title": "Аномалий ICMP не обнаружено",
+          "detail": ""
+        }
+      ],
+      "metrics": [
+        {
+          "label": "ICMP 8.8.8.8",
+          "value": "нет ответа"
+        },
+        {
+          "label": "TCP :443 8.8.8.8",
+          "value": "2 мс"
+        },
+        {
+          "label": "ICMP 1.1.1.1",
+          "value": "нет ответа"
+        },
+        {
+          "label": "TCP :443 1.1.1.1",
+          "value": "1 мс"
+        }
+      ],
+      "startedAt": "2026-10-29T15:31:10.8061832+00:00",
+      "duration": "00:00:00.0400915",
+      "weight": 10,
+      "highestSeverity": 0,
+      "criticalCount": 0,
+      "warningCount": 0,
+      "noticeCount": 0,
+      "statusText": "Чисто"
+    }
+  ],
+  "verdict": {
+    "level": 0,
+    "score": 5,
+    "headline": "Признаков обхода не обнаружено",
+    "summary": "Ни прямые, ни косвенные проверки не нашли следов туннеля, прокси или подмены.",
+    "reasons": [
+      "Косвенные признаки: DNS туннеля перекрывает системный"
+    ],
+    "triggeredCategories": [],
+    "levelText": "Чисто"
+  },
+  "ipConsensus": {
+    "consensusIp": "35.247.94.103",
+    "observations": [
+      {
+        "source": "STUN · stun.l.google.com",
+        "ip": "35.247.94.103",
+        "note": "UDP-выход"
+      },
+      {
+        "source": "STUN · stun.cloudflare.com",
+        "ip": "35.247.94.103",
+        "note": "UDP-выход"
+      },
+      {
+        "source": "STUN · stun.sipnet.ru",
+        "ip": "35.247.94.103",
+        "note": "UDP-выход"
+      },
+      {
+        "source": "HTTPS (TCP) · ipify",
+        "ip": "35.247.94.103",
+        "note": "TCP-путь"
+      }
+    ],
+    "russianVotes": 0,
+    "foreignVotes": 0,
+    "isSplit": false,
+    "hasConsensus": true,
+    "summary": "35.247.94.103"
+  },
+  "environment": {
+    "osDescription": "Debian GNU/Linux 13 (trixie)",
+    "machineName": "e2b",
+    "userName": "user",
+    "appVersion": "1.0.0.0",
+    "adapters": [
+      {
+        "id": "eth0",
+        "name": "eth0",
+        "description": "eth0",
+        "kind": 0,
+        "isUp": true,
+        "mtu": 1500,
+        "macAddress": "02:FC:00:00:00:05",
+        "iPv4": [
+          "169.254.0.21"
+        ],
+        "iPv6": [],
+        "gateways": [
+          "169.254.0.22"
+        ],
+        "dnsServers": [
+          "8.8.8.8"
+        ],
+        "speedBitsPerSecond": 4294967295000000,
+        "isTunnelHint": false,
+        "kindText": "Ethernet",
+        "addressText": "169.254.0.21"
+      },
+      {
+        "id": "dummy0",
+        "name": "dummy0",
+        "description": "dummy0",
+        "kind": 3,
+        "isUp": false,
+        "mtu": 1500,
+        "macAddress": "E2:25:18:5A:36:00",
+        "iPv4": [],
+        "iPv6": [],
+        "gateways": [],
+        "dnsServers": [
+          "8.8.8.8"
+        ],
+        "speedBitsPerSecond": 0,
+        "isTunnelHint": true,
+        "kindText": "Туннель",
+        "addressText": "—"
+      },
+      {
+        "id": "lo",
+        "name": "lo",
+        "description": "lo",
+        "kind": 4,
+        "isUp": true,
+        "mtu": 65536,
+        "macAddress": "00:00:00:00:00:00",
+        "iPv4": [
+          "127.0.0.1"
+        ],
+        "iPv6": [
+          "::1"
+        ],
+        "gateways": [],
+        "dnsServers": [
+          "8.8.8.8"
+        ],
+        "speedBitsPerSecond": 0,
+        "isTunnelHint": false,
+        "kindText": "Loopback",
+        "addressText": "127.0.0.1"
+      }
+    ],
+    "proxy": {
+      "enabled": false,
+      "source": "нет",
+      "hasProxy": false,
+      "hasMachineWideProxy": false,
+      "pacPointsToLocalhost": false,
+      "display": "не настроен"
+    },
+    "privacyMode": false,
+    "isElevated": false
+  },
+  "duration": "00:00:02.1598029"
+}

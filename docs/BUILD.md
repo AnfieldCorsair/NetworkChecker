@@ -1,6 +1,6 @@
 # Сборка из исходников — пошагово, для тех, кто делает это впервые
 
-Задача: получить из папки с исходниками работающий `RKNHardering.App.exe` на своём компьютере.
+Задача: получить из папки с исходниками работающий `NetworkChecker.App.exe` на своём компьютере.
 Понадобятся только Windows 10/11, интернет и 10–15 минут. Программировать не нужно.
 
 ---
@@ -41,16 +41,16 @@ dotnet --version
 
 ## Шаг 2. Получить исходники
 
-**Вариант А (без Git):** откройте страницу проекта на GitHub → кнопка **Code** → **Download ZIP** → распакуйте в удобное место, например `C:\src\rkn-hardering-pc`.
+**Вариант А (без Git):** откройте страницу проекта на GitHub → кнопка **Code** → **Download ZIP** → распакуйте в удобное место, например `C:\src\network-checker`.
 Важно: распаковать, а не запускать из ZIP-архива.
 
 **Вариант Б (с Git):**
 
 ```powershell
-git clone <адрес-репозитория> C:\src\rkn-hardering-pc
+git clone <адрес-репозитория> C:\src\network-checker
 ```
 
-Дальше считаем, что проект лежит в `C:\src\rkn-hardering-pc`.
+Дальше считаем, что проект лежит в `C:\src\network-checker`.
 
 ---
 
@@ -59,7 +59,7 @@ git clone <адрес-репозитория> C:\src\rkn-hardering-pc
 В PowerShell перейдите в папку проекта и запустите скрипт сборки:
 
 ```powershell
-cd C:\src\rkn-hardering-pc
+cd C:\src\network-checker
 powershell -ExecutionPolicy Bypass -File .\build.ps1 -Publish
 ```
 
@@ -67,13 +67,13 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Publish
 
 1. `restore` — скачает пакеты NuGet (нужен интернет, делается один раз);
 2. `build` — скомпилирует шесть проектов решения;
-3. `test` — прогонит 174 автотеста (это проверка, что всё собралось правильно);
+3. `test` — прогонит 245 автотестов (это проверка, что всё собралось правильно);
 4. `publish` — соберёт готовое приложение в папку `artifacts\win-x64`.
 
 В конце скрипт напишет:
 
 ```
-Готово: C:\src\rkn-hardering-pc\artifacts\win-x64/RKNHardering.App.exe
+Готово: C:\src\network-checker\artifacts\win-x64\NetworkChecker.exe
 ```
 
 `-ExecutionPolicy Bypass` в команде — это не «хакерство», а способ разрешить запуск локального
@@ -84,10 +84,10 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Publish
 ## Шаг 4. Запустить
 
 ```powershell
-.\artifacts\win-x64\RKNHardering.App.exe
+.\artifacts\win-x64\NetworkChecker.App.exe
 ```
 
-Или просто откройте `artifacts\win-x64` в проводнике и дважды щёлкните по `RKNHardering.App.exe`.
+Или просто откройте `artifacts\win-x64` в проводнике и дважды щёлкните по `NetworkChecker.App.exe`.
 
 При первом запуске Windows SmartScreen может спросить подтверждение («Неизвестный издатель») —
 это нормально для любого самосборного файла без цифровой подписи: **Подробнее → Выполнить в любом случае**.
@@ -113,7 +113,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Publish
 - **«Экспорт»** — сохранение отчёта в PDF, Word, Excel, CSV, Markdown или JSON;
 - вкладки **Сеть**, **История**, **Справка**, **Настройки**.
 
-Данные приложения лежат локально, в `%LOCALAPPDATA%\RKNHarderingPC\`:
+Данные приложения лежат локально, в `%LOCALAPPDATA%\NetworkChecker\`:
 
 | Файл | Что внутри |
 |---|---|
@@ -134,8 +134,8 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Publish
 | `error NU1301 ... Unable to load the service index` | нет доступа к nuget.org (прокси, файрвол, VPN) | проверить интернет; при корпоративном прокси — `dotnet nuget list source` |
 | `error NETSDK1045: текущий пакет SDK не поддерживает .NET 10` | стоит старый SDK | `dotnet --list-sdks`; поставить .NET 10 SDK по шагу 1 |
 | Сборка падает с `CS...` в незнакомом месте | повреждённая распаковка исходников | удалить папку, скачать ZIP заново, распаковать в путь **без пробелов и кириллицы** |
-| `Не удалось загрузить файл ... RKNHardering.App.exe` при запуске | антивирус сканирует только что собранный файл | подождать 10–20 секунд и запустить снова; при упорстве — добавить папку `artifacts` в исключения |
-| Приложение запускается и сразу закрывается | смотрите журнал: `%LOCALAPPDATA%\RKNHarderingPC\logs\` | в логе будет конкретная ошибка — её можно приложить к issue |
+| `Не удалось загрузить файл ... NetworkChecker.App.exe` при запуске | антивирус сканирует только что собранный файл | подождать 10–20 секунд и запустить снова; при упорстве — добавить папку `artifacts` в исключения |
+| Приложение запускается и сразу закрывается | смотрите журнал: `%LOCALAPPDATA%\NetworkChecker\logs\` | в логе будет конкретная ошибка — её можно приложить к issue |
 | Хочется запустить тесты отдельно | это же проверка сборки | `dotnet test` в папке проекта |
 
 Если ничего не помогло — приложите к issue **полный текст из консоли** и последний файл из `logs\`.
@@ -145,18 +145,18 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Publish
 ## Для тех, кто хочет собрать без скрипта
 
 ```powershell
-cd C:\src\rkn-hardering-pc
+cd C:\src\network-checker
 dotnet restore
 dotnet build -c Release
 dotnet test
-dotnet run --project src/RKNHardering.App
+dotnet run --project src/NetworkChecker.App
 ```
 
 `dotnet run` — запуск «как есть», без сборки папки с exe (удобно для разработки).
 Публикация папки с exe — команда из шага 3 либо:
 
 ```powershell
-dotnet publish src/RKNHardering.App -c Release -r win-x64 --self-contained false `
+dotnet publish src/NetworkChecker.App -c Release -r win-x64 --self-contained false `
   -p:PublishSingleFile=true -o artifacts/win-x64
 ```
 

@@ -4,25 +4,26 @@
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│ RKNHardering.App (Avalonia, net10.0-windows)                │
+│ NetworkChecker.App (Avalonia, net10.0-windows)                │
 │   Views / ViewModels (MVVM, CommunityToolkit)                │
 │   Startup/AppServices — Host + DI + Serilog                  │
 └───────────────▲──────────────────────────────┬──────────────┘
                 │ CheckRunResult / Network*    │ ICheck, IPlatformProbe
 ┌───────────────┴──────────────────────────────▼──────────────┐
-│ RKNHardering.Core (net10.0)                                  │
+│ NetworkChecker.Core (net10.0)                                  │
 │   Checks/ (10 модулей)  Verdict/  NetInfo/  Net/             │
-│   Plain/ (человеческий язык)                                 │
+│   Plain/ (человеческий язык)  Comparison/ (диф прогонов)      │
+│   SiteView/ (что видит сайт: GeoIP, таймзоны, выводы)         │
 │   Abstractions/ (ICheck, IPlatformProbe, IHttpProbe)         │
 └───────────────▲──────────────────────────────┬──────────────┘
                 │                               │
 ┌───────────────┴───────────────┐  ┌────────────▼────────────┐
-│ RKNHardering.Platform.Windows │  │ RKNHardering.Data       │
+│ NetworkChecker.Platform.Windows │  │ NetworkChecker.Data       │
 │  реестр, PowerShell, сеть     │  │ EF Core + SQLite        │
 └───────────────────────────────┘  └─────────────────────────┘
         ▲
 ┌───────┴─────────────────────────────────────────────────────┐
-│ RKNHardering.Export                                          │
+│ NetworkChecker.Export                                          │
 │  ReportExporter → PDF / DOCX / XLSX / CSV / Markdown / JSON   │
 │  (QuestPDF, OpenXml, ClosedXML; шрифт DejaVu внутри сборки)   │
 └──────────────────────────────────────────────────────────────┘
@@ -49,6 +50,8 @@ Core не знает про Avalonia и про реестр: всё платфо
 | `CheckContext` | настройки + прогресс + `CollectIp(...)` |
 | `IPlatformProbe` | всё, что зависит от ОС: адаптеры, маршруты, DNS, прокси, приложения, процессы, службы, VPN-профили, hosts, файрвол |
 | `IHttpProbe` | HTTP с опцией «игнорировать системный прокси» и честным таймаутом |
+| `PacInspector` | разбор PAC-скрипта: какие прокси он задаёт, есть ли loopback и правила по подсетям |
+| `RunComparer` | сравнение двух прогонов: статусы модулей, появившиеся находки, направление изменений |
 | `PingTools` / `RawIcmp` / `TraceTool` | ICMP-эхо, MTU-проба, трассировка (raw + fallback) |
 | `DnsClientLite` / `DnsWire` | запросы к конкретному резолверу, парсер DNS-сообщений, DoH |
 | `AsnLookup` | ASN/оператор по IP через DNS Team Cymru |
@@ -68,7 +71,7 @@ EF Core 10, SQLite, `IDbContextFactory` (короткие контексты н�
 
 ## UI
 
-Пять экранов, навигация — коллекция `NavItem` в `MainWindowViewModel`, контент — `ContentControl` с `ViewLocator`. Все цвета — в `ThemeDictionaries` (`App.axaml`), есть тёмная и светлая темы. Стили-классы: `card`, `chip`, `inset`, `h1..h3`, `muted`, `mono`, `overline`, кнопки `primary/ghost/danger/nav`.
+Шесть экранов, навигация — коллекция `NavItem` в `MainWindowViewModel`, контент — `ContentControl` с `ViewLocator`. Все цвета — в `ThemeDictionaries` (`App.axaml`), есть тёмная и светлая темы. Стили-классы: `card`, `chip`, `inset`, `h1..h3`, `muted`, `mono`, `overline`, кнопки `primary/ghost/danger/nav`.
 
 Раскладка адаптивная: карточки модулей в `WrapPanel` (2 колонки на 1440 px, 1 колонка на узком окне), таблицы сети — `Grid` с пропорциональными колонками, минимальный размер окна 1080×720.
 
@@ -80,15 +83,52 @@ EF Core 10, SQLite, `IDbContextFactory` (короткие контексты н�
 - `PlainLanguage` (`Core/Plain`) превращает `CheckResult` и вердикт в человеческий текст: статус словами, «что это значит», «что делать».
 - `PlainFacts` собирает шесть фактов верхнего уровня (интернет-адрес, VPN/туннель, прокси, программы обхода, отклик сети) с тоном `good/warn/bad` и общим выводом о конфигурации.
 
+## Вкладка «Глазами сайта»
+
+Задача — не проверить компьютер, а показать, как он выглядит снаружи. Отдельный сервис, без участия
+`CheckRunner`:
+
+- `ISiteEyeService` / `SiteEyeService` — перебирает `GeoIpProviders` из настроек, первый внятный ответ
+  побеждает; офлайн-режим вообще не ходит в сеть.
+- `SiteGeoParser` — рекурсивный разбор JSON: ключи ищутся по имени, а не по схеме, потому что у
+  `ipapi.is`, `ipwho.is`, `ipinfo.io` и `2ip` разные структуры (вложенные `connection`/`timezone`,
+  ASN строкой `"AS396982 Google LLC"` или числом, флаги `true`/`"yes"`/`1`).
+- `SiteViewAnalyzer` — чистые функции: собирает строки «визитной карточки», считает сигналы и их сумму
+  (порог «похоже на VPN» — 50, «есть что записать в профиль» — 20). Часовой пояс адреса разрешается
+  через `TimeZoneInfo` с возможностью подменить резолвер в тестах, поэтому расхождение поясов
+  проверяется без зависимости от базы ОС.
+- `SiteViewModel` — только подача: строки, сигналы, шкала, сырые HTTP-заголовки (в подробном режиме).
+  Осмотр запускается сам при первом открытии вкладки (`EnsureLoaded`), повторный — кнопкой «Посмотреть».
+
+Сеть не используется для «заглядывания» на сайты: на серверы ВК или Яндекса ничего не уходит,
+это модель того, что они увидят, когда пользователь откроет сайт сам.
+
 ## Тестирование
 
-`tests/RKNHardering.TestKit` — общие двойники (`FakePlatformProbe`, `FakeHttpProbe`, `FakeCheck`, эталонные прогоны `Sample.CleanRun()/RichRun()`), чтобы тесты не ходили в сеть и не читали реальную ОС.
+`tests/NetworkChecker.TestKit` — общие двойники (`FakePlatformProbe`, `FakeHttpProbe`, `FakeCheck`, эталонные прогоны `Sample.CleanRun()/RichRun()`), чтобы тесты не ходили в сеть и не читали реальную ОС.
 
 | Проект | Что проверяет |
 |---|---|
-| `Core.Tests` (120) | чекеры (включая детект SOCKS5/HTTP-прокси и API Xray/Clash на реальном loopback-листенере), раннер, вердикт, консенсус IP, парсеры, plain-язык, маскирование, настройки |
-| `Export.Tests` (20) | все шесть форматов: содержимое, кириллица, валидность ZIP/Office-контейнеров |
-| `App.Tests` (23) | ViewModel'и, переключение режимов, навигация, экспорт через фейковый диалог, рендер всех пяти экранов в headless-Avalonia |
+| `Core.Tests` (223) | чекеры (включая детект SOCKS5/HTTP-прокси и API Xray/Clash на реальном loopback-листенере), раннер, вердикт, консенсус IP, парсеры, plain-язык, маскирование, настройки, эвристики hosts/маршрутов, разбор GeoIP и анализ «глазами сайта» |
+| `Export.Tests` (29) | все семь форматов: содержимое, кириллица, валидность ZIP/Office-контейнеров |
+| `App.Tests` (37) | ViewModel'и, переключение режимов, навигация, сравнение прогонов, экспорт через фейковый диалог, экран «глазами сайта», рендер всех шести экранов в headless-Avalonia |
 | `Data.Tests` (11) | история прогонов (EF Core/SQLite), `settings.json`, повреждённый файл настроек |
 
 Особенность: `Masking.Enabled` — процессный переключатель, поэтому `CheckRunner` восстанавливает его после прогона, а тесты внутри сборки идут последовательно.
+
+
+## Требования к коду
+
+- Предупреждения компилятора и анализаторов — **ошибки сборки** (`TreatWarningsAsErrors`,
+  `EnforceCodeStyleInBuild`, `AnalysisMode=Recommended`). Сборка с предупреждением не проходит.
+- Форматирование и стиль зафиксированы в `.editorconfig`: файловые namespace, `System`-using первыми,
+  лишние `using` — ошибка (`IDE0005`).
+- Культура форматирования: машинный вывод (JSON, CSV, Markdown, DOCX, XLSX, PDF) — всегда
+  `InvariantCulture`; тексты интерфейса — с учётом локали пользователя.
+- Беспараметровые утилиты (`PingTools`, `AsnLookup`, `TraceTool`) — статические классы: не тянут
+  за собой экземпляры в DI и не создают иллюзию состояния.
+- Одноразовые ресурсы: ViewModel'и с `CancellationTokenSource` реализуют `IDisposable`,
+  окно вызывает `Dispose` при закрытии.
+
+
+Обзор ограничений сети, весов и полноты: [REVIEW.md](REVIEW.md). Часть результатов в интерфейсе выделяется мышью и копируется Ctrl+C.

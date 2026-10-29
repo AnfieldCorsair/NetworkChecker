@@ -1,5 +1,5 @@
 <#
-    Сборка и публикация RKNHardering PC под Windows.
+    Сборка и публикация NetworkChecker под Windows.
     usage:
         ./build.ps1                    # Debug-сборка + тесты
         ./build.ps1 -Publish           # framework-dependent publish в artifacts/win-x64
@@ -23,13 +23,13 @@ Write-Host "== build ($Configuration)" -ForegroundColor Cyan
 dotnet build -c $Configuration --no-restore
 
 Write-Host "== tests" -ForegroundColor Cyan
-dotnet test tests/RKNHardering.Core.Tests -c $Configuration --no-build
+dotnet test -c $Configuration --no-build
 
 if ($Publish) {
     $out = Join-Path $root "artifacts/$Runtime"
     Write-Host "== publish -> $out" -ForegroundColor Cyan
     $args = @(
-        "publish", "src/RKNHardering.App",
+        "publish", "src/NetworkChecker.App",
         "-c", $Configuration,
         "-r", $Runtime,
         "-o", $out,
@@ -38,5 +38,5 @@ if ($Publish) {
     )
     if ($SelfContained) { $args += "--self-contained", "true" } else { $args += "--self-contained", "false" }
     dotnet @args
-    Write-Host "Готово: $out/RKNHardering.App.exe" -ForegroundColor Green
+    Write-Host "Готово: $out/NetworkChecker.exe" -ForegroundColor Green
 }

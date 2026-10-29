@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NetworkChecker.App/NetworkChecker.App.csproj" />
+    <Project Path="src/NetworkChecker.Core/NetworkChecker.Core.csproj" />
+    <Project Path="src/NetworkChecker.Data/NetworkChecker.Data.csproj" />
+    <Project Path="src/NetworkChecker.Export/NetworkChecker.Export.csproj" />
+    <Project Path="src/NetworkChecker.Platform.Windows/NetworkChecker.Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NetworkChecker.App.Tests/NetworkChecker.App.Tests.csproj" />
+    <Project Path="tests/NetworkChecker.Core.Tests/NetworkChecker.Core.Tests.csproj" />
+    <Project Path="tests/NetworkChecker.Data.Tests/NetworkChecker.Data.Tests.csproj" />
+    <Project Path="tests/NetworkChecker.Export.Tests/NetworkChecker.Export.Tests.csproj" />
+    <Project Path="tests/NetworkChecker.TestKit/NetworkChecker.TestKit.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/NetworkChecker.Screenshots/NetworkChecker.Screenshots.csproj" />
+  </Folder>
+</Solution>

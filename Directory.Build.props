@@ -4,7 +4,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Чистота кода — требование, а не пожелание: предупреждения ломают сборку. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <!-- XML-доки не нужны, но без них не работает IDE0005 (лишние using) как ошибка сборки. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <!-- Держим bin/obj вне снапшота воркспейса -->
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).cache\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <BaseOutputPath>$(MSBuildThisFileDirectory).cache\bin\$(MSBuildProjectName)\</BaseOutputPath>
