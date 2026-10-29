@@ -25,7 +25,7 @@
           </Border>
           <StackPanel VerticalAlignment="Center" Spacing="1">
             <TextBlock Text="NetworkChecker" FontSize="14" FontWeight="SemiBold" />
-            <TextBlock Text="проверка сети · методика РКН" Classes="muted" FontSize="10.5" />
+            <TextBlock Text="{DynamicResource LocExtra37}" Classes="muted" FontSize="10.5" />
           </StackPanel>
         </StackPanel>
 
@@ -51,9 +51,9 @@
         <!-- Футер -->
         <StackPanel Grid.Row="2" Margin="20,0,16,0" Spacing="6">
           <Border Height="1" Background="{DynamicResource BorderBrush2}" Margin="0,0,0,10" />
-          <TextBlock Text="Модулей в наборе" Classes="overline" />
-          <TextBlock Text="10 проверок · 3 сетевых режима" Classes="muted" />
-          <TextBlock Text="v1.0 · Avalonia 12 · .NET 10" Classes="muted" FontSize="10.5" Margin="0,6,0,0" />
+          <TextBlock Text="{DynamicResource LocExtra34}" Classes="overline" />
+          <TextBlock Text="{DynamicResource LocExtra35}" Classes="muted" />
+          <TextBlock Text="v1.4 · Avalonia 12 · .NET 10" Classes="muted" FontSize="10.5" Margin="0,6,0,0" />
         </StackPanel>
       </Grid>
     </Border>
@@ -71,7 +71,7 @@
             <Border Classes="chip">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Ellipse Width="7" Height="7" Fill="{DynamicResource CleanBrush}" VerticalAlignment="Center" />
-                <TextBlock Text="локально, без сервера" FontSize="11" />
+                <TextBlock Text="{DynamicResource LocExtra36}" FontSize="11" />
               </StackPanel>
             </Border>
 

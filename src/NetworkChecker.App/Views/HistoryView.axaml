@@ -10,10 +10,10 @@
     <Border Grid.Column="0" Classes="card" Padding="14">
       <Grid RowDefinitions="Auto,*,Auto">
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
-          <TextBlock Grid.Column="0" Text="ПРОГОНЫ" Classes="overline" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="0" Text="{DynamicResource LocExtra27}" Classes="overline" VerticalAlignment="Center" />
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-            <Button Classes="ghost" Command="{Binding RefreshCommand}" FontSize="11" Padding="9,4" Content="Обновить" />
-            <Button Classes="danger" Command="{Binding ClearCommand}" FontSize="11" Padding="9,4" Content="Очистить" />
+            <Button Classes="ghost" Command="{Binding RefreshCommand}" FontSize="11" Padding="9,4" Content="{DynamicResource LocExtra28}" />
+            <Button Classes="danger" Command="{Binding ClearCommand}" FontSize="11" Padding="9,4" Content="{DynamicResource LocExtra29}" />
           </StackPanel>
         </Grid>
 
@@ -49,13 +49,13 @@
       <Grid RowDefinitions="Auto,Auto,Auto,*">
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
           <StackPanel Grid.Column="0" Spacing="4">
-            <TextBlock Text="ДЕТАЛИ ПРОГОНА" Classes="overline" />
+            <TextBlock Text="{DynamicResource LocExtra30}" Classes="overline" />
             <SelectableTextBlock Text="{Binding DetailHeadline}" Classes="h2" />
             <SelectableTextBlock Text="{Binding DetailSummary}" Classes="muted" IsVisible="{Binding HasDetail}" />
           </StackPanel>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top">
             <Button Classes="ghost" Command="{Binding CompareWithPreviousCommand}" FontSize="11" Padding="10,5"
-                    Content="Сравнить с предыдущим" IsVisible="{Binding HasDetail}" />
+                    Content="{DynamicResource LocExtra31}" IsVisible="{Binding HasDetail}" />
           </StackPanel>
         </Grid>
 
@@ -76,12 +76,12 @@
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Grid.Column="0" Spacing="2">
-                <TextBlock Text="СРАВНЕНИЕ С ПРЕДЫДУЩИМ ПРОГОНОМ" Classes="overline" />
+                <TextBlock Text="{DynamicResource LocExtra32}" Classes="overline" />
                 <SelectableTextBlock Text="{Binding ComparisonHeadline}" FontSize="15" FontWeight="SemiBold" />
                 <SelectableTextBlock Text="{Binding ComparisonSummary}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
               </StackPanel>
               <Button Grid.Column="1" Classes="ghost" Command="{Binding CloseComparisonCommand}"
-                      FontSize="11" Padding="9,4" Content="Скрыть" VerticalAlignment="Top" />
+                      FontSize="11" Padding="9,4" Content="{DynamicResource LocExtra33}" VerticalAlignment="Top" />
             </Grid>
             <ItemsControl ItemsSource="{Binding ComparisonRows}">
               <ItemsControl.ItemTemplate>

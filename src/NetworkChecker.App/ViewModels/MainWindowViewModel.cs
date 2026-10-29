@@ -13,10 +13,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         HistoryViewModel history,
         GuideViewModel guide,
         SettingsViewModel settings,
-        UiModeService mode)
+        UiModeService mode,
+        ObservationViewModel observation)
     {
         Mode = mode;
-        Pages = [dashboard, network, site, history, guide, settings];
+        Pages = [dashboard, network, site, history, guide, settings, observation];
         NavItems = new ObservableCollection<NavItem>(Pages.Select(p => new NavItem(p) { Command = NavigateCommand }));
         NavItems[0].IsSelected = true;
         CurrentNav = NavItems[0];

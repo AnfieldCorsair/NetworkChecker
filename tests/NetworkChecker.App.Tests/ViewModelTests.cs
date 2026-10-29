@@ -104,7 +104,7 @@ public class MainWindowViewModelTests
         Assert.Equal("История", main.CurrentPage.Title);
         Assert.True(main.NavItems[3].IsSelected);
         Assert.False(main.NavItems[0].IsSelected);
-        Assert.Equal(6, main.NavItems.Count);
+        Assert.Equal(7, main.NavItems.Count);
     }
 
     [AvaloniaFact]

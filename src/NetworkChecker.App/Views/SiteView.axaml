@@ -13,7 +13,7 @@
         <Grid ColumnDefinitions="6,*,Auto">
           <Border Grid.Column="0" CornerRadius="12,0,0,12" Background="{Binding AccentBrush}" />
           <StackPanel Grid.Column="1" Margin="22,18" Spacing="9">
-            <TextBlock Text="ВЗГЛЯД С ТОЙ СТОРОНЫ" Classes="overline" />
+            <TextBlock Text="{DynamicResource LocExtra38}" Classes="overline" />
             <SelectableTextBlock Text="{Binding Headline}" Classes="h1" FontSize="24" />
             <SelectableTextBlock Text="{Binding Summary}" TextWrapping="Wrap" MaxWidth="720" HorizontalAlignment="Left"
                        Foreground="{DynamicResource TextMuted}" LineHeight="19" />
@@ -22,7 +22,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="7">
                   <Path Data="{x:Static local:Icons.Refresh}" Stretch="Uniform" Width="12" Height="12"
                         Stroke="White" StrokeThickness="1.8" VerticalAlignment="Center" />
-                  <TextBlock Text="Посмотреть" Foreground="White" FontSize="12.5" />
+                  <TextBlock Text="{DynamicResource LocExtra45}" Foreground="White" FontSize="12.5" />
                 </StackPanel>
               </Button>
               <SelectableTextBlock Text="{Binding StatusLine}" Classes="muted" FontSize="11.5" VerticalAlignment="Center" />
@@ -30,8 +30,8 @@
           </StackPanel>
 
           <StackPanel Grid.Column="2" Margin="0,18,24,18" Spacing="2" VerticalAlignment="Center" MinWidth="132">
-            <TextBlock Text="УСЛОВНЫЙ БАЛЛ" Classes="overline" HorizontalAlignment="Right" />
-            <TextBlock Text="НЕ ВЕРОЯТНОСТЬ" Classes="overline" HorizontalAlignment="Right" />
+            <TextBlock Text="{DynamicResource LocExtra39}" Classes="overline" HorizontalAlignment="Right" />
+            <TextBlock Text="{DynamicResource LocExtra40}" Classes="overline" HorizontalAlignment="Right" />
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" Margin="0,4,0,0">
               <SelectableTextBlock Text="{Binding ExposureText}" FontSize="38" FontWeight="Bold" Foreground="{Binding AccentBrush}" />
               <TextBlock Text="/100" FontSize="13" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,0,6" />
@@ -47,7 +47,7 @@
           <StackPanel Spacing="12">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Grid.Column="0" Spacing="2">
-                <TextBlock Text="ДАННЫЕ И ПРЕДПОЛОЖЕНИЯ" Classes="overline" />
+                <TextBlock Text="{DynamicResource LocExtra41}" Classes="overline" />
                 <TextBlock Text="IP и GeoIP — по ответу сервиса; язык и пояс — локальные настройки, не данные браузера" Classes="muted" FontSize="11.5" />
               </StackPanel>
               <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center">
@@ -80,7 +80,7 @@
         <Border Grid.Column="1" Classes="card">
           <StackPanel Spacing="12">
             <StackPanel Spacing="2">
-              <TextBlock Text="ЧТО ИЗ ЭТОГО СЛЕДУЕТ" Classes="overline" />
+              <TextBlock Text="{DynamicResource LocExtra42}" Classes="overline" />
               <TextBlock Text="Условная модель приложения, а не вывод конкретного сайта"
                          Classes="muted" FontSize="11.5" />
             </StackPanel>
@@ -113,7 +113,7 @@
 
             <Border Classes="inset" IsVisible="{Binding HasError}" Padding="12,10">
               <StackPanel Spacing="3">
-                <TextBlock Text="ПОЧЕМУ ДАННЫХ МЕНЬШЕ" Classes="overline" FontSize="9" />
+                <TextBlock Text="{DynamicResource LocExtra46}" Classes="overline" FontSize="9" />
                 <SelectableTextBlock Text="{Binding ErrorText}" Classes="muted" FontSize="11" />
               </StackPanel>
             </Border>
@@ -123,7 +123,7 @@
 
       <Border Classes="card">
         <StackPanel Spacing="8">
-          <TextBlock Text="ЧЕГО САЙТ НЕ ЗНАЕТ АВТОМАТИЧЕСКИ" Classes="overline" />
+          <TextBlock Text="{DynamicResource LocExtra44}" Classes="overline" />
           <TextBlock Text="В HTTP-запросе нет списка установленных программ, локальных файлов, паролей или истории браузера. Сайт не получает их просто по IP-адресу." TextWrapping="Wrap" />
           <TextBlock Text="Но с разрешения пользователя сайт может получить геолокацию, доступ к камере, микрофону или выбранным файлам. Браузерные скрипты могут узнать часовой пояс, размеры экрана и другие признаки отпечатка; cookies, вход в аккаунт и внешние базы дают дополнительные сведения." Classes="muted" TextWrapping="Wrap" />
           <TextBlock Text="Этот экран не проверяет настройки или отпечаток вашего браузера: его язык и часовой пояс могут отличаться от системных." Classes="muted" TextWrapping="Wrap" />
@@ -134,7 +134,7 @@
       <Border Classes="card" IsVisible="{Binding ShowRawRequest}">
         <StackPanel Spacing="10">
           <StackPanel Spacing="2">
-            <TextBlock Text="ЧТО УХОДИТ В ЗАПРОСЕ" Classes="overline" />
+            <TextBlock Text="{DynamicResource LocExtra43}" Classes="overline" />
             <TextBlock Text="Пример заголовков клиента; фактический запрос и адрес поставщика могут отличаться. Это не запрос браузера."
                        Classes="muted" FontSize="11.5" />
           </StackPanel>

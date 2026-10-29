@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels" x:Class="NetworkChecker.App.Views.ObservationView" x:DataType="vm:ObservationViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="24,18,24,28" Spacing="14">
+      <Border Classes="card"><StackPanel Spacing="10">
+        <TextBlock Text="{DynamicResource ObsTitle}" Classes="h2" />
+        <TextBlock Text="{DynamicResource ObsDescription}" Classes="muted" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource ObsLimitations}" Classes="muted" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding RightsText}" FontWeight="SemiBold" />
+        <TextBlock Text="{DynamicResource ObsRestartHint}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding CanRestart}" />
+        <Button Content="{DynamicResource ObsRestart}" IsVisible="{Binding CanRestart}" Click="RestartAsAdmin" HorizontalAlignment="Left" />
+        <TextBlock x:Name="RestartStatus" Classes="muted" TextWrapping="Wrap" />
+        <CheckBox IsChecked="{Binding Consented}" Content="{DynamicResource ObsConsent}" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Classes="primary" Command="{Binding StartCommand}" Content="{DynamicResource ObsStart}" />
+          <Button Command="{Binding StopCommand}" Content="{DynamicResource ObsStop}" />
+          <SelectableTextBlock Text="{Binding Status}" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </StackPanel>
+      </StackPanel></Border>
+      <Border Classes="card"><StackPanel Spacing="8">
+        <TextBlock Text="WFP" Classes="overline" /><SelectableTextBlock Text="{Binding WfpStatus}" TextWrapping="Wrap" />
+        <TextBlock Text="ETW" Classes="overline" /><SelectableTextBlock Text="{Binding EtwStatus}" TextWrapping="Wrap" />
+      </StackPanel></Border>
+      <Border Classes="card"><StackPanel Spacing="10">
+        <TextBlock Text="{DynamicResource ObsEvents}" Classes="overline" />
+        <ItemsControl ItemsSource="{Binding Events}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ObservationRow">
+          <Grid ColumnDefinitions="80,65,180,*" Margin="0,4">
+            <SelectableTextBlock Grid.Column="0" Text="{Binding Time}" Classes="mono" />
+            <SelectableTextBlock Grid.Column="1" Text="{Binding Source}" />
+            <SelectableTextBlock Grid.Column="2" Text="{Binding Kind}" TextTrimming="CharacterEllipsis" />
+            <SelectableTextBlock Grid.Column="3" Text="{Binding Detail}" TextWrapping="Wrap" />
+          </Grid>
+        </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+      </StackPanel></Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

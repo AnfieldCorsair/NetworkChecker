@@ -161,6 +161,11 @@ internal static class Program
         Pump(8);
         Save(window, Path.Combine(output, "12-settings.png"));
 
+        // Наблюдение не запускается автоматически и не запрашивает привилегии.
+        main.NavigateCommand.Execute(main.NavItems[6]);
+        Pump(8);
+        Save(window, Path.Combine(output, "13-observation.png"));
+
         // 12. Демонстрационные отчёты во всех форматах — чтобы формат можно было посмотреть глазами.
         var lastRun = dashboard.LastResult;
         if (lastRun is not null)

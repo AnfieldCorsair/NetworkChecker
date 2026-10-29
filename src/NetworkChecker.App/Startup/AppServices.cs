@@ -8,6 +8,7 @@ using NetworkChecker.Core.Abstractions;
 using NetworkChecker.Core.Checks;
 using NetworkChecker.Core.Net;
 using NetworkChecker.Core.NetInfo;
+using NetworkChecker.Core.Observation;
 using NetworkChecker.Core.Options;
 using NetworkChecker.Core.SiteView;
 using NetworkChecker.Data;
@@ -51,6 +52,7 @@ public static class AppServices
         services.AddSingleton<DnsClientLite>();
         services.AddSingleton<NetworkInfoService>();
         services.AddSingleton<ISiteEyeService, SiteEyeService>();
+        services.AddSingleton<IObservationService, WindowsObservationService>();
 
         services.AddSingleton<ICheck, GeoIpCheck>();
         services.AddSingleton<ICheck, IpComparisonCheck>();
@@ -75,6 +77,7 @@ public static class AppServices
         services.AddSingleton<HistoryViewModel>();
         services.AddSingleton<GuideViewModel>();
         services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<ObservationViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         return builder.Build();

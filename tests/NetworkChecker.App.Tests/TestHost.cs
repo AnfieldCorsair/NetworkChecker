@@ -49,6 +49,15 @@ public static class TestHost
         var guide = new GuideViewModel();
         var settings = new SettingsViewModel(store, opts, store.Ui, history, mode);
 
-        return new MainWindowViewModel(dashboard, network, site, historyVm, guide, settings, mode);
+        return new MainWindowViewModel(dashboard, network, site, historyVm, guide, settings, mode, new ObservationViewModel(new FakeObservationService()));
+    }
+}
+
+public sealed class FakeObservationService : NetworkChecker.Core.Observation.IObservationService
+{
+    public Task<NetworkChecker.Core.Observation.ObservationReport> ObserveAsync(TimeSpan duration, CancellationToken cancellationToken)
+    {
+        var part = new NetworkChecker.Core.Observation.ObservationPart("test", true, "test", [], 0);
+        return Task.FromResult(new NetworkChecker.Core.Observation.ObservationReport(part, part));
     }
 }

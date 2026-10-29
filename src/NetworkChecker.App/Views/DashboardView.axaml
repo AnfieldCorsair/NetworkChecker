@@ -134,7 +134,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="7">
                   <Path Data="{x:Static local:Icons.Download}" Stretch="Uniform" Width="12" Height="12"
                         Stroke="{DynamicResource TextPrimary}" StrokeThickness="1.6" VerticalAlignment="Center" />
-                  <TextBlock Text="Сохранить" FontSize="12" />
+                  <TextBlock Text="{DynamicResource LocExtra26}" FontSize="12" />
                 </StackPanel>
               </Button>
             </StackPanel>
@@ -250,7 +250,7 @@
               </ComboBox>
               <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                 <Button Grid.Column="0" Classes="primary" Command="{Binding ExportReportCommand}"
-                        IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="Сохранить" FontSize="12" />
+                        IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="{DynamicResource LocExtra26}" FontSize="12" />
                 <Button Grid.Column="1" Classes="ghost" Command="{Binding CopySummaryCommand}"
                         IsEnabled="{Binding HasResult}" HorizontalAlignment="Stretch" Content="Копировать" FontSize="12" />
               </Grid>

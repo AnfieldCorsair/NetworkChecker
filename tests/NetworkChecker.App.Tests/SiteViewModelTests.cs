@@ -186,8 +186,8 @@ public class SiteViewModelTests
         using var env = new TempEnv();
         var main = TestHost.BuildMain(env, siteEye: new FakeSiteEyeService());
 
-        Assert.Equal(6, main.NavItems.Count);
-        Assert.Equal(["Проверка", "Сеть", "Глазами сайта", "История", "Справка", "Настройки"],
+        Assert.Equal(7, main.NavItems.Count);
+        Assert.Equal(["Проверка", "Сеть", "Глазами сайта", "История", "Справка", "Настройки", "Наблюдение"],
             main.NavItems.Select(n => n.Title));
         Assert.Contains("ВК", main.NavItems[2].Description, StringComparison.Ordinal);
     }

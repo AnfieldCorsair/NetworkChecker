@@ -8,7 +8,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- Имя exe = имя продукта: artifacts/win-x64/NetworkChecker.exe -->
     <AssemblyName>NetworkChecker</AssemblyName>
-    <Version>1.1.0</Version>
+    <Version>1.4.0</Version>
     <Product>NetworkChecker</Product>
     <Company>NetworkChecker</Company>
     <Description>Проверка сети и признаков обхода VPN/прокси по методике РКН</Description>
