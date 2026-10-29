@@ -38,6 +38,7 @@ public static class AppServices
         services.AddSingleton(settings);
         services.AddSingleton(options);
         services.AddSingleton(settings.Ui);
+        services.AddSingleton<UiModeService>();
 
         services.AddSingleton<VpnClientCatalog>();
         services.AddSingleton<IPlatformProbe, WindowsPlatformProbe>();

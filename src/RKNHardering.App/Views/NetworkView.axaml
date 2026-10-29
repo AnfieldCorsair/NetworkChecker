@@ -9,10 +9,10 @@
 
   <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Панель управления -->
-    <Border Grid.Row="0" Classes="card" Margin="24,18,24,0" Padding="14">
+    <!-- Панель управления: только в подробном режиме, в простом всё нужное — в карточке ниже -->
+    <Border Grid.Row="0" Classes="card" Margin="24,18,24,0" Padding="14" IsVisible="{Binding Mode.IsPro}">
       <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowTabs}">
           <Button Content="Овервью" Command="{Binding SelectTabCommand}" CommandParameter="Овервью" FontSize="12"
                   Padding="12,6" Classes.primary="{Binding ShowOverview}" />
           <Button Content="Диагностика" Command="{Binding SelectTabCommand}" CommandParameter="Диагностика" FontSize="12"
@@ -31,13 +31,60 @@
             </StackPanel>
           </Button>
           <Button Classes="primary" Command="{Binding RunDiagnosticsCommand}" FontSize="12" Padding="12,6"
-                  Content="Диагностика" />
+                  Content="Диагностика" IsVisible="{Binding ShowTabs}" />
         </StackPanel>
       </Grid>
     </Border>
 
-    <!-- ================= Овервью ================= -->
-    <ScrollViewer Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowOverview}">
+    <!-- ================= Овервью: простой режим ================= -->
+    <ScrollViewer Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowSimpleOverview}">
+      <StackPanel Margin="24,16,24,28" Spacing="16">
+        <Border Classes="card" Padding="0">
+          <Grid ColumnDefinitions="6,*">
+            <Border Grid.Column="0" CornerRadius="12,0,0,12" Background="{Binding SimpleToneBrush}" />
+            <StackPanel Grid.Column="1" Margin="20,18" Spacing="10">
+              <TextBlock Text="СОСТОЯНИЕ СЕТИ" Classes="overline" />
+              <TextBlock Text="{Binding SimpleSummary}" Classes="h1" FontSize="22" />
+              <TextBlock Text="Здесь только понятные факты. Полную картину — маршруты, адаптеры, MTU, трассировку — смотрите в режиме «Подробно»."
+                         Classes="muted" MaxWidth="780" HorizontalAlignment="Left" />
+              <Button Classes="primary" Command="{Binding RefreshOverviewCommand}" HorizontalAlignment="Left" Padding="16,9">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Path Data="{x:Static local:Icons.Refresh}" Stretch="Uniform" Width="12" Height="12"
+                        Stroke="White" StrokeThickness="1.8" VerticalAlignment="Center" />
+                  <TextBlock Text="Обновить" Foreground="White" FontSize="12.5" />
+                </StackPanel>
+              </Button>
+              <TextBlock Text="{Binding StatusLine}" Classes="muted" FontSize="11" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <ItemsControl ItemsSource="{Binding SimpleFacts}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SimpleNetFact">
+              <Border Classes="card" Width="440" Margin="0,0,14,14" Padding="14,12">
+                <StackPanel Spacing="5">
+                  <StackPanel Orientation="Horizontal" Spacing="7">
+                    <Ellipse Width="8" Height="8" Fill="{Binding DotBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Label}" Classes="overline" FontSize="9.5" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding Value}" FontSize="15" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Hint}" Classes="muted" FontSize="11" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ================= Овервью: подробный режим ================= -->
+    <ScrollViewer Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding ShowTechnicalOverview}">
       <StackPanel Margin="24,16,24,28" Spacing="16">
 
         <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">

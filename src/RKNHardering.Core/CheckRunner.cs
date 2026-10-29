@@ -36,7 +36,22 @@ public sealed class CheckRunner
 
     public async Task<CheckRunResult> RunAsync(RknOptions options, bool privacyMode, CancellationToken ct)
     {
+        // Маскировка — процессный переключатель: включаем на время прогона и в любом случае
+        // возвращаем как было, чтобы прогон не менял глобальное состояние приложения и тестов.
+        var previousMasking = Masking.Enabled;
         Masking.Enabled = privacyMode;
+        try
+        {
+            return await RunCoreAsync(options, privacyMode, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            Masking.Enabled = previousMasking;
+        }
+    }
+
+    private async Task<CheckRunResult> RunCoreAsync(RknOptions options, bool privacyMode, CancellationToken ct)
+    {
         var startedAt = DateTimeOffset.Now;
 
         var context = new CheckContext

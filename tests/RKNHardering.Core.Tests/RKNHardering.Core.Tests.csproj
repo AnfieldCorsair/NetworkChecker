@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\RKNHardering.Core\RKNHardering.Core.csproj" />
+    <ProjectReference Include="..\RKNHardering.TestKit\RKNHardering.TestKit.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

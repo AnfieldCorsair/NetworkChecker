@@ -11,14 +11,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         NetworkViewModel network,
         HistoryViewModel history,
         GuideViewModel guide,
-        SettingsViewModel settings)
+        SettingsViewModel settings,
+        UiModeService mode)
     {
+        Mode = mode;
         Pages = new ObservableCollection<ViewModelBase> { dashboard, network, history, guide, settings };
         NavItems = new ObservableCollection<NavItem>(Pages.Select(p => new NavItem(p) { Command = NavigateCommand }));
         NavItems[0].IsSelected = true;
         _currentNav = NavItems[0];
         _currentPage = dashboard;
     }
+
+    public UiModeService Mode { get; }
 
     public override string Title => "RKNHardering PC";
     public override string Icon => "\uE7F4";
@@ -41,4 +45,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand]
     private void ToggleNav() => IsNavExpanded = !IsNavExpanded;
+
+    [RelayCommand]
+    private void SetProMode(bool pro) => Mode.IsSimple = !pro;
+
+    /// <summary>Переключатель в шапке: "simple" или "pro".</summary>
+    [RelayCommand]
+    private void SwitchMode(string? value) => Mode.IsSimple = value != "pro";
+
+    public bool IsSimpleMode => Mode.IsSimple;
+    public bool IsProMode => Mode.IsPro;
 }

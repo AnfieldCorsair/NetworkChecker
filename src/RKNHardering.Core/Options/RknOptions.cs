@@ -120,6 +120,8 @@ public sealed class RknOptions
 public sealed class UiOptions
 {
     public string Theme { get; set; } = "Dark";
+    /// <summary>Открывать приложение в подробном режиме (по умолчанию — простой).</summary>
+    public bool ProModeByDefault { get; set; }
     public bool CompactNavigation { get; set; }
     public string Culture { get; set; } = "ru-RU";
 }

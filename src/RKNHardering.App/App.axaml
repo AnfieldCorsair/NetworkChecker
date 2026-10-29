@@ -167,6 +167,26 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
     </Style>
 
+    <Style Selector="Button.modetab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="12,5" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+      <Setter Property="FontSize" Value="11.5" />
+    </Style>
+    <Style Selector="Button.modetab:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ChipBrush}" />
+    </Style>
+    <Style Selector="Button.modetab.selected">
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.modetab.selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoft}" />
+    </Style>
+
     <!-- ===== Разное ===== -->
     <Style Selector="ProgressBar">
       <Setter Property="Height" Value="4" />

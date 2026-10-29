@@ -27,6 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\RKNHardering.Core\RKNHardering.Core.csproj" />
     <ProjectReference Include="..\RKNHardering.Data\RKNHardering.Data.csproj" />
+    <ProjectReference Include="..\RKNHardering.Export\RKNHardering.Export.csproj" />
     <ProjectReference Include="..\RKNHardering.Platform.Windows\RKNHardering.Platform.Windows.csproj" />
   </ItemGroup>
 

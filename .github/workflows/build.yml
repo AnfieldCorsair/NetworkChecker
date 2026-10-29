@@ -1,0 +1,38 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore
+      - run: dotnet build -c Release --no-restore
+      # Все четыре тестовых проекта: Core, Export, Data и App (headless-Avalonia рендер экранов).
+      - run: dotnet test -c Release --no-build
+      - run: dotnet publish src/RKNHardering.App -c Release -r win-x64 --self-contained false -o artifacts/win-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rkn-hardering-pc-win-x64
+          path: artifacts/win-x64
+
+  build-linux-headless:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore
+      - run: dotnet build -c Release --no-restore
+      # App-тесты требуют net10.0-windows, на Linux собираются и идут Core/Export/Data.
+      - run: dotnet test tests/RKNHardering.Core.Tests -c Release --no-build
+      - run: dotnet test tests/RKNHardering.Export.Tests -c Release --no-build
+      - run: dotnet test tests/RKNHardering.Data.Tests -c Release --no-build

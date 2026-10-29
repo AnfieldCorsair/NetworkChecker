@@ -70,9 +70,9 @@ public sealed class IndirectSignsCheck : ICheck
                 $"gateway={tunnelDefault.Gateway}, metric={tunnelDefault.Metric}"));
         }
 
-        // «подозрительный» шлюз в локальной сети: /32 host route — типовой приём tun2socks
-        var hostRoutes = routes.Where(r => r.Destination.EndsWith("/32", StringComparison.Ordinal) ||
-                                           (r.Destination.Count(c => c == '.') == 3 && r.Gateway is not null)).ToList();
+        // Хостовые маршруты (/32 или адрес без маски) — типовой приём tun2socks и выборочной маршрутизации.
+        // Маршрут по умолчанию сюда не попадает: у него тоже три точки, но это не host route.
+        var hostRoutes = routes.Where(r => !r.IsDefault && IsHostRoute(r.Destination)).ToList();
         if (hostRoutes.Count > 0)
         {
             findings.Add(Finding.Notice(
@@ -94,7 +94,12 @@ public sealed class IndirectSignsCheck : ICheck
                 string.Join(", ", loopbackDns)));
         }
 
-        var privateDns = dnsServers.Where(DnsConfiguration.IsPrivate).Except(loopbackDns).ToList();
+        // DNS на адресе шлюза (192.168.1.1) — обычная домашняя настройка, шумом не считаем.
+        var gateways = adapters.SelectMany(a => a.Gateways).Where(g => !string.IsNullOrWhiteSpace(g)).ToHashSet();
+        var privateDns = dnsServers.Where(DnsConfiguration.IsPrivate)
+            .Except(loopbackDns)
+            .Where(server => !gateways.Contains(server))
+            .ToList();
         if (privateDns.Count > 0)
         {
             findings.Add(Finding.Notice("Приватные DNS-серверы",
@@ -150,6 +155,13 @@ public sealed class IndirectSignsCheck : ICheck
             Duration = sw.Elapsed,
             Weight = Weight,
         };
+    }
+
+    private static bool IsHostRoute(string destination)
+    {
+        if (destination.EndsWith("/32", StringComparison.Ordinal)) return true;
+        if (destination.Contains('/')) return false;
+        return IPAddress.TryParse(destination, out var address) && !address.Equals(IPAddress.Any);
     }
 
     private static bool IsBenignHostsEntry(HostsEntry entry)

@@ -67,15 +67,25 @@
             <TextBlock Text="{Binding CurrentPage.Title}" Classes="h1" />
             <TextBlock Text="{Binding CurrentPage.Description}" Classes="muted" />
           </StackPanel>
-          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
             <Border Classes="chip">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <Ellipse Width="7" Height="7" Fill="{DynamicResource CleanBrush}" VerticalAlignment="Center" />
                 <TextBlock Text="локально, без сервера" FontSize="11" />
               </StackPanel>
             </Border>
-            <Border Classes="chip">
-              <TextBlock Text="Windows" FontSize="11" />
+
+            <!-- Переключатель «Просто / Подробно» -->
+            <Border Background="{DynamicResource SurfaceAltBrush}" CornerRadius="9" Padding="3"
+                    BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="modetab" Classes.selected="{Binding Mode.IsSimple}"
+                        Command="{Binding SwitchModeCommand}" CommandParameter="simple"
+                        Content="Просто" FontSize="11.5" />
+                <Button Classes="modetab" Classes.selected="{Binding Mode.IsPro}"
+                        Command="{Binding SwitchModeCommand}" CommandParameter="pro"
+                        Content="Подробно" FontSize="11.5" />
+              </StackPanel>
             </Border>
           </StackPanel>
         </Grid>

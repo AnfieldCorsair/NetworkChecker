@@ -36,11 +36,14 @@ public sealed partial class HistoryViewModel : ViewModelBase
 {
     private readonly HistoryRepository _history;
 
-    public HistoryViewModel(HistoryRepository history)
+    public HistoryViewModel(HistoryRepository history, UiModeService mode)
     {
+        Mode = mode;
         _history = history;
         _ = LoadAsync();
     }
+
+    public UiModeService Mode { get; }
 
     public override string Title => "История";
     public override string Icon => global::RKNHardering.App.Icons.Clock;

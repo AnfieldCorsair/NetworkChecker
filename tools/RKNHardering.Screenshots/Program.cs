@@ -53,9 +53,12 @@ internal static class Program
         Pump();
 
         var dashboard = host.Services.GetRequiredService<DashboardViewModel>();
+        var network = host.Services.GetRequiredService<NetworkViewModel>();
+        var mode = main.Mode;
 
-        // 1. Экран до запуска
-        Save(window, Path.Combine(output, "01-dashboard-idle.png"));
+        // 1. Простой режим: экран до запуска
+        mode.IsSimple = true;
+        Save(window, Path.Combine(output, "01-dashboard-simple-idle.png"));
 
         // 2. Реальный прогон проверки (сеть нужна; в офлайн-среде часть модулей уйдёт в Skipped)
         Console.WriteLine("Запуск проверки...");
@@ -67,45 +70,59 @@ internal static class Program
             Pump();
             Thread.Sleep(120);
         }
-        Save(window, Path.Combine(output, "02-dashboard-result.png"));
 
-        // 3. Сеть: овервью
-        var network = host.Services.GetRequiredService<NetworkViewModel>();
+        // 3. Простой режим: понятный результат
+        Save(window, Path.Combine(output, "02-dashboard-simple-result.png"));
+
+        // 4. Подробный режим: тот же прогон в технических деталях
+        mode.IsPro = true;
+        Pump(10);
+        Save(window, Path.Combine(output, "03-dashboard-pro-result.png"));
+
+        // 5. Сеть в простом режиме
+        mode.IsSimple = true;
         main.NavigateCommand.Execute(main.NavItems[1]);
-        AwaitWithPump(network.RefreshOverviewCommand.ExecuteAsync(null), TimeSpan.FromSeconds(60));
-        Pump(6);
-        Save(window, Path.Combine(output, "03-network-overview.png"));
+        AwaitWithPump(network.RefreshOverviewCommand.ExecuteAsync(null), TimeSpan.FromSeconds(90));
+        Pump(10);
+        Save(window, Path.Combine(output, "04-network-simple.png"));
 
-        // 4. Сеть: диагностика
+        // 6. Сеть: овервью в подробном режиме
+        mode.IsPro = true;
+        network.SelectTabCommand.Execute("Овервью");
+        AwaitWithPump(network.RefreshOverviewCommand.ExecuteAsync(null), TimeSpan.FromSeconds(90));
+        Pump(10);
+        Save(window, Path.Combine(output, "05-network-overview.png"));
+
+        // 7. Сеть: диагностика
         network.SelectTabCommand.Execute("Диагностика");
         AwaitWithPump(network.RunDiagnosticsCommand.ExecuteAsync(null), TimeSpan.FromSeconds(180));
-        Pump(6);
-        Save(window, Path.Combine(output, "04-network-diagnostics.png"));
+        Pump(8);
+        Save(window, Path.Combine(output, "06-network-diagnostics.png"));
 
-        // 5. Сеть: трассировка
+        // 8. Сеть: трассировка
         network.SelectTabCommand.Execute("Трассировка");
         AwaitWithPump(network.RunTraceCommand.ExecuteAsync(null), TimeSpan.FromSeconds(180));
-        Pump(6);
-        Save(window, Path.Combine(output, "05-network-trace.png"));
+        Pump(8);
+        Save(window, Path.Combine(output, "07-network-trace.png"));
 
-        // 6. История
+        // 9. История
         main.NavigateCommand.Execute(main.NavItems[2]);
         var history = host.Services.GetRequiredService<HistoryViewModel>();
         AwaitWithPump(history.RefreshCommand.ExecuteAsync(null), TimeSpan.FromSeconds(20));
         Pump(4);
         if (history.Runs.Count > 0) history.Selected = history.Runs[0];
-        Pump(8);
-        Save(window, Path.Combine(output, "06-history.png"));
+        Pump(10);
+        Save(window, Path.Combine(output, "08-history.png"));
 
-        // 7. Справка
+        // 10. Справка
         main.NavigateCommand.Execute(main.NavItems[3]);
-        Pump(6);
-        Save(window, Path.Combine(output, "07-guide.png"));
+        Pump(8);
+        Save(window, Path.Combine(output, "09-guide.png"));
 
-        // 8. Настройки
+        // 11. Настройки
         main.NavigateCommand.Execute(main.NavItems[4]);
-        Pump(6);
-        Save(window, Path.Combine(output, "08-settings.png"));
+        Pump(8);
+        Save(window, Path.Combine(output, "10-settings.png"));
 
         Console.WriteLine("Готово: " + Path.GetFullPath(output));
         return 0;

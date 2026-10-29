@@ -5,8 +5,9 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using RKNHardering.App.Startup;
 using RKNHardering.Core;
-using RKNHardering.Core.Export;
 using RKNHardering.Core.Models;
+using RKNHardering.Core.Plain;
+using RKNHardering.Export;
 using RKNHardering.Core.Net;
 using RKNHardering.Core.Options;
 using RKNHardering.Data;
@@ -147,6 +148,47 @@ public sealed class VerdictViewModel
     public double ScoreWidth => Math.Clamp(Score, 0, 100) * 3.2;
 }
 
+/// <summary>Строка простого режима: вопрос и понятный ответ.</summary>
+public sealed class FactViewModel(PlainFact fact)
+{
+    public string Question { get; } = fact.Question;
+    public string Answer { get; } = fact.Answer;
+    public string? Hint { get; } = fact.Hint;
+    public bool HasHint => !string.IsNullOrWhiteSpace(Hint);
+    public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(fact.Tone switch
+    {
+        "good" => "#35C48A",
+        "bad" => "#F0524C",
+        _ => "#F5C542",
+    });
+}
+
+/// <summary>Строка простого режима: модуль проверки человеческим языком.</summary>
+public sealed class PlainCheckViewModel(PlainCheck check)
+{
+    public string Title { get; } = check.Title;
+    public string WhatWeChecked { get; } = check.WhatWeChecked;
+    public string Status { get; } = check.Status;
+    public string Advice { get; } = check.Advice;
+    public bool HasAdvice => !string.IsNullOrWhiteSpace(Advice);
+    public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(check.Colour switch
+    {
+        "green" => "#35C48A",
+        "yellow" => "#F5C542",
+        "red" => "#F0524C",
+        "purple" => "#B061D6",
+        _ => "#5C7A99",
+    });
+    public Avalonia.Media.IBrush StatusSoftBrush { get; } = Ui.Brush(check.Colour switch
+    {
+        "green" => "#35C48A",
+        "yellow" => "#F5C542",
+        "red" => "#F0524C",
+        "purple" => "#B061D6",
+        _ => "#5C7A99",
+    }, 0.14);
+}
+
 public sealed partial class DashboardViewModel : ViewModelBase
 {
     private readonly CheckRunner _runner;
@@ -164,8 +206,10 @@ public sealed partial class DashboardViewModel : ViewModelBase
         SettingsStore settings,
         RknOptions options,
         IFileDialogService files,
+        UiModeService mode,
         ILogger<DashboardViewModel> logger)
     {
+        Mode = mode;
         _runner = runner;
         _history = history;
         _settings = settings;
@@ -190,6 +234,7 @@ public sealed partial class DashboardViewModel : ViewModelBase
                 Findings = [],
             })));
 
+        ShowPlainDetails = true;
         StatusLine = "Готово к запуску. Проверок в наборе: " + _runner.Checks.Count;
         CheckCount = _runner.Checks.Count;
     }
@@ -198,7 +243,11 @@ public sealed partial class DashboardViewModel : ViewModelBase
     public override string Icon => global::RKNHardering.App.Icons.ShieldCheck;
     public override string Description => "Обнаружение VPN и прокси по методике РКН";
 
+    public UiModeService Mode { get; }
+
     public ObservableCollection<CheckCardViewModel> Cards { get; }
+    public ObservableCollection<FactViewModel> Facts { get; } = new();
+    public ObservableCollection<PlainCheckViewModel> PlainChecks { get; } = new();
 
     [ObservableProperty] private VerdictViewModel? _verdict;
     [ObservableProperty] private bool _isRunning;
@@ -211,6 +260,14 @@ public sealed partial class DashboardViewModel : ViewModelBase
     [ObservableProperty] private bool _offlineMode;
     [ObservableProperty] private string _saveMessage = string.Empty;
     [ObservableProperty] private bool _hasResult;
+    [ObservableProperty] private string _plainHeadline = "Проверка ещё не запускалась";
+    [ObservableProperty] private string _plainMeaning = "Нажмите «Проверить компьютер» — приложение посмотрит настройки сети и объяснит простыми словами, всё ли обычно.";
+    [ObservableProperty] private string _plainAdvice = "Проверка занимает около 10 секунд и ничего не меняет в системе.";
+    [ObservableProperty] private string _plainConfiguration = string.Empty;
+    [ObservableProperty] private string _plainAccent = "#5C7A99";
+    [ObservableProperty] private Avalonia.Media.IBrush _plainAccentBrush = Ui.Brush("#5C7A99");
+    [ObservableProperty] private Avalonia.Media.IBrush _plainSoftBrush = Ui.Brush("#5C7A99", 0.12);
+    [ObservableProperty] private bool _showPlainDetails;
 
     public bool HasVerdict => Verdict is not null;
 
@@ -259,6 +316,8 @@ public sealed partial class DashboardViewModel : ViewModelBase
             _lastResult = result;
             Verdict = new VerdictViewModel(result.Verdict, result.IpConsensus, result.Duration);
             HasResult = true;
+            ExportReportCommand.NotifyCanExecuteChanged();
+            UpdatePlainView(result);
             Progress = 100;
             LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
             StatusLine = result.Verdict.Headline;
@@ -287,6 +346,44 @@ public sealed partial class DashboardViewModel : ViewModelBase
         }
     }
 
+    /// <summary>
+    /// Показывает готовый прогон (например, выбранный в истории) без повторного запуска проверок.
+    /// </summary>
+    public void LoadRun(CheckRunResult result)
+    {
+        _lastResult = result;
+        Verdict = new VerdictViewModel(result.Verdict, result.IpConsensus, result.Duration);
+        HasResult = true;
+        ExportReportCommand.NotifyCanExecuteChanged();
+        UpdatePlainView(result);
+        Progress = 100;
+        LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
+        StatusLine = result.Verdict.Headline;
+    }
+
+    private void UpdatePlainView(CheckRunResult result)
+    {
+        var explanation = PlainLanguage.ForVerdict(result.Verdict, result.Checks);
+        PlainHeadline = explanation.Headline;
+        PlainMeaning = explanation.WhatItMeans;
+        PlainAdvice = explanation.Advice;
+        PlainConfiguration = PlainFacts.OverallConfiguration(result);
+        PlainAccent = result.Verdict.Level switch
+        {
+            RiskLevel.Clean => "#35C48A",
+            RiskLevel.NeedsReview => "#F5C542",
+            _ => "#F0524C",
+        };
+        PlainAccentBrush = Ui.Brush(PlainAccent);
+        PlainSoftBrush = Ui.Brush(PlainAccent, 0.12);
+
+        Facts.Clear();
+        foreach (var fact in PlainFacts.Build(result)) Facts.Add(new FactViewModel(fact));
+
+        PlainChecks.Clear();
+        foreach (var check in result.Checks.Select(PlainLanguage.ToPlain)) PlainChecks.Add(new PlainCheckViewModel(check));
+    }
+
     private bool CanRun() => !IsRunning;
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
@@ -294,25 +391,37 @@ public sealed partial class DashboardViewModel : ViewModelBase
 
     private bool CanCancel() => IsRunning;
 
-    [RelayCommand]
-    private async Task ExportMarkdownAsync()
+    /// <summary>Доступные форматы отчёта (PDF, Word, Excel, CSV, Markdown, JSON).</summary>
+    public IReadOnlyList<ExportFormatOption> ExportFormats { get; } = ExportFormatOption.All;
+
+    [ObservableProperty] private ExportFormatOption _selectedFormat = ExportFormatOption.All[0];
+
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private async Task ExportReportAsync()
     {
         if (_lastResult is null) return;
-        var path = await _files.SaveTextAsync(
-            $"rkn-hardering-{_lastResult.StartedAt:yyyyMMdd-HHmm}.md",
-            Core.Export.ResultExport.ToMarkdown(_lastResult), ".md", "Markdown").ConfigureAwait(true);
-        if (path is not null) SaveMessage = "Отчёт сохранён: " + path;
+        try
+        {
+            var file = ReportExporter.Build(SelectedFormat.Format, _lastResult);
+            var path = await _files.SaveBytesAsync(file.FileName, file.Content, SelectedFormat.Extension, file.Description)
+                .ConfigureAwait(true);
+            SaveMessage = path is null ? string.Empty : $"Отчёт сохранён: {path}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка экспорта отчёта");
+            SaveMessage = "Не удалось сохранить отчёт: " + ex.GetBaseException().Message;
+        }
     }
 
+    private bool CanExport() => _lastResult is not null;
+
     [RelayCommand]
-    private async Task ExportJsonAsync()
-    {
-        if (_lastResult is null) return;
-        var path = await _files.SaveTextAsync(
-            $"rkn-hardering-{_lastResult.StartedAt:yyyyMMdd-HHmm}.json",
-            ResultExport.ToJson(_lastResult), ".json", "JSON").ConfigureAwait(true);
-        if (path is not null) SaveMessage = "Данные сохранены: " + path;
-    }
+    private void TogglePlainDetails() => ShowPlainDetails = !ShowPlainDetails;
+
+    /// <summary>Переключить на подробный режим (кнопка «Нужны детали»).</summary>
+    [RelayCommand]
+    private void GoPro() => Mode.IsSimple = false;
 
     [RelayCommand]
     private async Task CopySummaryAsync()

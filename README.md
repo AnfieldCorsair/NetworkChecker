@@ -1,10 +1,45 @@
 # RKNHardering PC
 
-Десктопный порт [RKNHardering](https://github.com/xtclovver/RKNHardering) — приложения для обнаружения VPN и прокси по методике РКН. Android-проверки перенесены на платформенные аналоги Windows, плюс добавлены расширенные сетевые проверки и отдельная вкладка «Сеть» (база → диагностика → трассировка).
+Приложение для Windows, которое проверяет компьютер по методике РКН: ищет признаки включённого VPN, системного прокси, туннелей и локальных клиентов обхода, а также показывает подробную картину сети.
+
+Самостоятельный проект: свой код, свой UI, свои проверки под Windows. Идею и набор признаков взяли из Android-приложения [RKNHardering](https://github.com/xtclovver/RKNHardering) — оно упомянуто как источник вдохновения, код общий только в смысле методики.
+
+Две аудитории в одном приложении:
+
+- **«Просто»** — понятный ответ для обычного человека: «конфигурация обычная / есть отклонения / есть признаки обхода» + 6 фактов без терминов.
+- **«Подробно»** — для тех, кому нужны метрики, находки по каждому модулю, сырые маршруты, DNS, MTU и трассировка.
 
 **Стек:** .NET 10 LTS · Avalonia 12.1.4 · CommunityToolkit.Mvvm 8.4 · EF Core 10 + SQLite · Microsoft.Extensions.Hosting + DI · Serilog.
 
-![Экран проверки](screenshots/02-dashboard-result.png)
+![Экран проверки в простом режиме](screenshots/02-dashboard-simple-result.png)
+
+---
+
+## Два режима интерфейса
+
+Переключатель «Просто / Подробно» — в правом верхнем углу; выбор запоминается в `settings.json`.
+
+| | Просто | Подробно |
+|---|---|---|
+| Ответ | крупный вердикт человеческим языком + «что делать» | счёт 0–100, причины, наблюдения IP-консенсуса |
+| Модули | карточки «что проверяли» со статусом словами | полный список с метриками, находками и доказательствами |
+| Сеть | полоса тона + 6 фактов (соединение, VPN/туннель, прокси, адрес выхода, DNS, MTU) | адаптеры, маршруты, NRPT, диагностика, трассировка |
+| Настройки | базовое | плюс списки целей: провайдеры GeoIP, домены, STUN, порты |
+
+## Экспорт отчёта
+
+Результат прогона выгружается в привычные форматы — кнопка «Экспорт» на экране проверки:
+
+| Формат | Что получается |
+|---|---|
+| **PDF** | печатный отчёт: вердикт, находки, таблица модулей, окружение |
+| **Word (DOCX)** | тот же отчёт как документ — можно править и дополнять |
+| **Excel (XLSX)** | листы «Сводка», «Модули», «Находки», «IP-источники» |
+| **CSV** | плоская таблица для своих сводных и скриптов |
+| **Markdown** | отчёт для тикета, wiki или git-репозитория |
+| **JSON** | полный машинный дамп прогона (для автоматизации и сравнения) |
+
+Кириллица в PDF встроена в файл (шрифт DejaVu, лицензия позволяет), внешние шрифты не нужны.
 
 ---
 
@@ -39,28 +74,39 @@
 
 ## Сборка и запуск
 
-Нужен **.NET 10 SDK** (проверено на 10.0.403).
+Нужен **.NET 10 SDK** (проверено на 10.0.403). Подробный пошаговый гайд для тех, кто собирает впервые, — в [docs/BUILD.md](docs/BUILD.md).
+
+Самый короткий путь (PowerShell в папке проекта):
+
+```powershell
+./build.ps1 -Publish
+```
+
+Скрипт восстановит пакеты, соберёт, прогонит тесты и положит готовый `RKNHardering.App.exe` в `artifacts/win-x64`.
+
+Вручную:
 
 ```powershell
 dotnet restore
 dotnet build
+dotnet test                     # 174 теста во всех четырёх тестовых проектах
 dotnet run --project src/RKNHardering.App
 ```
 
-Тесты (58 штук: парсеры, вердикт, консенсус IP, DNS-wire, экспорт, каталог клиентов):
+| Тестовый проект | Что покрывает | Тестов |
+|---|---|---|
+| `tests/RKNHardering.Core.Tests` | чекеры, вердикт, консенсус IP, парсеры, DNS-wire, plain-язык, раннер | 120 |
+| `tests/RKNHardering.Export.Tests` | все шесть форматов отчёта, кириллица, содержимое файлов | 20 |
+| `tests/RKNHardering.App.Tests` | ViewModel'и, режимы UI, навигация, рендер всех экранов (headless) | 23 |
+| `tests/RKNHardering.Data.Tests` | история прогонов (EF Core/SQLite), settings.json | 11 |
+
+Публикация:
 
 ```powershell
-dotnet test tests/RKNHardering.Core.Tests
+./build.ps1                       # Debug + тесты
+./build.ps1 -Publish              # framework-dependent → artifacts/win-x64
+./build.ps1 -Publish -SelfContained   # .NET не нужен на целевой машине
 ```
-
-Публикация self-contained под Windows:
-
-```powershell
-./build.ps1            # → artifacts/win-x64, framework-dependent
-./build.ps1 -SelfContained
-```
-
-Готовый exe: `artifacts/win-x64/RKNHardering.App.exe`.
 
 ### Требования к ОС
 
@@ -105,9 +151,15 @@ src/
 │   └── Export/                  # Markdown и JSON-отчёты
 ├── RKNHardering.Platform.Windows # IPlatformProbe: реестр, PowerShell, сеть, hosts
 ├── RKNHardering.Data            # EF Core + SQLite, история, settings.json
-├── RKNHardering.App             # Avalonia UI (MVVM, 5 экранов)
-tests/RKNHardering.Core.Tests    # xUnit
-tools/RKNHardering.Screenshots   # headless-рендер экранов в PNG (для ревью UI)
+├── RKNHardering.Export          # PDF / DOCX / XLSX / CSV / Markdown / JSON
+└── RKNHardering.App             # Avalonia UI (MVVM, 5 экранов, два режима)
+tests/
+├── RKNHardering.TestKit         # общие фейки: платформа, HTTP, чекеры, «эталонные» прогоны
+├── RKNHardering.Core.Tests
+├── RKNHardering.Export.Tests
+├── RKNHardering.App.Tests       # включая headless-рендер экранов
+└── RKNHardering.Data.Tests
+tools/RKNHardering.Screenshots   # рендер реальных экранов в PNG (для ревью UI)
 ```
 
 Поток данных: `DashboardViewModel` → `CheckRunner` (параллельно, `MaxParallelChecks`) → `ICheck.RunAsync` → `VerdictEngine` + `IpConsensusBuilder` → `HistoryRepository` → UI/экспорт.
@@ -143,10 +195,11 @@ tools/RKNHardering.Screenshots   # headless-рендер экранов в PNG (
 
 | | |
 |---|---|
-| ![](screenshots/01-dashboard-idle.png) | ![](screenshots/02-dashboard-result.png) |
-| ![](screenshots/03-network-overview.png) | ![](screenshots/04-network-diagnostics.png) |
-| ![](screenshots/05-network-trace.png) | ![](screenshots/06-history.png) |
-| ![](screenshots/07-guide.png) | ![](screenshots/08-settings.png) |
+| **Простой режим, до запуска**<br>![](screenshots/01-dashboard-simple-idle.png) | **Простой режим, результат**<br>![](screenshots/02-dashboard-simple-result.png) |
+| **Подробный режим, результат**<br>![](screenshots/03-dashboard-pro-result.png) | **Сеть в простом режиме**<br>![](screenshots/04-network-simple.png) |
+| **Сеть: овервью**<br>![](screenshots/05-network-overview.png) | **Сеть: диагностика**<br>![](screenshots/06-network-diagnostics.png) |
+| **Сеть: трассировка**<br>![](screenshots/07-network-trace.png) | **История**<br>![](screenshots/08-history.png) |
+| **Справка**<br>![](screenshots/09-guide.png) | **Настройки**<br>![](screenshots/10-settings.png) |
 
 Скриншоты снимаются утилитой `tools/RKNHardering.Screenshots` (headless Avalonia + Skia) из реальных экранов — это не макеты.
 
@@ -163,7 +216,7 @@ tools/RKNHardering.Screenshots   # headless-рендер экранов в PNG (
 
 - [ ] WinHTTP-прокси (`netsh winhttp show proxy`) и PAC-разбор
 - [ ] WFP-фильтры и ETW-события для детекта перехвата без опроса
-- [ ] Экспорт HTML-отчёта и сравнение прогонов между собой
+- [ ] HTML-отчёт (для отправки одним файлом) и сравнение прогонов между собой
 - [ ] ICMP raw с авто-повышением прав
 - [ ] Трей-граф с картой хопов и per-hop ASN-цветом
 - [ ] Локализация интерфейса (en)

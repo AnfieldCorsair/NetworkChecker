@@ -15,8 +15,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly UiOptions _ui;
     private readonly HistoryRepository _history;
 
-    public SettingsViewModel(SettingsStore store, RknOptions options, UiOptions ui, HistoryRepository history)
+    public SettingsViewModel(SettingsStore store, RknOptions options, UiOptions ui, HistoryRepository history, UiModeService mode)
     {
+        Mode = mode;
         _store = store;
         _options = options;
         _ui = ui;
@@ -40,6 +41,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
         DataDirectory = store.DataDirectory;
         DatabasePath = store.DatabasePath;
     }
+
+    public UiModeService Mode { get; }
 
     public override string Title => "Настройки";
     public override string Icon => global::RKNHardering.App.Icons.Sliders;
@@ -98,7 +101,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
             .ToList();
 
         Masking.Enabled = PrivacyMode;
-        _store.Save();
+        _store.Save(_options, _ui);
         SaveStatus = $"Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}";
         await Task.CompletedTask.ConfigureAwait(true);
     }

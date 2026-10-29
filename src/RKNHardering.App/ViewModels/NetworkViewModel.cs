@@ -46,6 +46,23 @@ public sealed class RouteRowViewModel(RouteInfo route)
 
 public sealed record KeyValueRow(string Key, string Value, string? Hint = null);
 
+/// <summary>Понятный факт о сети для простого режима.</summary>
+public sealed class SimpleNetFact(string label, string value, string hint, string tone)
+{
+    public string Tone { get; } = tone;
+    public bool IsGood => Tone == "good";
+    public bool IsBad => Tone == "bad";
+    public string Label { get; } = label;
+    public string Value { get; } = value;
+    public string Hint { get; } = hint;
+    public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(tone switch
+    {
+        "good" => "#35C48A",
+        "bad" => "#F0524C",
+        _ => "#F5C542",
+    });
+}
+
 public sealed partial class NetworkViewModel : ViewModelBase
 {
     private readonly NetworkInfoService _service;
@@ -53,13 +70,27 @@ public sealed partial class NetworkViewModel : ViewModelBase
     private readonly ILogger<NetworkViewModel> _logger;
     private CancellationTokenSource? _cts;
 
-    public NetworkViewModel(NetworkInfoService service, RknOptions options, ILogger<NetworkViewModel> logger)
+    public NetworkViewModel(NetworkInfoService service, RknOptions options, UiModeService mode, ILogger<NetworkViewModel> logger)
     {
+        Mode = mode;
         _service = service;
         _options = options;
         _logger = logger;
         TraceTarget = options.DefaultTraceTarget;
+        Mode.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName is nameof(UiModeService.IsSimple) or nameof(UiModeService.IsPro))
+            {
+                OnPropertyChanged(nameof(ShowTabs));
+                OnPropertyChanged(nameof(ShowTechnicalOverview));
+                OnPropertyChanged(nameof(ShowSimpleOverview));
+                OnPropertyChanged(nameof(ShowOverview));
+                if (Mode.IsSimple) ActiveTab = "Овервью";
+            }
+        };
     }
+
+    public UiModeService Mode { get; }
 
     public override string Title => "Сеть";
     public override string Icon => global::RKNHardering.App.Icons.Globe;
@@ -73,6 +104,15 @@ public sealed partial class NetworkViewModel : ViewModelBase
     public ObservableCollection<DnsProbeResult> Dns { get; } = new();
     public ObservableCollection<TlsProbe> Tls { get; } = new();
     public ObservableCollection<TraceHop> Hops { get; } = new();
+    public ObservableCollection<SimpleNetFact> SimpleFacts { get; } = new();
+
+    /// <summary>Технические таблицы показываем только в подробном режиме.</summary>
+    public bool ShowTechnicalOverview => ShowOverview && Mode.IsPro;
+    public bool ShowSimpleOverview => Mode.IsSimple;
+
+    [ObservableProperty] private string _simpleSummary = "Нажмите «Обновить», чтобы посмотреть состояние сети простыми словами.";
+    [ObservableProperty] private string _simpleTone = "#5C7A99";
+    [ObservableProperty] private Avalonia.Media.IBrush _simpleToneBrush = Ui.Brush("#5C7A99");
 
     [ObservableProperty] private string _traceTarget = "1.1.1.1";
     [ObservableProperty] private bool _isLoadingOverview;
@@ -94,6 +134,9 @@ public sealed partial class NetworkViewModel : ViewModelBase
 
     public string[] Tabs { get; } = ["Овервью", "Диагностика", "Трассировка"];
 
+    /// <summary>В простом режиме вкладки диагностики и трассировки скрыты.</summary>
+    public bool ShowTabs => Mode.IsPro;
+
     public bool ShowOverview => ActiveTab == "Овервью";
     public bool ShowDiagnostics => ActiveTab == "Диагностика";
     public bool ShowTrace => ActiveTab == "Трассировка";
@@ -103,6 +146,8 @@ public sealed partial class NetworkViewModel : ViewModelBase
         OnPropertyChanged(nameof(ShowOverview));
         OnPropertyChanged(nameof(ShowDiagnostics));
         OnPropertyChanged(nameof(ShowTrace));
+        OnPropertyChanged(nameof(ShowTechnicalOverview));
+        OnPropertyChanged(nameof(ShowSimpleOverview));
     }
 
     [RelayCommand]
@@ -150,6 +195,7 @@ public sealed partial class NetworkViewModel : ViewModelBase
             MtuText = overview.MtuText;
             AdaptersCountText = $"{overview.ActiveAdapters.Count} из {overview.Adapters.Count}";
             OverviewRefreshed = $"обновлено {overview.RefreshedAt:HH:mm:ss}";
+            UpdateSimpleFacts(overview);
             StatusLine = "Готово. Данные прочитаны из системы.";
         }
         catch (Exception ex)
@@ -162,6 +208,75 @@ public sealed partial class NetworkViewModel : ViewModelBase
             IsLoadingOverview = false;
             RefreshOverviewCommand.NotifyCanExecuteChanged();
         }
+    }
+
+    private void UpdateSimpleFacts(NetworkOverview overview)
+    {
+        SimpleFacts.Clear();
+
+        var primary = overview.PrimaryAdapter;
+        SimpleFacts.Add(new SimpleNetFact(
+            "Соединение",
+            primary is null ? "не найдено" : $"{primary.KindText} · {primary.Name}",
+            primary is null ? "Сетевой адаптер не найден — возможно, нет подключения." : $"Адрес {primary.AddressText}",
+            primary is null ? "bad" : "good"));
+
+        var tunnels = overview.Adapters.Where(a => a.IsUp && a.Kind == AdapterKind.Tunnel).ToList();
+        SimpleFacts.Add(new SimpleNetFact(
+            "VPN или туннель",
+            tunnels.Count == 0 ? "не найден" : "включён",
+            tunnels.Count == 0 ? "Туннельных интерфейсов в системе нет." : string.Join(", ", tunnels.Select(t => t.Name)),
+            tunnels.Count == 0 ? "good" : "bad"));
+
+        SimpleFacts.Add(new SimpleNetFact(
+            "Прокси",
+            overview.Proxy.HasProxy ? "настроен" : "не настроен",
+            overview.Proxy.HasProxy ? overview.Proxy.Display : "Системный прокси выключен.",
+            overview.Proxy.HasProxy ? "bad" : "good"));
+
+        SimpleFacts.Add(new SimpleNetFact(
+            "Адрес выхода",
+            overview.ExternalIp is null ? "неизвестен" : Masking.Ip(overview.ExternalIp),
+            overview.Country is null
+                ? "Внешний сервис не ответил — проверьте интернет или офлайн-режим."
+                : $"{GeoCountries.Name(overview.Country)} · {overview.Isp ?? "провайдер неизвестен"}",
+            overview.ExternalIp is null ? "warn" : "good"));
+
+        SimpleFacts.Add(new SimpleNetFact(
+            "DNS-серверы",
+            overview.Dns.Servers.Count == 0 ? "автоматически" : string.Join(", ", overview.Dns.Servers.Take(2)),
+            overview.Dns.HasLoopbackServer
+                ? "Один из DNS — локальный (127.0.0.1): так бывает, когда DNS обслуживает VPN или прокси."
+                : "Обычное разрешение имён.",
+            overview.Dns.HasLoopbackServer ? "warn" : "good"));
+
+        SimpleFacts.Add(new SimpleNetFact(
+            "Размер пакета (MTU)",
+            primary is null ? "—" : $"{primary.Mtu}",
+            tunnels.Count > 0 && tunnels.All(t => t.Mtu is not 1500 and not 1420)
+                ? "Нестандартный MTU туннеля — так обычно настраивают клиенты обхода."
+                : "Стандартный размер пакета.",
+            tunnels.Count > 0 && tunnels.All(t => t.Mtu is not 1500 and not 1420) ? "warn" : "good"));
+
+        var bad = SimpleFacts.Any(f => f.IsBad);
+        var odd = SimpleFacts.Count(f => !f.IsGood);
+
+        if (bad)
+        {
+            SimpleSummary = "В сети есть VPN, прокси или туннель";
+            SimpleTone = "#F0524C";
+        }
+        else if (odd > 0)
+        {
+            SimpleSummary = "Сеть работает обычно, но есть пара отличий от типичной настройки";
+            SimpleTone = "#F5C542";
+        }
+        else
+        {
+            SimpleSummary = "Настройки сети выглядят обычным образом";
+            SimpleTone = "#35C48A";
+        }
+        SimpleToneBrush = Ui.Brush(SimpleTone);
     }
 
     private bool CanLoadOverview() => !IsLoadingOverview;

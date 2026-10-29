@@ -87,7 +87,7 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="card">
+          <Border Classes="card" IsVisible="{Binding Mode.IsPro}">
             <StackPanel Spacing="10">
               <TextBlock Text="СПИСКИ ЦЕЛЕЙ" Classes="overline" />
               <TextBlock Text="GeoIP-провайдеры (URL построчно)" Classes="muted" FontSize="10.5" />

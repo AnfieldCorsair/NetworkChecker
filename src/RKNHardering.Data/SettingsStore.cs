@@ -48,11 +48,20 @@ public sealed class SettingsStore
         return Options;
     }
 
-    public void Save()
+    public void Save() => Save(Options, Ui);
+
+    /// <summary>
+    /// Сохраняет явно переданные экземпляры. Страховка от рассинхронизации: если настройки
+    /// в UI живут в другом объекте, чем <see cref="Options"/>, они всё равно попадут в файл,
+    /// а не будут молча затёрты дефолтами.
+    /// </summary>
+    public void Save(RknOptions options, UiOptions ui)
     {
+        Options = options;
+        Ui = ui;
         try
         {
-            var envelope = new SettingsEnvelope { Options = Options, Ui = Ui };
+            var envelope = new SettingsEnvelope { Options = options, Ui = ui };
             File.WriteAllText(_path, JsonSerializer.Serialize(envelope, JsonOptions));
         }
         catch
