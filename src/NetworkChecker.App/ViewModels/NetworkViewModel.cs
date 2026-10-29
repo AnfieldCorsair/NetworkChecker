@@ -395,8 +395,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     /// <summary>Освобождает незавершённый прогон (например, при закрытии окна во время проверки).</summary>
     public void Dispose()
     {
+        // Источник освобождается самой операцией в finally после завершения отмены.
         _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
     }
 }

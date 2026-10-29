@@ -31,13 +31,14 @@ public static class PowerShell
 
     public static async Task<string> RunAsync(string command, TimeSpan timeout, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (!IsAvailable) return string.Empty;
+        Process? process = null;
         try
         {
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -Command \"{command.Replace("\"", "\\\"")}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -45,17 +46,35 @@ public static class PowerShell
                 StandardOutputEncoding = Encoding.UTF8,
                 StandardErrorEncoding = Encoding.UTF8,
             };
-            using var process = Process.Start(psi);
+            // EncodedCommand не зависит от кавычек в сценарии и сохраняет Unicode.
+            var script = "[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new();" + command;
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-NonInteractive");
+            psi.ArgumentList.Add("-ExecutionPolicy");
+            psi.ArgumentList.Add("Bypass");
+            psi.ArgumentList.Add("-EncodedCommand");
+            psi.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(script)));
+            process = Process.Start(psi);
             if (process is null) return string.Empty;
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(timeout);
-            var stdout = await process.StandardOutput.ReadToEndAsync(cts.Token).ConfigureAwait(false);
-            await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
-            return stdout.Trim();
+            // Оба потока читаются параллельно, чтобы заполненный stderr не заблокировал процесс.
+            var stdout = process.StandardOutput.ReadToEndAsync(cts.Token);
+            var stderr = process.StandardError.ReadToEndAsync(cts.Token);
+            await Task.WhenAll(stdout, stderr, process.WaitForExitAsync(cts.Token)).ConfigureAwait(false);
+            return process.ExitCode == 0 ? stdout.Result.Trim() : string.Empty;
         }
-        catch
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch { return string.Empty; }
+        finally
         {
-            return string.Empty;
+            if (process is not null)
+            {
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception) { }
+                process.Dispose();
+            }
         }
     }
 

@@ -26,21 +26,22 @@ public static class ConnectivityProbes
     public static async Task<TcpProbeResult> TcpConnectAsync(string host, int port, TimeSpan timeout, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(timeout);
         try
         {
-            var addresses = await ResolveAsync(host, ct).ConfigureAwait(false);
+            var addresses = await ResolveAsync(host, deadline.Token).ConfigureAwait(false);
             if (addresses.Count == 0) return new TcpProbeResult(false, sw.Elapsed, "DNS не разрешил имя", null);
             Exception? last = null;
             foreach (var ip in addresses)
             {
                 using var client = new TcpClient(ip.AddressFamily);
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                cts.CancelAfter(timeout);
                 try
                 {
-                    await client.ConnectAsync(ip, port, cts.Token).ConfigureAwait(false);
+                    await client.ConnectAsync(ip, port, deadline.Token).ConfigureAwait(false);
                     return new TcpProbeResult(true, sw.Elapsed, null, ip.ToString());
                 }
+                catch (OperationCanceledException) when (deadline.IsCancellationRequested) { throw; }
                 catch (Exception ex)
                 {
                     last = ex;
@@ -48,6 +49,8 @@ public static class ConnectivityProbes
             }
             return new TcpProbeResult(false, sw.Elapsed, Describe(last), null);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) { return new TcpProbeResult(false, sw.Elapsed, "таймаут", null); }
         catch (Exception ex)
         {
             return new TcpProbeResult(false, sw.Elapsed, Describe(ex), null);
@@ -57,17 +60,17 @@ public static class ConnectivityProbes
     public static async Task<TlsProbeResult> TlsHandshakeAsync(string host, int port, TimeSpan timeout, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(timeout);
         try
         {
-            var addresses = await ResolveAsync(host, ct).ConfigureAwait(false);
+            var addresses = await ResolveAsync(host, deadline.Token).ConfigureAwait(false);
             if (addresses.Count == 0)
                 return new TlsProbeResult(false, sw.Elapsed, "DNS не разрешил имя", null, null, null, null, null, false);
 
             var ip = addresses[0];
             using var client = new TcpClient(ip.AddressFamily);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(timeout);
-            await client.ConnectAsync(ip, port, cts.Token).ConfigureAwait(false);
+            await client.ConnectAsync(ip, port, deadline.Token).ConfigureAwait(false);
             // TLS-зонд: сертификат нам нужен как данные (издатель, срок), а не как доверие.
             // Валидацию сознательно отключаем — иначе MITM-сертификат не прочитать.
 #pragma warning disable CA5359
@@ -83,13 +86,15 @@ public static class ConnectivityProbes
                 TargetHost = host,
                 EnabledSslProtocols = System.Security.Authentication.SslProtocols.None,
                 ApplicationProtocols = [SslApplicationProtocol.Http11],
-            }, cts.Token).ConfigureAwait(false);
+            }, deadline.Token).ConfigureAwait(false);
 
             var cert = ssl.RemoteCertificate as X509Certificate2 ?? new X509Certificate2(ssl.RemoteCertificate!);
             var chainValid = validationErrors == SslPolicyErrors.None;
             return new TlsProbeResult(true, sw.Elapsed, null, cert.Subject, cert.Issuer, cert.NotAfter.ToLocalTime(),
                 ssl.SslProtocol.ToString(), ip.ToString(), chainValid);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) { return new TlsProbeResult(false, sw.Elapsed, "таймаут", null, null, null, null, null, false); }
         catch (Exception ex)
         {
             return new TlsProbeResult(false, sw.Elapsed, Describe(ex), null, null, null, null, null, false);
@@ -98,12 +103,15 @@ public static class ConnectivityProbes
 
     public static async Task<IReadOnlyList<IPAddress>> ResolveAsync(string host, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
         if (IPAddress.TryParse(host, out var direct)) return [direct];
         try
         {
             var result = await Dns.GetHostAddressesAsync(host, ct).ConfigureAwait(false);
-            return [.. result.Where(a => a.AddressFamily == AddressFamily.InterNetwork).Take(2)];
+            return [.. result.Where(a => a.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6)
+                .OrderBy(a => a.AddressFamily == AddressFamily.InterNetwork ? 0 : 1).Take(4)];
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             return Array.Empty<IPAddress>();
@@ -125,6 +133,7 @@ public static class ConnectivityProbes
             await stream.ReadExactlyAsync(response, cts.Token).ConfigureAwait(false);
             return response[0] == 0x05 && response[1] == 0x00;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             return false;
@@ -151,6 +160,7 @@ public static class ConnectivityProbes
             return firstLine.Length >= 2 && firstLine[0].StartsWith("HTTP/1.", StringComparison.OrdinalIgnoreCase)
                 && firstLine[1] == "200";
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             return false;
@@ -172,6 +182,7 @@ public static class ConnectivityProbes
             var read = await stream.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
             return read > 0 ? Encoding.ASCII.GetString(buffer, 0, Math.Min(read, 120)).Split('\r')[0] : null;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             return null;
@@ -201,27 +212,46 @@ public static class StunClient
 
     public static async Task<IPEndPoint?> BindAsync(string server, TimeSpan timeout, CancellationToken ct = default)
     {
-        var parts = server.Split(':');
-        var host = parts[0];
-        var port = parts.Length > 1 && int.TryParse(parts[1], out var p) ? p : 3478;
+        if (!TryParseServer(server, out var host, out var port)) return null;
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(timeout);
         try
         {
-            var addresses = await ConnectivityProbes.ResolveAsync(host, ct).ConfigureAwait(false);
+            var addresses = await ConnectivityProbes.ResolveAsync(host, deadline.Token).ConfigureAwait(false);
             if (addresses.Count == 0) return null;
 
             using var udp = new UdpClient(addresses[0].AddressFamily);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(timeout);
             var request = BuildBindingRequest();
             udp.Connect(addresses[0], port);
-            await udp.SendAsync(request, cts.Token).ConfigureAwait(false);
-            var response = await udp.ReceiveAsync(cts.Token).ConfigureAwait(false);
+            await udp.SendAsync(request, deadline.Token).ConfigureAwait(false);
+            var response = await udp.ReceiveAsync(deadline.Token).ConfigureAwait(false);
             return ParseXorMapped(response.Buffer, request);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             return null;
         }
+    }
+
+    internal static bool TryParseServer(string server, out string host, out int port)
+    {
+        host = "";
+        port = 3478;
+        var value = server.Trim();
+        if (value.StartsWith('['))
+        {
+            var end = value.IndexOf(']');
+            if (end <= 1 || !IPAddress.TryParse(value[1..end], out var ipv6) || ipv6.AddressFamily != AddressFamily.InterNetworkV6) return false;
+            host = ipv6.ToString();
+            if (end == value.Length - 1) return true;
+            return value[end + 1] == ':' && int.TryParse(value[(end + 2)..], out port) && port is > 0 and <= 65535;
+        }
+        if (IPAddress.TryParse(value, out var address)) { host = address.ToString(); return true; }
+        var separator = value.IndexOf(':');
+        if (separator < 0) { host = value; return host.Length > 0; }
+        host = value[..separator];
+        return host.Length > 0 && int.TryParse(value[(separator + 1)..], out port) && port is > 0 and <= 65535;
     }
 
     private static byte[] BuildBindingRequest()

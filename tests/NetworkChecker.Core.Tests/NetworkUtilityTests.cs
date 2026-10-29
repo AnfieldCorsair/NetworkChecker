@@ -97,7 +97,8 @@ public class DnsWireTests
         Assert.Equal(0x34, query[1]);
         Assert.Equal(0x01, query[2]);           // recursion desired
         Assert.Equal(1, query[4] * 256 + query[5]); // QDCOUNT = 1
-        Assert.Contains((byte)0, query);        // terminator
+        Assert.Equal(7, query[12]);             // QNAME сразу после 12-байтного заголовка
+        Assert.Equal(29, query.Length);           // header + QNAME + QTYPE + QCLASS
     }
 
     [Fact]

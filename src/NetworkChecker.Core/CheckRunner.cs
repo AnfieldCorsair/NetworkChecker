@@ -55,12 +55,12 @@ public sealed class CheckRunner(IEnumerable<ICheck> checks, IPlatformProbe platf
         };
 
         using var gate = new SemaphoreSlim(Math.Max(1, options.MaxParallelChecks));
-        var results = new List<CheckResult>();
+        var results = new CheckResult?[_checks.Count];
         var completed = 0;
         var total = _checks.Count;
         var sync = new Lock();
 
-        var tasks = _checks.Select(async check =>
+        var tasks = _checks.Select(async (check, index) =>
         {
             await gate.WaitAsync(ct).ConfigureAwait(false);
             var sw = Stopwatch.StartNew();
@@ -85,7 +85,7 @@ public sealed class CheckRunner(IEnumerable<ICheck> checks, IPlatformProbe platf
 
             lock (sync)
             {
-                results.Add(result);
+                results[index] = result;
                 completed++;
                 Progress?.Invoke(this, new CheckProgressEventArgs(completed, total, check.Title, result));
             }
@@ -93,11 +93,8 @@ public sealed class CheckRunner(IEnumerable<ICheck> checks, IPlatformProbe platf
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
 
-        var ordered = _checks
-            .Select(c => results.FirstOrDefault(r => r.Category == c.Category))
-            .Where(r => r is not null)
-            .Select(r => r!)
-            .ToArray();
+        // Сохраняем каждый результат на позиции своей проверки, даже при повторяющихся категориях.
+        var ordered = results.Select(r => r!).ToArray();
 
         var consensus = IpConsensusBuilder.Build(context.IpObservations);
         var verdict = VerdictEngine.Build(ordered, consensus);
@@ -125,6 +122,7 @@ public sealed class CheckRunner(IEnumerable<ICheck> checks, IPlatformProbe platf
             adapters = await _platform.GetAdaptersAsync(ct).ConfigureAwait(false);
             proxy = await _platform.GetSystemProxyAsync(ct).ConfigureAwait(false);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             os = new OsInfo { Description = Environment.OSVersion.VersionString };

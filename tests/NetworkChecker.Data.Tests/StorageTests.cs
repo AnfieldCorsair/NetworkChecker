@@ -236,3 +236,30 @@ public class SettingsStoreTests
         Assert.Contains("logs", store.LogPath);
     }
 }
+
+public class SettingsSaveStabilityTests
+{
+    [Fact]
+    public void Failed_save_is_reported_and_temporary_file_is_removed()
+    {
+        using var temp = new TempData();
+        var store = temp.Store();
+        Directory.CreateDirectory(System.IO.Path.Combine(temp.Path, "settings.json"));
+        Assert.False(store.Save());
+        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
+    }
+
+    [Fact]
+    public void Repeated_save_replaces_complete_settings()
+    {
+        using var temp = new TempData();
+        var store = temp.Store();
+        store.Options.RequestTimeoutSeconds = 7;
+        Assert.True(store.Save());
+        store.Options.RequestTimeoutSeconds = 13;
+        Assert.True(store.Save());
+        var loaded = temp.Store();
+        Assert.Equal(13, loaded.Load().RequestTimeoutSeconds);
+        Assert.Empty(Directory.GetFiles(temp.Path, "*.tmp"));
+    }
+}

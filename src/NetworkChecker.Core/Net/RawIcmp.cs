@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -70,6 +71,7 @@ public sealed class RawIcmp : IDisposable
             var deadline = Environment.TickCount64 + Math.Max(200, timeoutMs);
             while (Environment.TickCount64 <= deadline)
             {
+                _socket.ReceiveTimeout = (int)Math.Max(1, deadline - Environment.TickCount64);
                 EndPoint from = new IPEndPoint(IPAddress.Any, 0);
                 int read;
                 try
@@ -80,17 +82,11 @@ public sealed class RawIcmp : IDisposable
                 {
                     break;
                 }
-                if (read < 20) continue;
-
-                var reply = ParseReply(buffer, read, ip);
-                if (reply is null) continue;
-                var elapsed = sw.Elapsed.TotalMilliseconds;
-
-                // На Linux ответ приходит с IP-заголовком, на Windows — без него.
-                var type = buffer[0] == 0x45 ? buffer[20] : buffer[0];
-                if (type is 0) return new IcmpReply(IcmpStatus.EchoReply, (from as IPEndPoint)?.Address.ToString(), elapsed, ttl);
-                if (type is 11) return new IcmpReply(IcmpStatus.TtlExpired, (from as IPEndPoint)?.Address.ToString(), elapsed, ttl);
-                if (type is 3) return new IcmpReply(IcmpStatus.Unreachable, (from as IPEndPoint)?.Address.ToString(), elapsed, ttl, "destination unreachable");
+                var sender = (from as IPEndPoint)?.Address;
+                var status = ParseReply(buffer.AsSpan(0, read), ip, sender, _identifier, sequence);
+                if (status is null) continue;
+                return new IcmpReply(status.Value, sender?.ToString(), sw.Elapsed.TotalMilliseconds, ttl,
+                    status == IcmpStatus.Unreachable ? "destination unreachable" : null);
             }
             return new IcmpReply(IcmpStatus.Timeout, null, sw.Elapsed.TotalMilliseconds, ttl);
         }
@@ -100,15 +96,34 @@ public sealed class RawIcmp : IDisposable
         }
     }
 
-    private static IcmpReply? ParseReply(byte[] buffer, int read, IPAddress target)
+    // Ответ должен относиться к конкретному запросу; raw-сокет видит и чужие ICMP-пакеты.
+    internal static IcmpStatus? ParseReply(ReadOnlySpan<byte> packet, IPAddress target, IPAddress? sender,
+        ushort identifier, ushort sequence)
     {
-        // Проверяем корректность структуры: либо с IP-заголовком, либо без.
-        var withIpHeader = buffer[0] == 0x45;
-        var icmpOffset = withIpHeader ? 20 : 0;
-        if (read < icmpOffset + 8) return null;
-        var type = buffer[icmpOffset];
-        if (type is not (0 or 3 or 11)) return null;
-        return new IcmpReply(IcmpStatus.EchoReply, null, 0, 0);
+        if (packet.Length < 8 || target.AddressFamily != AddressFamily.InterNetwork) return null;
+        var offset = 0;
+        if ((packet[0] >> 4) == 4)
+        {
+            offset = (packet[0] & 0x0f) * 4;
+            if (offset < 20 || packet.Length < offset + 8 || packet[9] != (byte)ProtocolType.Icmp) return null;
+        }
+        var icmp = packet[offset..];
+        if (icmp[0] == 0 && icmp[1] == 0)
+        {
+            if (sender is null || !sender.Equals(target)) return null;
+            return BinaryPrimitives.ReadUInt16BigEndian(icmp[4..]) == identifier &&
+                   BinaryPrimitives.ReadUInt16BigEndian(icmp[6..]) == sequence ? IcmpStatus.EchoReply : null;
+        }
+        if (icmp[0] is not (3 or 11) || icmp.Length < 8 + 20 + 8) return null;
+        var inner = icmp[8..];
+        var innerHeader = (inner[0] & 0x0f) * 4;
+        if ((inner[0] >> 4) != 4 || innerHeader < 20 || inner.Length < innerHeader + 8 ||
+            inner[9] != (byte)ProtocolType.Icmp || !inner.Slice(16, 4).SequenceEqual(target.GetAddressBytes())) return null;
+        var request = inner[innerHeader..];
+        if (request[0] != 8 || request[1] != 0 ||
+            BinaryPrimitives.ReadUInt16BigEndian(request[4..]) != identifier ||
+            BinaryPrimitives.ReadUInt16BigEndian(request[6..]) != sequence) return null;
+        return icmp[0] == 11 ? IcmpStatus.TtlExpired : IcmpStatus.Unreachable;
     }
 
     private static byte[] BuildPacket(ushort identifier, ushort sequence, int payloadSize)

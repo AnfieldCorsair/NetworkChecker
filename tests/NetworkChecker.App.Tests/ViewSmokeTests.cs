@@ -108,6 +108,34 @@ public class ViewSmokeTests
     }
 
     [AvaloniaFact]
+    public async Task Progress_and_result_cards_are_updated_on_the_ui_thread()
+    {
+        using var env = new TempEnv();
+        var main = TestHost.BuildMain(env, checks: [global::NetworkChecker.TestKit.FakeCheck.Slow(global::NetworkChecker.Core.Models.CheckCategory.GeoIp, 50)]);
+        var dashboard = (DashboardViewModel)main.Pages[0];
+        var offThread = false;
+        dashboard.Cards.CollectionChanged += (_, _) => offThread |= !Dispatcher.UIThread.CheckAccess();
+        await dashboard.RunCommand.ExecuteAsync(null);
+        Assert.False(offThread);
+        Assert.Single(dashboard.Cards);
+        Assert.Equal(global::NetworkChecker.Core.Models.CheckStatus.Clean, dashboard.Cards[0].Result.Status);
+        main.Dispose();
+    }
+
+    [AvaloniaFact]
+    public void Loading_run_updates_detailed_cards_as_well_as_summary()
+    {
+        using var env = new TempEnv();
+        var main = TestHost.BuildMain(env);
+        var dashboard = (DashboardViewModel)main.Pages[0];
+        var run = global::NetworkChecker.TestKit.Sample.RichRun();
+        dashboard.LoadRun(run);
+        Assert.Equal(run.Checks.Count, dashboard.Cards.Count);
+        Assert.Equal(run.Checks[0].Title, dashboard.Cards[0].Result.Title);
+        main.Dispose();
+    }
+
+    [AvaloniaFact]
     public void Every_page_renders_without_binding_errors()
     {
         using var env = new TempEnv();

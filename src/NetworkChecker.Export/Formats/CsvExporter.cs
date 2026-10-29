@@ -65,6 +65,8 @@ public static class CsvExporter
     {
         if (string.IsNullOrEmpty(value)) return string.Empty;
         var clean = value.Replace("\r", " ").Replace("\n", " ").Trim();
+        // Табличные программы могут выполнить строку из сетевых данных как формулу.
+        if (clean.Length > 0 && clean[0] is '=' or '+' or '-' or '@') clean = "'" + clean;
         if (clean.Contains(';') || clean.Contains('"'))
             clean = '"' + clean.Replace("\"", "\"\"") + '"';
         return clean;

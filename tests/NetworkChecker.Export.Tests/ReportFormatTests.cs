@@ -197,3 +197,28 @@ public class ReportFormatTests
             Environment = template.Environment,
         };
 }
+
+public class CsvSafetyTests
+{
+    [Theory]
+    [InlineData("=1+1")]
+    [InlineData("+cmd")]
+    [InlineData("-cmd")]
+    [InlineData("@cmd")]
+    [InlineData("  =1+1")]
+    public void Spreadsheet_formulas_are_exported_as_text(string value)
+    {
+        var sample = Sample.CleanRun();
+        var run = new CheckRunResult
+        {
+            StartedAt = sample.StartedAt,
+            FinishedAt = sample.FinishedAt,
+            Verdict = sample.Verdict,
+            IpConsensus = sample.IpConsensus,
+            Environment = sample.Environment,
+            Checks = [new CheckResult { Category = CheckCategory.GeoIp, Title = value, Status = CheckStatus.Clean }],
+        };
+        var text = Encoding.UTF8.GetString(CsvExporter.Build(run));
+        Assert.Contains("'" + value.Trim(), text);
+    }
+}

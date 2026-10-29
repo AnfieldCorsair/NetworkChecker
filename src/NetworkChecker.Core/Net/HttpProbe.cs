@@ -10,7 +10,7 @@ public sealed class HttpProbe : IHttpProbe, IDisposable
     private readonly HttpClient _direct;
     private readonly HttpClient _system;
 
-    public string UserAgent { get; set; } = "NetworkChecker/1.0 (+Windows; local diagnostics)";
+    public string UserAgent { get; } = "NetworkChecker/1.0 (+Windows; local diagnostics)";
 
     public HttpProbe()
     {
@@ -47,8 +47,10 @@ public sealed class HttpProbe : IHttpProbe, IDisposable
         var client = ignoreProxy ? _direct : _system;
         try
         {
-            using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseContentRead, cts.Token)
+            using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, cts.Token)
                 .ConfigureAwait(false);
+            // Ответы внешних сервисов и PAC не должны бесконтрольно занимать память.
+            await response.Content.LoadIntoBufferAsync(1024 * 1024, cts.Token).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             return new HttpProbeResult(
                 Success: response.IsSuccessStatusCode,
@@ -62,6 +64,10 @@ public sealed class HttpProbe : IHttpProbe, IDisposable
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             return new HttpProbeResult(false, 0, null, "таймаут", sw.Elapsed, null, null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {

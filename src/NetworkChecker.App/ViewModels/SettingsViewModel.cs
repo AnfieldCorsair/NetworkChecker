@@ -99,8 +99,9 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
 
         _ui.Culture = Language == "en-US" ? "en-US" : "ru-RU";
         Masking.Enabled = PrivacyMode;
-        _store.Save(_options, _ui);
-        SaveStatus = $"Язык применяется после перезапуска. Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}";
+        SaveStatus = _store.Save(_options, _ui)
+            ? $"Язык применяется после перезапуска. Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}"
+            : "Не удалось сохранить настройки на диск. Изменения действуют только в текущем сеансе.";
         await Task.CompletedTask.ConfigureAwait(true);
     }
 

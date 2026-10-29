@@ -37,6 +37,7 @@ public static class PingTools
                 _ => new PingResult(false, TimeSpan.Zero, ttl, reply.Address?.ToString(), reply.Status.ToString()),
             };
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (Exception ex)
         {
             return new PingResult(false, TimeSpan.Zero, ttl, null, ex.GetBaseException().Message);

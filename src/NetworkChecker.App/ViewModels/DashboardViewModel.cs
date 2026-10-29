@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Avalonia;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -200,6 +201,8 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     private readonly ILogger<DashboardViewModel> _logger;
     private CancellationTokenSource? _cts;
     private CheckRunResult? _lastResult;
+    private int _runGeneration;
+    private bool _disposed;
 
     public DashboardViewModel(
         CheckRunner runner,
@@ -221,7 +224,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         OfflineMode = options.OfflineMode;
 
         _runner.Progress += OnProgress;
-        _runner.StatusText += (_, text) => StatusLine = text;
+        _runner.StatusText += OnStatusText;
 
         Cards = new ObservableCollection<CheckCardViewModel>(
             _runner.Checks.Select(c => new CheckCardViewModel(new CheckResult
@@ -314,28 +317,44 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     {
         _options.PrivacyMode = value;
         Masking.Enabled = value;
-        _settings.Save();
+        if (!_settings.Save()) StatusLine = "Не удалось сохранить настройки; изменение действует только в текущем сеансе.";
     }
 
     partial void OnOfflineModeChanged(bool value)
     {
         _options.OfflineMode = value;
-        _settings.Save();
+        if (!_settings.Save()) StatusLine = "Не удалось сохранить настройки; изменение действует только в текущем сеансе.";
+    }
+
+    private void OnStatusText(object? sender, string text)
+    {
+        var generation = Volatile.Read(ref _runGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && IsRunning && generation == _runGeneration) StatusLine = text;
+        });
     }
 
     private void OnProgress(object? sender, CheckProgressEventArgs e)
     {
-        Progress = e.Percent;
-        ProgressText = $"{e.Completed} / {e.Total}";
-        if (e.Result is null) return;
-        var index = Cards.ToList().FindIndex(c => c.Result.Category == e.Result.Category);
-        if (index >= 0) Cards[index] = new CheckCardViewModel(e.Result);
+        var generation = Volatile.Read(ref _runGeneration);
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_disposed || !IsRunning || generation != _runGeneration) return;
+            Progress = e.Percent;
+            ProgressText = $"{e.Completed} / {e.Total}";
+            if (e.Result is null) return;
+            var index = Cards.ToList().FindIndex(c => c.Result.Category == e.Result.Category);
+            if (index >= 0) Cards[index] = new CheckCardViewModel(e.Result);
+        });
     }
 
     [RelayCommand(CanExecute = nameof(CanRun))]
     private async Task RunAsync()
     {
-        _cts = new CancellationTokenSource();
+        var cts = new CancellationTokenSource();
+        _cts = cts;
+        Interlocked.Increment(ref _runGeneration);
         IsRunning = true;
         RunCommand.NotifyCanExecuteChanged();
         CancelCommand.NotifyCanExecuteChanged();
@@ -349,8 +368,10 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var result = await Task.Run(() => _runner.RunAsync(_options, PrivacyMode, _cts.Token)).ConfigureAwait(true);
+            var result = await Task.Run(() => _runner.RunAsync(_options, PrivacyMode, cts.Token)).ConfigureAwait(true);
+            if (_disposed) return;
             _lastResult = result;
+            UpdateCards(result);
             Verdict = new VerdictViewModel(result.Verdict, result.IpConsensus, result.Duration);
             HasResult = true;
             ExportReportCommand.NotifyCanExecuteChanged();
@@ -378,8 +399,8 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
             IsRunning = false;
             RunCommand.NotifyCanExecuteChanged();
             CancelCommand.NotifyCanExecuteChanged();
-            _cts?.Dispose();
-            _cts = null;
+            cts.Dispose();
+            if (ReferenceEquals(_cts, cts)) _cts = null;
         }
     }
 
@@ -392,6 +413,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     public void LoadRun(CheckRunResult result)
     {
         _lastResult = result;
+        UpdateCards(result);
         Verdict = new VerdictViewModel(result.Verdict, result.IpConsensus, result.Duration);
         HasResult = true;
         ExportReportCommand.NotifyCanExecuteChanged();
@@ -399,6 +421,12 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         Progress = 100;
         LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
         StatusLine = result.Verdict.Headline;
+    }
+
+    private void UpdateCards(CheckRunResult result)
+    {
+        Cards.Clear();
+        foreach (var check in result.Checks) Cards.Add(new CheckCardViewModel(check));
     }
 
     private void UpdatePlainView(CheckRunResult result)
@@ -494,8 +522,9 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     /// <summary>Освобождает незавершённый прогон (например, при закрытии окна во время проверки).</summary>
     public void Dispose()
     {
+        _disposed = true;
+        _runner.Progress -= OnProgress;
+        _runner.StatusText -= OnStatusText;
         _cts?.Cancel();
-        _cts?.Dispose();
-        _cts = null;
     }
 }

@@ -35,7 +35,7 @@ public static class DnsWire
             0,
             1 // QDCOUNT
         };
-        for (var i = 0; i < 6; i++) { buffer.Add(0); buffer.Add(0); }
+        for (var i = 0; i < 3; i++) { buffer.Add(0); buffer.Add(0); }
 
         foreach (var label in name.TrimEnd('.').Split('.'))
         {
@@ -151,7 +151,6 @@ public static class DnsWire
 /// <summary>Запросы к конкретному DNS-серверу: UDP, при обрезке — TCP, плюс DoH.</summary>
 public sealed class DnsClientLite(IHttpProbe http) : IDisposable
 {
-    private static ushort _counter = (ushort)Random.Shared.Next(1, 60000);
     private readonly IHttpProbe _http = http;
 
     public static async Task<IReadOnlyList<DnsAnswer>> QueryAsync(
@@ -162,52 +161,79 @@ public sealed class DnsClientLite(IHttpProbe http) : IDisposable
         CancellationToken ct = default)
     {
         server ??= new IPEndPoint(IPAddress.Parse(DefaultResolver()), 53);
-        var tmo = timeout ?? TimeSpan.FromSeconds(4);
-        var id = unchecked(_counter++);
+        var id = (ushort)System.Security.Cryptography.RandomNumberGenerator.GetInt32(65536);
         var query = DnsWire.BuildQuery(name, type, id);
-
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(timeout ?? TimeSpan.FromSeconds(4));
         try
         {
             using var udp = new UdpClient(server.AddressFamily);
-            udp.Client.ReceiveTimeout = (int)tmo.TotalMilliseconds;
-            await udp.SendAsync(query, query.Length, server).ConfigureAwait(false);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(tmo);
-            var result = await udp.ReceiveAsync(cts.Token).ConfigureAwait(false);
-            return DnsWire.ParseResponse(result.Buffer);
+            // Подключённый UDP-сокет принимает ответы только от выбранного сервера.
+            udp.Connect(server);
+            await udp.SendAsync(query, deadline.Token).ConfigureAwait(false);
+            while (true)
+            {
+                var received = await udp.ReceiveAsync(deadline.Token).ConfigureAwait(false);
+                if (!IsMatchingResponse(received.Buffer, query)) continue;
+                if ((received.Buffer[3] & 0x0F) != 0) return Array.Empty<DnsAnswer>();
+                if ((received.Buffer[2] & 0x02) != 0)
+                    return await QueryTcpAsync(query, server, deadline.Token).ConfigureAwait(false);
+                return DnsWire.ParseResponse(received.Buffer);
+            }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            return Array.Empty<DnsAnswer>();
-        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (OperationCanceledException) { return Array.Empty<DnsAnswer>(); }
         catch (SocketException)
         {
-            return await QueryTcpAsync(query, server, tmo, ct).ConfigureAwait(false);
+            try { return await QueryTcpAsync(query, server, deadline.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+            catch (OperationCanceledException) { return Array.Empty<DnsAnswer>(); }
         }
     }
 
-    private static async Task<IReadOnlyList<DnsAnswer>> QueryTcpAsync(byte[] query, IPEndPoint server, TimeSpan timeout, CancellationToken ct)
+    // Проверка корреляции не является криптографической аутентификацией DNS.
+    private static bool IsMatchingResponse(byte[] response, byte[] query)
+    {
+        if (response.Length < query.Length || response.Length < 12 ||
+            response[0] != query[0] || response[1] != query[1] ||
+            (response[2] & 0xF8) != 0x80 ||
+            response[4] != 0 || response[5] != 1) return false;
+        for (var i = 12; i < query.Length; i++)
+        {
+            var a = response[i];
+            var b = query[i];
+            if (i < query.Length - 4)
+            {
+                if (a is >= (byte)'A' and <= (byte)'Z') a += 32;
+                if (b is >= (byte)'A' and <= (byte)'Z') b += 32;
+            }
+            if (a != b) return false;
+        }
+        return true;
+    }
+
+    private static async Task<IReadOnlyList<DnsAnswer>> QueryTcpAsync(byte[] query, IPEndPoint server, CancellationToken ct)
     {
         try
         {
             using var tcp = new TcpClient(server.AddressFamily);
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(timeout);
-            await tcp.ConnectAsync(server.Address, server.Port, cts.Token).ConfigureAwait(false);
+            await tcp.ConnectAsync(server.Address, server.Port, ct).ConfigureAwait(false);
             var stream = tcp.GetStream();
             var framed = new byte[query.Length + 2];
             framed[0] = (byte)(query.Length >> 8);
             framed[1] = (byte)(query.Length & 0xFF);
             query.CopyTo(framed, 2);
-            await stream.WriteAsync(framed, cts.Token).ConfigureAwait(false);
+            await stream.WriteAsync(framed, ct).ConfigureAwait(false);
             var lenBuf = new byte[2];
-            await stream.ReadExactlyAsync(lenBuf, cts.Token).ConfigureAwait(false);
+            await stream.ReadExactlyAsync(lenBuf, ct).ConfigureAwait(false);
             var len = BinaryPrimitives.ReadUInt16BigEndian(lenBuf);
             var response = new byte[len];
-            await stream.ReadExactlyAsync(response, cts.Token).ConfigureAwait(false);
-            return DnsWire.ParseResponse(response);
+            await stream.ReadExactlyAsync(response, ct).ConfigureAwait(false);
+            return IsMatchingResponse(response, query) && (response[2] & 0x02) == 0 && (response[3] & 0x0F) == 0
+                ? DnsWire.ParseResponse(response) : Array.Empty<DnsAnswer>();
         }
-        catch
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is SocketException or IOException)
         {
             return Array.Empty<DnsAnswer>();
         }
