@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NetworkChecker.App.Localization;
 using NetworkChecker.Core.Net;
 using NetworkChecker.Core.Options;
 using NetworkChecker.Data;
@@ -100,8 +101,12 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
         _ui.Culture = Language == "en-US" ? "en-US" : "ru-RU";
         Masking.Enabled = PrivacyMode;
         SaveStatus = _store.Save(_options, _ui)
-            ? $"Язык применяется после перезапуска. Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}"
-            : "Не удалось сохранить настройки на диск. Изменения действуют только в текущем сеансе.";
+            ? Localizer.Culture == "en-US"
+                ? $"Language changes apply after restart. Saved to {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}"
+                : $"Язык применяется после перезапуска. Сохранено в {Path.Combine(DataDirectory, "settings.json")} — {DateTime.Now:HH:mm:ss}"
+            : Localizer.Culture == "en-US"
+                ? "Could not save settings to disk. Changes apply only in this session."
+                : "Не удалось сохранить настройки на диск. Изменения действуют только в текущем сеансе.";
         await Task.CompletedTask.ConfigureAwait(true);
     }
 
@@ -122,7 +127,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
         RttForeignHosts = string.Join(Environment.NewLine, defaults.RttForeignHosts);
         StunServers = string.Join(Environment.NewLine, defaults.StunServers);
         LocalProxyPorts = string.Join(", ", defaults.LocalProxyPorts);
-        SaveStatus = "Значения сброшены к дефолтным. Нажмите «Сохранить».";
+        SaveStatus = Localizer.Culture == "en-US" ? "Defaults restored. Select Save." : "Значения сброшены к дефолтным. Нажмите «Сохранить».";
     }
 
     [RelayCommand]

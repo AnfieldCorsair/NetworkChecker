@@ -145,7 +145,7 @@ public static class CaptureReader
             if (i > 0) hex.Append(i % 16 == 0 ? '\n' : ' ');
             hex.Append(shown[i].ToString("X2", System.Globalization.CultureInfo.InvariantCulture));
         }
-        if (frame.Length > shown.Length) hex.Append("\n… первые 256 байт");
+        if (frame.Length > shown.Length) hex.Append("\n…");
         return new CapturePacket(protocol, source, destination, frame.Length, original, hex.ToString());
     }
 }

@@ -13,7 +13,7 @@ public sealed class SiteRowViewModel(SiteViewRow row)
 {
     public string Label { get; } = Localizer.T(row.Label);
     public string Value { get; } = Localizer.T(row.Value);
-    public string Hint { get; } = row.Hint ?? string.Empty;
+    public string Hint { get; } = row.Hint is null ? string.Empty : Localizer.T(row.Hint);
     public bool HasHint { get; } = !string.IsNullOrWhiteSpace(row.Hint);
     public string Tone { get; } = ToneKey(row.Tone);
     public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(ColorOf(row.Tone));
@@ -39,8 +39,8 @@ public sealed class SiteRowViewModel(SiteViewRow row)
 /// <summary>Вывод сайта: короткий заголовок, объяснение и «вес» признака.</summary>
 public sealed class SiteSignalViewModel(SiteViewSignal signal)
 {
-    public string Title { get; } = signal.Title;
-    public string Detail { get; } = signal.Detail;
+    public string Title { get; } = Localizer.T(signal.Title);
+    public string Detail { get; } = Localizer.T(signal.Detail);
     public string PointsText { get; } = signal.Points > 0 ? "+" + signal.Points.ToString(CultureInfo.InvariantCulture) : string.Empty;
     public bool HasPoints { get; } = signal.Points > 0;
     public Avalonia.Media.IBrush AccentBrush { get; } = Ui.Brush(signal.Tone switch
@@ -163,7 +163,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
         var token = _cts.Token;
 
         IsBusy = true;
-        StatusLine = "Спрашиваем GeoIP-сервис, каким вас видит интернет…";
+        StatusLine = Localizer.T("Спрашиваем GeoIP-сервис, каким вас видит интернет…");
         ErrorText = null;
         HasError = false;
 
@@ -174,12 +174,12 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            StatusLine = "Осмотр отменён";
+            StatusLine = Localizer.T("Осмотр отменён");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Не удалось собрать данные «глазами сайта»");
-            StatusLine = "Не получилось";
+            StatusLine = Localizer.T("Не получилось");
             ErrorText = ex.GetBaseException().Message;
             HasError = true;
         }
@@ -204,7 +204,10 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
         RequestLine = report.Request.Line;
 
         Headline = Localizer.T(report.Headline);
-        Summary = report.Summary;
+        Summary = Localizer.Culture != "en-US" ? report.Summary
+            : report.HasGeo
+                ? $"Signals: {report.Signals.Count}; heuristic score: {report.Exposure}/100. This is not a VPN probability or a particular website's assessment. GeoIP can be incomplete or inaccurate; language and time zone are system values, not browser values. Captchas and restrictions depend on the website."
+                : "The public IP was not obtained: offline mode may be enabled or GeoIP services may be unavailable. Only local time zone, language and client information are shown.";
         ExposureText = report.HasGeo ? report.Exposure.ToString(CultureInfo.InvariantCulture) : "—";
         IpText = report.HasGeo ? report.Ip! : "адрес ещё не получен";
         ErrorText = report.Error;
@@ -220,8 +223,8 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
 
         UpdatedText = report.At.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
         StatusLine = report.Offline
-            ? "Офлайн-режим: показаны только локальные факты"
-            : report.HasGeo ? "Готово" : "Внешний адрес получить не удалось";
+            ? Localizer.T("Офлайн-режим: показаны только локальные факты")
+            : report.HasGeo ? Localizer.T("Готово") : Localizer.T("Внешний адрес получить не удалось");
     }
 
     public void Dispose()

@@ -55,14 +55,14 @@ public static class PlainFacts
         if (foreign)
             return new PlainFact("Интернет-адрес", $"{ip} · {where}", "warn",
                 "Адрес не российский. Если вы не включали VPN — стоит посмотреть подробности.");
-        return new PlainFact("Интернет-адрес", $"{ip} · {where}", "good", "Обычный домашний адрес.");
+        return new PlainFact("Интернет-адрес", $"{ip} · {where}", "good", "Доступные источники не отметили адрес; это не устанавливает тип подключения.");
     }
 
     private static PlainFact VpnFact(CheckRunResult result)
     {
         var direct = result.Checks.FirstOrDefault(c => c.Category == CheckCategory.DirectSigns);
         var indirect = result.Checks.FirstOrDefault(c => c.Category == CheckCategory.IndirectSigns);
-        if (direct is null && indirect is null)
+        if (!HasData(direct) && !HasData(indirect))
             return new PlainFact("VPN или туннель", "не проверялось", "warn");
 
         var tunnels = direct?.Findings
@@ -77,7 +77,7 @@ public static class PlainFacts
             return new PlainFact("VPN или туннель", "похоже, включён", "bad",
                 "В настройках сети есть признаки перенаправления трафика.");
 
-        return new PlainFact("VPN или туннель", "не найден", "good", "Активных туннелей в системе нет.");
+        return new PlainFact("VPN или туннель", "не найден", "good", "В доступных данных активный туннель не найден; это не исключает VPN.");
     }
 
     private static PlainFact ProxyFact(CheckRunResult result)
@@ -86,6 +86,7 @@ public static class PlainFacts
         var bypass = result.Checks.FirstOrDefault(c => c.Category == CheckCategory.Bypass);
 
         var systemProxy = direct?.Findings.FirstOrDefault(f =>
+            f.Kind == EvidenceKind.ConfiguredProxy ||
             f.Title.Contains("Системный прокси включён", StringComparison.OrdinalIgnoreCase));
         if (systemProxy is not null)
             return new PlainFact("Прокси в системе", "настроен", "bad", systemProxy.Evidence ?? systemProxy.Detail);
@@ -95,18 +96,18 @@ public static class PlainFacts
         if (localProxy is not null)
             return new PlainFact("Локальный прокси", "работает", "bad", localProxy.Evidence ?? localProxy.Title);
 
-        if (bypass is null && direct is null)
+        if (!HasData(bypass) && !HasData(direct))
             return new PlainFact("Прокси в системе", "не проверялось", "warn");
 
-        return new PlainFact("Прокси в системе", "не настроен", "good", "Ни системного, ни локального прокси нет.");
+        return new PlainFact("Прокси в системе", "не найден", "good", "В доступных данных прокси не найден; ошибки чтения и другие способы настройки не исключены.");
     }
 
     private static PlainFact AppsFact(CheckRunResult result)
     {
         var direct = result.Checks.FirstOrDefault(c => c.Category == CheckCategory.DirectSigns);
-        if (direct is null) return new PlainFact("Программы для обхода", "не проверялось", "warn");
+        if (!HasData(direct)) return new PlainFact("Программы для обхода", "не проверялось", "warn");
 
-        var running = direct.Findings.Where(f => f.Title.StartsWith("Запущен клиент", StringComparison.OrdinalIgnoreCase)).ToList();
+        var running = direct!.Findings.Where(f => f.Title.StartsWith("Запущен клиент", StringComparison.OrdinalIgnoreCase)).ToList();
         if (running.Count > 0)
             return new PlainFact("Программы для обхода", "запущены", "bad", string.Join("; ", running.Select(r => r.Title)));
 
@@ -133,8 +134,8 @@ public static class PlainFacts
 
         var tone = rtt.Status == CheckStatus.Detected ? "bad" : rtt.Status == CheckStatus.Clean ? "good" : "warn";
         var hint = rtt.Status == CheckStatus.Detected
-            ? "Российские сайты отвечают заметно медленнее зарубежных — трафик, похоже, идёт в обход."
-            : "Отклик обычный для прямого подключения.";
+            ? "Задержки до групп сайтов отличаются; причину и маршрут по ним установить нельзя."
+            : "Задержки не устанавливают тип подключения или маршрут.";
         if (!string.IsNullOrWhiteSpace(method))
             hint += $" Замер: {method}.";
 
@@ -158,6 +159,8 @@ public static class PlainFacts
         if (failed > 0) text += $" · {failed} проверок не отработали";
         return text;
     }
+
+    private static bool HasData(CheckResult? result) => result is not null && result.Status is not CheckStatus.Failed and not CheckStatus.Skipped;
 
     internal static string Format(double value) => value.ToString("F0", CultureInfo.InvariantCulture);
 }

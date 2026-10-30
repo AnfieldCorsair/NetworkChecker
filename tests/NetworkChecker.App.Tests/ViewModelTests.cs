@@ -380,3 +380,54 @@ public class CaptureViewModelTests
         Assert.False(vm.IsBusy);
     }
 }
+
+public class LocalizationCoverageTests
+{
+    [AvaloniaFact]
+    public void English_help_and_capture_page_use_english_without_changing_system_culture()
+    {
+        var currentCulture = System.Globalization.CultureInfo.CurrentUICulture;
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            var guide = new GuideViewModel();
+            Assert.Equal("Understanding the verdict", guide.Sections[0].Title);
+            Assert.All(guide.Sections.SelectMany(s => s.Items), item =>
+                Assert.DoesNotMatch("[А-Яа-яЁё]", item.Body));
+            var capture = new CaptureViewModel();
+            Assert.Equal("Packet viewer", capture.Title);
+            Assert.Contains("not available yet", capture.Status);
+            Assert.Equal("Open PCAP / PCAPNG", NetworkChecker.App.Localization.Localizer.T("Открыть PCAP / PCAPNG"));
+            Assert.Equal(currentCulture, System.Globalization.CultureInfo.CurrentUICulture);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+
+    [Fact]
+    public void Every_russian_static_resource_has_an_english_translation()
+    {
+        var missing = NetworkChecker.App.Localization.Localizer.Resources
+            .Where(pair => System.Text.RegularExpressions.Regex.IsMatch(pair.Value, "[А-Яа-яЁё]") &&
+                NetworkChecker.App.Localization.Localizer.Translate(pair.Value, "en-US") == pair.Value)
+            .Select(pair => pair.Key).ToArray();
+        Assert.True(missing.Length == 0, "Missing English resource translations: " + string.Join(", ", missing));
+    }
+
+    [AvaloniaFact]
+    public void English_verdict_preserves_uncertainty_and_failure_count()
+    {
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            var summary = "В доступных данных не найдены значимые признаки. Это не исключает VPN или прокси." +
+                " Индекс условный, не вероятность; влияние на браузер отдельно не проверялось." +
+                " Часть модулей не отработала (3) — вердикт неполный.";
+            var result = NetworkChecker.App.Localization.Localizer.VerdictSummary(summary);
+            Assert.Contains("does not rule out", result);
+            Assert.Contains("not a probability", result);
+            Assert.Contains("failed (3)", result);
+            Assert.DoesNotMatch("[А-Яа-яЁё]", result);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+}

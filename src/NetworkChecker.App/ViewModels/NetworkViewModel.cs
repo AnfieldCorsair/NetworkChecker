@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
+using NetworkChecker.App.Localization;
 using NetworkChecker.Core.Models;
 using NetworkChecker.Core.Net;
 using NetworkChecker.Core.NetInfo;
@@ -49,11 +50,11 @@ public sealed class RouteRowViewModel(RouteInfo route)
 public sealed class TraceHopViewModel(TraceHop hop)
 {
     public int Index { get; } = hop.Index;
-    public string HostText => hop.Address is null ? "нет ответа" : Masking.Ip(hop.Address);
+    public string HostText => hop.Address is null ? Localizer.T("нет ответа") : Masking.Ip(hop.Address);
     public bool HasPrevious => Index > 1;
     public string RttText { get; } = hop.RttText;
     public string Asn { get; } = TraceGraph.NormalizeAsn(hop.Asn) ?? "—";
-    public string AsnLabel => Asn == "—" ? "ASN неизвестен" : Asn;
+    public string AsnLabel => Asn == "—" ? Localizer.T("ASN неизвестен") : Asn;
     public string AsName { get; } = string.IsNullOrWhiteSpace(hop.AsName) ? "—" : hop.AsName;
     public Avalonia.Media.IBrush AsnBrush { get; } = Ui.Brush(TraceGraph.ColorForAsn(hop.Asn));
 }
@@ -66,9 +67,9 @@ public sealed class SimpleNetFact(string label, string value, string hint, strin
     public string Tone { get; } = tone;
     public bool IsGood => Tone == "good";
     public bool IsBad => Tone == "bad";
-    public string Label { get; } = label;
-    public string Value { get; } = value;
-    public string Hint { get; } = hint;
+    public string Label { get; } = Localizer.T(label);
+    public string Value { get; } = Localizer.T(value);
+    public string Hint { get; } = Localizer.T(hint);
     public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(tone switch
     {
         "good" => "#35C48A",
@@ -125,7 +126,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     public bool ShowSimpleOverview => Mode.IsSimple;
 
     [ObservableProperty]
-    public partial string SimpleSummary { get; set; } = "Нажмите «Обновить», чтобы посмотреть состояние сети простыми словами.";
+    public partial string SimpleSummary { get; set; } = Localizer.T("Нажмите «Обновить», чтобы посмотреть состояние сети простыми словами.");
 
     [ObservableProperty]
     public partial string SimpleTone { get; set; } = "#5C7A99";
@@ -137,12 +138,12 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _isLoadingOverview;
     [ObservableProperty] private bool _isRunningDiagnostics;
     [ObservableProperty] private bool _isTracing;
-    [ObservableProperty] private string _statusLine = "Нажмите «Обновить обзор», чтобы прочитать сетевую конфигурацию.";
+    [ObservableProperty] private string _statusLine = Localizer.T("Нажмите «Обновить обзор», чтобы прочитать сетевую конфигурацию.");
     [ObservableProperty] private string _overviewRefreshed = "—";
-    [ObservableProperty] private string _diagnosticsRefreshed = "диагностика ещё не запускалась";
-    [ObservableProperty] private string _traceStatus = "трассировка не запускалась";
+    [ObservableProperty] private string _diagnosticsRefreshed = Localizer.T("диагностика ещё не запускалась");
+    [ObservableProperty] private string _traceStatus = Localizer.T("трассировка не запускалась");
     [ObservableProperty] private string _externalIp = "—";
-    [ObservableProperty] private string _externalDetails = "нет данных";
+    [ObservableProperty] private string _externalDetails = Localizer.T("нет данных");
     [ObservableProperty] private string _stunText = "—";
     [ObservableProperty] private string _proxyText = "—";
     [ObservableProperty] private string _dnsText = "—";
@@ -180,7 +181,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     {
         IsLoadingOverview = true;
         RefreshOverviewCommand.NotifyCanExecuteChanged();
-        StatusLine = "Читаю сетевую конфигурацию...";
+        StatusLine = Localizer.T("Читаю сетевую конфигурацию...");
         try
         {
             var overview = await _service.GetOverviewAsync(_options, includeExternal: !_options.OfflineMode, CancellationToken.None)
@@ -221,7 +222,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
             AdaptersCountText = $"{overview.ActiveAdapters.Count} из {overview.Adapters.Count}";
             OverviewRefreshed = $"обновлено {overview.RefreshedAt:HH:mm:ss}";
             UpdateSimpleFacts(overview);
-            StatusLine = "Обзор прочитан. Пустые данные не исключают ошибки доступа или недоступный компонент.";
+            StatusLine = Localizer.T("Обзор прочитан. Пустые данные не исключают ошибки доступа или недоступный компонент.");
         }
         catch (Exception ex)
         {
@@ -291,17 +292,17 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
 
         if (bad)
         {
-            SimpleSummary = "В сети есть VPN, прокси или туннель";
+            SimpleSummary = Localizer.T("В сети есть VPN, прокси или туннель");
             SimpleTone = "#F0524C";
         }
         else if (odd > 0)
         {
-            SimpleSummary = "Сеть работает обычно, но есть пара отличий от типичной настройки";
+            SimpleSummary = Localizer.T("Сеть работает обычно, но есть пара отличий от типичной настройки");
             SimpleTone = "#F5C542";
         }
         else
         {
-            SimpleSummary = "Настройки сети выглядят обычным образом";
+            SimpleSummary = Localizer.T("Настройки сети выглядят обычным образом");
             SimpleTone = "#35C48A";
         }
         SimpleToneBrush = Ui.Brush(SimpleTone);
@@ -314,8 +315,8 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     {
         if (_options.OfflineMode)
         {
-            StatusLine = "Диагностика не запущена: включён офлайн-режим.";
-            DiagnosticsRefreshed = "недоступно в офлайн-режиме";
+            StatusLine = Localizer.T("Диагностика не запущена: включён офлайн-режим.");
+            DiagnosticsRefreshed = Localizer.T("недоступно в офлайн-режиме");
             return;
         }
         IsRunningDiagnostics = true;
@@ -333,7 +334,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
             Tls.Clear();
             foreach (var row in diagnostics.Tls) Tls.Add(row);
             DiagnosticsRefreshed = $"диагностика завершена за {diagnostics.Duration.TotalSeconds:F1} с";
-            StatusLine = "Диагностика завершена.";
+            StatusLine = Localizer.T("Диагностика завершена.");
         }
         catch (Exception ex)
         {
@@ -354,7 +355,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     {
         if (_options.OfflineMode)
         {
-            TraceStatus = "Трассировка не запущена: включён офлайн-режим.";
+            TraceStatus = Localizer.T("Трассировка не запущена: включён офлайн-режим.");
             return;
         }
         IsTracing = true;
@@ -373,7 +374,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            TraceStatus = "трассировка отменена";
+            TraceStatus = Localizer.T("трассировка отменена");
         }
         finally
         {

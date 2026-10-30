@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using NetworkChecker.App.Localization;
 using NetworkChecker.App.ViewModels;
 
 namespace NetworkChecker.App.Views;
@@ -18,7 +19,7 @@ public partial class CaptureView : UserControl
         {
             var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Открыть файл захвата",
+                Title = Localizer.T("Открыть файл захвата"),
                 AllowMultiple = false,
                 FileTypeFilter = [new FilePickerFileType("PCAP / PCAPNG") { Patterns = ["*.pcap", "*.pcapng", "*.cap"] }],
             }).ConfigureAwait(true);
@@ -28,7 +29,7 @@ public partial class CaptureView : UserControl
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            vm.Status = "Не удалось открыть файл: " + ex.Message;
+            vm.Status = Localizer.Culture == "en-US" ? "Could not open the capture file: " + ex.Message : "Не удалось открыть файл: " + ex.Message;
         }
     }
 }

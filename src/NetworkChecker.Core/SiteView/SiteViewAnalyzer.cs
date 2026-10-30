@@ -111,7 +111,7 @@ public static class SiteViewAnalyzer
     private static SiteViewRow GeoRow(SiteGeo geo) => new(
         "IP-адрес",
         geo.Ip!.Trim(),
-        "Сервер видит его в каждом запросе. Без прокси или VPN скрыть нельзя.",
+        "Сервис видит адрес, с которого пришёл запрос. Он может отличаться от адреса браузера.",
         SiteViewTone.Neutral);
 
     private static IEnumerable<SiteViewRow> GeoDetails(SiteGeo geo, string ipZoneText)
@@ -132,26 +132,26 @@ public static class SiteViewAnalyzer
         yield return new SiteViewRow("Тип сети", geo.Hosting switch
         {
             true => "дата-центр (хостинг)",
-            false => "домашний или мобильный провайдер",
+            false => "не помечен как хостинг",
             null => "нет данных",
         }, geo.Hosting switch
         {
             true => "Сервис классифицирует адрес как хостинг; это не доказывает VPN.",
-            false => "Обычный признак частного подключения.",
+            false => "Сервис не пометил адрес как хостинг; это не устанавливает тип сети.",
             null => "База GeoIP не дала признак hosting.",
-        }, geo.Hosting switch { true => SiteViewTone.Bad, false => SiteViewTone.Good, _ => SiteViewTone.Neutral });
+        }, geo.Hosting switch { true => SiteViewTone.Bad, _ => SiteViewTone.Neutral });
 
         yield return new SiteViewRow("Метки в базах", geo.Proxy switch
         {
             true => "VPN / прокси / Tor",
-            false => "чисто",
+            false => "не помечен сервисом",
             null => "нет данных",
         }, geo.Proxy switch
         {
-            true => "Самая заметная метка: по ней включаются капчи и «подтвердите, что вы не робот».",
+            true => "Сервис пометил адрес; другие базы и решения сайтов могут отличаться, возможна ошибка.",
             false => "Этот GeoIP-сервис не пометил адрес как прокси; другие базы могут отличаться.",
             null => "Признак proxy от сервиса не пришёл.",
-        }, geo.Proxy switch { true => SiteViewTone.Bad, false => SiteViewTone.Good, _ => SiteViewTone.Neutral });
+        }, geo.Proxy switch { true => SiteViewTone.Bad, _ => SiteViewTone.Neutral });
 
         yield return new SiteViewRow("Часовой пояс адреса", ipZoneText,
             "По GeoIP; сайт может сравнивать с данными браузера, если они доступны.", SiteViewTone.Neutral);

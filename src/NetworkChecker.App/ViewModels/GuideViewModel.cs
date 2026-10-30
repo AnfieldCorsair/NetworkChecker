@@ -23,6 +23,11 @@ public sealed partial class GuideViewModel : ViewModelBase
 {
     public GuideViewModel()
     {
+        if (global::NetworkChecker.App.Localization.Localizer.Culture == "en-US")
+        {
+            Sections = EnglishSections();
+            return;
+        }
         Sections =
         [
             new()
@@ -46,7 +51,7 @@ public sealed partial class GuideViewModel : ViewModelBase
                 Items =
                 [
                     new("Системный прокси", "Читаются ключи WinINET в HKCU\\...\\Internet Settings (ProxyEnable, ProxyServer, AutoConfigURL), машинные DefaultConnectionSettings и переменные HTTP_PROXY/ALL_PROXY.", "реестр", "#4EA1FF"),
-                    new("TUN/TAP-адаптеры", "Через NetworkInterface ищутся интерфейсы типа Tunnel и имена вида tun/tap/wg/wintun/nordlynx/amnezia/clash-*. Активный туннель — критичный сигнал.", "сеть", "#4EA1FF"),
+                    new("TUN/TAP-адаптеры", "Через NetworkInterface ищутся интерфейсы типа Tunnel и имена вида tun/tap/wg/wintun/nordlynx/amnezia/clash-*. Активный туннель может иметь разные причины и не подтверждает маршрут браузера.", "сеть", "#4EA1FF"),
                     new("VPN-профили ОС", "Get-VpnConnection (все пользователи и текущий). Активное подключение = критичный сигнал, наличие профиля = контекст.", "PowerShell", "#B061D6"),
                     new("Запущенные клиенты", "Сверка имён процессов и путей с каталогом из 38 маркеров: WireGuard, OpenVPN, v2rayN, Xray, NekoRay, Clash, sing-box, Hiddify, Tor, GoodbyeDPI, zapret и др.", "каталог", "#4EA1FF"),
                     new("Установленные приложения", "Три ветки Uninstall в реестре (HKLM, WOW6432Node, HKCU). Факт установки — warning, а не приговор.", "реестр", "#4EA1FF"),
@@ -91,7 +96,7 @@ public sealed partial class GuideViewModel : ViewModelBase
                     new("GeoIP", "ipapi.is (основной), iplocate.io, ipinfo.io, myip.com. Hosting — majority vote, proxy/VPN/Tor — достаточно одного голоса. Иностранный IP без hosting даёт needsReview.", "вес 20", "#4EA1FF"),
                     new("Сравнение IP-источников", "Сравниваются только адреса одного семейства. Различия могут иметь разные причины; это не доказательство split tunneling.", "диагностика", "#5C7A99"),
                     new("UDP / STUN", "Различие адресов HTTPS и STUN может быть связано с NAT, маршрутами или прокси; утечка не доказана.", "вес 10", "#4EA1FF"),
-                    new("Доступность доменов", "Цепочка DNS → TCP :443 → TLS для набора доменов. Показывает, где именно ломается доступ: DNS, TCP или SNI.", "вес 10", "#4EA1FF"),
+                    new("Доступность доменов", "Цепочка DNS → TCP :443 → TLS для набора доменов. Показывает этап ошибки DNS, TCP или TLS; причина и блокировка по SNI не установлены.", "вес 10", "#4EA1FF"),
                     new("CDN и redirector", "cdn-cgi/trace и httpbin/headers: страна edge-узла и наличие прокси-заголовков (Via, X-Forwarded-For).", "вес 5", "#4EA1FF"),
                     new("RTT-триангуляция (β)", "Сравнение медиан задержки до групп узлов. Географию и тип маршрута по этим данным установить нельзя.", "вес 15", "#F2913D"),
                     new("ICMP-спуфинг (β)", "Сверка ICMP и TCP-ответов: разные адреса, «слишком близкий» ответ с малым TTL, ICMP есть при закрытом TCP.", "вес 10", "#F2913D"),
@@ -113,13 +118,13 @@ public sealed partial class GuideViewModel : ViewModelBase
             {
                 Title = "Вкладка «Глазами сайта»",
                 Icon = global::NetworkChecker.App.Icons.Eye,
-                Summary = "Что о вас узнаёт ВК, Яндекс или банк с первого запроса — и почему включается капча.",
+                Summary = "Условная модель доступных сайту сведений, не анализ конкретного сайта или браузера.",
                 Items =
                 [
                     new("Визитная карточка", "IP-адрес, страна и город по GeoIP, провайдер и ASN, тип сети (домашний провайдер или дата-центр), метки VPN/прокси в базах.", "что видно", "#4EA1FF"),
-                    new("Часовой пояс и язык", "Сайт сверяет часовой пояс адреса с вашим системным, а язык — со страной адреса. Расхождение больше 2 часов — типичный признак VPN.", "сверка", "#F5C542"),
+                    new("Часовой пояс и язык", "Модель сравнивает системные язык и часовой пояс с GeoIP. Настройки браузера могут отличаться; расхождение не доказывает VPN.", "сверка", "#F5C542"),
                     new("Шкала 0–100", "Сумма весов сигналов: метка VPN 30, дата-центр 25, иностранный адрес 20, расхождение поясов 15, язык 10, небраузерный клиент 5. Это условные веса, не вероятность и не методика конкретного сайта. Для русскоязычных стран региона язык отдельно не штрафуется.", "механика", "#F0524C"),
-                    new("Сырой запрос", "В подробном режиме видно, какие ровно заголовки уходят на сервер. Настоящий браузер добавляет к ним cookie, язык и отпечаток JS.", "подробно", "#B061D6"),
+                    new("Сырой запрос", "Показан иллюстративный набор заголовков приложения, не перехваченный запрос браузера. Cookies и данные скриптов зависят от сайта и браузера.", "подробно", "#B061D6"),
                     new("Ничего не отправляется", "Запросы идут только к GeoIP-сервисам. На серверы ВК, Яндекса и банков приложение не ходит — это модель того, что они увидят.", "приватность", "#35C48A"),
                 ],
             },
@@ -137,6 +142,59 @@ public sealed partial class GuideViewModel : ViewModelBase
                     new("MCC/SIM/BeaconDB", "Не переносится: на ПК нет сотового модуля. Роль LocationSignals частично берёт на себя GeoIP.", "исключено", "#F2913D"),
                 ],
             },
+        ];
+    }
+
+    private static ObservableCollection<GuideSection> EnglishSections()
+    {
+        static GuideSection Section(string title, string icon, string summary, params GuideItem[] items) => new()
+        {
+            Title = title,
+            Icon = icon,
+            Summary = summary,
+            Items = new(items),
+        };
+        const string blue = "#4EA1FF";
+        return
+        [
+            Section("Understanding the verdict", global::NetworkChecker.App.Icons.ShieldCheck,
+                "The result combines completed checks with conservative rules.",
+                new("No indicators found", "Available data does not exclude a VPN or proxy.", "level", blue),
+                new("Review needed", "Ambiguous observations can have several explanations.", "level", blue),
+                new("Settings detected", "Proxy settings or a connected Windows VPN were found; the browser route was not checked.", "level", blue),
+                new("Index 0–100", "An unvalidated relative index, not a probability or security score. It is unavailable without sufficient data.", "index", blue)),
+            Section("Direct indicators", global::NetworkChecker.App.Icons.Shield,
+                "Windows proxy settings, network interfaces, profiles, processes and services.",
+                new("Proxy", "WinINET, WinHTTP, environment variables and PAC configuration may be inspected.", "system", blue),
+                new("Tunnel interfaces", "An active tunnel interface does not prove a browser uses it.", "network", blue),
+                new("VPN profiles and clients", "A connected Windows VPN is different from an installed client or an inactive profile.", "Windows", blue)),
+            Section("Indirect indicators", global::NetworkChecker.App.Icons.Trace,
+                "Routes, DNS, MTU and hosts entries provide context, not proof of a tunnel.",
+                new("Routes and DNS", "Default routes, host routes, local DNS and NRPT policies can also be used by ordinary or corporate networks.", "network", blue),
+                new("MTU and hosts", "Unusual values may have many causes and do not identify a specific application.", "context", blue)),
+            Section("Local proxy checks", global::NetworkChecker.App.Icons.Chip,
+                "Loopback ports and some local endpoints are probed.",
+                new("SOCKS5 and HTTP CONNECT", "A response suggests a compatible local service, not that the browser uses it.", "ports", blue),
+                new("Client APIs", "A response on port 10085 or /version is not sufficient to identify a particular client. Xray gRPC is not implemented.", "API", blue)),
+            Section("Network checks", global::NetworkChecker.App.Icons.Globe,
+                "GeoIP, IP comparison, STUN, reachability, CDN, RTT and ICMP.",
+                new("IP and GeoIP", "Only addresses of the same family are compared. Databases can be incomplete or wrong; a mismatch does not prove a leak.", "IP", blue),
+                new("DNS, TCP and TLS", "The checks show the stage that failed, not its cause or proof of filtering. Certificate validation failures have multiple possible causes.", "reachability", blue),
+                new("RTT and ICMP", "Latency and differing replies cannot establish a route's geography or prove spoofing on their own.", "beta", blue)),
+            Section("Network page", global::NetworkChecker.App.Icons.Globe,
+                "Overview, diagnostics and traceroute. Some probes contact external services.",
+                new("Overview", "Interfaces, routes, proxy settings and available external IP information.", "overview", blue),
+                new("Diagnostics", "Latency, path MTU, DNS and TLS checks; unavailable probes do not establish a cause.", "diagnostics", blue),
+                new("Traceroute", "TTL hops and ASN information from Team Cymru. It is not a geographic map; timeouts do not prove an outage.", "trace", blue)),
+            Section("Website perspective", global::NetworkChecker.App.Icons.Eye,
+                "A simplified model, not the actual view or decision of a website.",
+                new("Data and assumptions", "GeoIP comes from an external service; language and time zone are system settings, not necessarily browser settings.", "model", blue),
+                new("Score", "The weighted score is heuristic, not a probability or a website's real algorithm.", "index", blue),
+                new("Illustrative request", "The displayed headers are an example, not an intercepted browser request. No request is sent to VK or Yandex.", "privacy", blue)),
+            Section("Packet viewer and observation", global::NetworkChecker.App.Icons.Eye,
+                "The PCAP viewer and the experimental Windows observation are separate features.",
+                new("Packet viewer", "Opens local PCAP and supported PCAPNG blocks. Live capture and monitoring are not implemented. Capture files may contain secrets.", "viewer", blue),
+                new("WFP / ETW", "Starts only on request. Results are limited, do not prove interception and do not affect the verdict.", "experimental", blue)),
         ];
     }
 

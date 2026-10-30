@@ -19,15 +19,15 @@ namespace NetworkChecker.App.ViewModels;
 public sealed class MetricViewModel(Metric metric)
 {
     public string Label { get; } = Localizer.T(metric.Label);
-    public string Value { get; } = metric.Value;
-    public string? Hint { get; } = metric.Hint;
+    public string Value { get; } = Localizer.T(metric.Value);
+    public string? Hint { get; } = metric.Hint is null ? null : Localizer.T(metric.Hint);
     public bool HasHint => !string.IsNullOrWhiteSpace(Hint);
 }
 
 public sealed class FindingViewModel(Finding finding)
 {
     public string Title { get; } = Localizer.T(finding.Title);
-    public string Detail { get; } = finding.Detail;
+    public string Detail { get; } = Localizer.T(finding.Detail);
     public string? Evidence { get; } = finding.Evidence;
     public bool HasEvidence => !string.IsNullOrWhiteSpace(Evidence);
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
@@ -106,13 +106,13 @@ public sealed class VerdictViewModel
     public VerdictViewModel(VerdictResult verdict, IpConsensus consensus, TimeSpan duration)
     {
         Headline = Localizer.T(verdict.Headline);
-        Summary = verdict.Summary;
+        Summary = Localizer.VerdictSummary(verdict.Summary);
         Score = verdict.Score;
-        ScoreText = verdict.ScoreText;
+        ScoreText = verdict.ScoreAvailable ? verdict.ScoreText : Localizer.T("не рассчитан");
         LevelText = Localizer.T(verdict.LevelText);
         Reasons = new ObservableCollection<string>(verdict.Reasons);
         HasReasons = Reasons.Count > 0;
-        IpText = consensus.ConsensusIp is null ? "нет данных" : Masking.Ip(consensus.ConsensusIp);
+        IpText = consensus.ConsensusIp is null ? Localizer.T("нет данных") : Masking.Ip(consensus.ConsensusIp);
         Observations = new ObservableCollection<string>(consensus.Observations
             .Select(o => $"{o.Source}: {Masking.Ip(o.Ip)}{(o.Note is null ? "" : $" · {o.Note}")}")
             .Distinct());
@@ -153,9 +153,9 @@ public sealed class VerdictViewModel
 /// <summary>Строка простого режима: вопрос и понятный ответ.</summary>
 public sealed class FactViewModel(PlainFact fact)
 {
-    public string Question { get; } = fact.Question;
-    public string Answer { get; } = fact.Answer;
-    public string? Hint { get; } = fact.Hint;
+    public string Question { get; } = Localizer.T(fact.Question);
+    public string Answer { get; } = Localizer.T(fact.Answer);
+    public string? Hint { get; } = fact.Hint is null ? null : Localizer.T(fact.Hint);
     public bool HasHint => !string.IsNullOrWhiteSpace(Hint);
     public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(fact.Tone switch
     {
@@ -171,7 +171,7 @@ public sealed class PlainCheckViewModel(PlainCheck check)
     public string Title { get; } = Localizer.T(check.Title);
     public string WhatWeChecked { get; } = Localizer.T(check.WhatWeChecked);
     public string Status { get; } = Localizer.T(check.Status);
-    public string Advice { get; } = check.Advice;
+    public string Advice { get; } = Localizer.T(check.Advice);
     public bool HasAdvice => !string.IsNullOrWhiteSpace(Advice);
     public Avalonia.Media.IBrush DotBrush { get; } = Ui.Brush(check.Colour switch
     {
@@ -238,7 +238,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
             })));
 
         ShowPlainDetails = true;
-        StatusLine = "Готово к запуску. Проверок в наборе: " + _runner.Checks.Count;
+        StatusLine = Localizer.Culture == "en-US" ? $"Ready. Checks available: {_runner.Checks.Count}" : "Готово к запуску. Проверок в наборе: " + _runner.Checks.Count;
         CheckCount = _runner.Checks.Count;
     }
 
@@ -271,7 +271,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     public partial int CheckCount { get; set; }
 
     [ObservableProperty]
-    public partial string LastRunText { get; set; } = "прогонов ещё не было";
+    public partial string LastRunText { get; set; } = Localizer.Culture == "en-US" ? "No runs yet" : "прогонов ещё не было";
 
     [ObservableProperty]
     public partial bool PrivacyMode { get; set; }
@@ -289,7 +289,9 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     public partial string PlainHeadline { get; set; } = Localizer.T("Проверка ещё не запускалась");
 
     [ObservableProperty]
-    public partial string PlainMeaning { get; set; } = "Нажмите «Проверить компьютер» — приложение посмотрит настройки сети и объяснит простыми словами, всё ли обычно.";
+    public partial string PlainMeaning { get; set; } = Localizer.Culture == "en-US"
+        ? "Select Check this computer to review network settings and get a plain-language summary."
+        : "Нажмите «Проверить компьютер» — приложение посмотрит настройки сети и объяснит простыми словами, всё ли обычно.";
 
     [ObservableProperty]
     public partial string PlainAdvice { get; set; } = Localizer.T("Проверка занимает около 10 секунд и ничего не меняет в системе.");
@@ -317,13 +319,13 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     {
         _options.PrivacyMode = value;
         Masking.Enabled = value;
-        if (!_settings.Save()) StatusLine = "Не удалось сохранить настройки; изменение действует только в текущем сеансе.";
+        if (!_settings.Save()) StatusLine = Localizer.T("Не удалось сохранить настройки; изменение действует только в текущем сеансе.");
     }
 
     partial void OnOfflineModeChanged(bool value)
     {
         _options.OfflineMode = value;
-        if (!_settings.Save()) StatusLine = "Не удалось сохранить настройки; изменение действует только в текущем сеансе.";
+        if (!_settings.Save()) StatusLine = Localizer.T("Не удалось сохранить настройки; изменение действует только в текущем сеансе.");
     }
 
     private void OnStatusText(object? sender, string text)
@@ -378,7 +380,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
             UpdatePlainView(result);
             Progress = 100;
             LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
-            StatusLine = result.Verdict.Headline;
+            StatusLine = Localizer.T(result.Verdict.Headline);
             if (_options.SaveHistory)
             {
                 try { await _history.SaveAsync(result).ConfigureAwait(true); }
@@ -387,7 +389,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         }
         catch (OperationCanceledException)
         {
-            StatusLine = "Проверка отменена пользователем";
+            StatusLine = Localizer.T("Проверка отменена пользователем");
         }
         catch (Exception ex)
         {
@@ -420,7 +422,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         UpdatePlainView(result);
         Progress = 100;
         LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
-        StatusLine = result.Verdict.Headline;
+        StatusLine = Localizer.T(result.Verdict.Headline);
     }
 
     private void UpdateCards(CheckRunResult result)
@@ -448,7 +450,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
                 PlainMeaning += " Some checks were incomplete; review their individual statuses.";
             PlainAdvice = "Open Detailed mode to inspect the findings and their limitations.";
         }
-        PlainConfiguration = PlainFacts.OverallConfiguration(result);
+        PlainConfiguration = Localizer.T(PlainFacts.OverallConfiguration(result));
         PlainAccent = result.Verdict.Level switch
         {
             RiskLevel.Clean => "#35C48A",

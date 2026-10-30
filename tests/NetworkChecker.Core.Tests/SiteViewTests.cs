@@ -62,7 +62,8 @@ public class SiteViewAnalyzerTests
         Assert.True(report.Exposure < SiteViewAnalyzer.ReviewThreshold);
         Assert.DoesNotContain(report.Signals, s => s.Tone == SiteViewTone.Bad);
         Assert.Contains("не вероятность", report.Summary);
-        Assert.Equal("домашний или мобильный провайдер", Row(report, "Тип сети").Value);
+        Assert.Equal("не помечен как хостинг", Row(report, "Тип сети").Value);
+        Assert.Equal(SiteViewTone.Neutral, Row(report, "Тип сети").Tone);
     }
 
     [Fact]

@@ -175,3 +175,50 @@ public class PlainFactsTests
         Assert.Contains("не отработали", PlainFacts.OverallConfiguration(run));
     }
 }
+
+public class PlainFactsReliabilityTests
+{
+    [Fact]
+    public void Typed_proxy_configuration_is_shown_in_simple_mode()
+    {
+        var sample = Sample.CleanRun();
+        var direct = new CheckResult
+        {
+            Category = CheckCategory.DirectSigns,
+            Title = "Прямые признаки",
+            Status = CheckStatus.Detected,
+            Findings = [Finding.Critical("Обнаружены настройки прокси") with { Kind = EvidenceKind.ConfiguredProxy }],
+        };
+        var run = new CheckRunResult
+        {
+            StartedAt = sample.StartedAt,
+            FinishedAt = sample.FinishedAt,
+            Verdict = sample.Verdict,
+            Environment = sample.Environment,
+            IpConsensus = sample.IpConsensus,
+            Checks = [direct],
+        };
+        var proxy = PlainFacts.Build(run).Single(f => f.Question == "Прокси в системе");
+        Assert.Equal("настроен", proxy.Answer);
+        Assert.True(proxy.IsBad);
+    }
+
+    [Fact]
+    public void Failed_checks_are_not_reported_as_no_tunnel_or_proxy()
+    {
+        var sample = Sample.CleanRun();
+        var run = new CheckRunResult
+        {
+            StartedAt = sample.StartedAt,
+            FinishedAt = sample.FinishedAt,
+            Verdict = sample.Verdict,
+            Environment = sample.Environment,
+            IpConsensus = sample.IpConsensus,
+            Checks = [CheckResult.Failed(CheckCategory.DirectSigns, "Direct", "error", TimeSpan.Zero)],
+        };
+        var facts = PlainFacts.Build(run);
+        Assert.Equal("не проверялось", facts.Single(x => x.Question == "VPN или туннель").Answer);
+        Assert.Equal("не проверялось", facts.Single(x => x.Question == "Прокси в системе").Answer);
+        Assert.Equal("не проверялось", facts.Single(x => x.Question == "Программы для обхода").Answer);
+    }
+}
