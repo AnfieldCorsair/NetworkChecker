@@ -23,50 +23,52 @@ public static class ResultExport
 
     public static string ToJson(CheckRunResult result) => JsonSerializer.Serialize(result, JsonOptions);
 
-    public static string ToMarkdown(CheckRunResult result)
+    public static string ToMarkdown(CheckRunResult result, bool english = false, Func<string, string>? translate = null)
     {
+        string Text(string text) => english && translate is not null ? translate(text) : text;
+        string Label(string ru, string en) => english ? en : ru;
         var sb = new StringBuilder();
-        sb.AppendLine("# NetworkChecker — отчёт о проверке");
+        sb.AppendLine(Label("# NetworkChecker — отчёт о проверке", "# NetworkChecker — diagnostic report"));
         sb.AppendLine();
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Вердикт:** {result.Verdict.Headline} ({result.Verdict.Level}, {result.Verdict.ScoreText})");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Начато:** {result.StartedAt:dd.MM.yyyy HH:mm:ss zzz}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Длительность:** {result.Duration.TotalSeconds:F1} с");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Внешний IP:** {result.IpConsensus.Summary}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **ОС:** {result.Environment.OsDescription}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Приватный режим:** {(result.Environment.PrivacyMode ? "включён (IP/имена маскированы)" : "выключен")}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Вердикт", "Verdict")}:** {Text(result.Verdict.Headline)} ({result.Verdict.Level}, {Text(result.Verdict.ScoreText)})");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Начато", "Started")}:** {result.StartedAt:dd.MM.yyyy HH:mm:ss zzz}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Длительность", "Duration")}:** {result.Duration.TotalSeconds:F1} {Label("с", "s")}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Внешний IP", "Public IP")}:** {Text(result.IpConsensus.Summary)}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("ОС", "OS")}:** {result.Environment.OsDescription}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Приватный режим", "Privacy mode")}:** {(result.Environment.PrivacyMode ? Label("включён (IP/имена маскированы)", "enabled (IP addresses and names masked)") : Label("выключен", "disabled"))}");
         sb.AppendLine();
-        sb.AppendLine("## Сводка");
+        sb.AppendLine(Label("## Сводка", "## Summary"));
         sb.AppendLine();
-        sb.AppendLine(result.Verdict.Summary);
+        sb.AppendLine(Text(result.Verdict.Summary));
         if (result.Verdict.Reasons.Count > 0)
         {
             sb.AppendLine();
-            sb.AppendLine("### Причины");
-            foreach (var reason in result.Verdict.Reasons) sb.AppendLine(CultureInfo.InvariantCulture, $"- {reason}");
+            sb.AppendLine(Label("### Причины", "### Reasons"));
+            foreach (var reason in result.Verdict.Reasons) sb.AppendLine(CultureInfo.InvariantCulture, $"- {Text(reason)}");
         }
 
         sb.AppendLine();
-        sb.AppendLine("## Модули");
+        sb.AppendLine(Label("## Модули", "## Checks"));
         sb.AppendLine();
-        sb.AppendLine("| Модуль | Статус | Находок | Время |");
+        sb.AppendLine(Label("| Модуль | Статус | Находок | Время |", "| Check | Status | Findings | Time |"));
         sb.AppendLine("|---|---|---|---|");
         foreach (var check in result.Checks)
         {
-            sb.AppendLine(CultureInfo.InvariantCulture, $"| {check.Title} | {check.StatusText} | {check.Findings.Count} | {check.Duration.TotalSeconds:F1} с |");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"| {Text(check.Title)} | {Text(check.StatusText)} | {check.Findings.Count} | {check.Duration.TotalSeconds:F1} {Label("с", "s")} |");
         }
 
         foreach (var check in result.Checks)
         {
             sb.AppendLine();
-            sb.AppendLine(CultureInfo.InvariantCulture, $"### {check.Title} — {check.StatusText}");
-            if (!string.IsNullOrWhiteSpace(check.Subtitle)) sb.AppendLine(CultureInfo.InvariantCulture, $"> {check.Subtitle}");
-            if (check.Error is not null) sb.AppendLine(CultureInfo.InvariantCulture, $"> Ошибка: {check.Error}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"### {Text(check.Title)} — {Text(check.StatusText)}");
+            if (!string.IsNullOrWhiteSpace(check.Subtitle)) sb.AppendLine(CultureInfo.InvariantCulture, $"> {Text(check.Subtitle)}");
+            if (check.Error is not null) sb.AppendLine(CultureInfo.InvariantCulture, $"> {Label("Ошибка", "Error")}: {check.Error}");
             if (check.Metrics.Count > 0)
             {
                 sb.AppendLine();
                 foreach (var metric in check.Metrics)
                 {
-                    sb.AppendLine(CultureInfo.InvariantCulture, $"- **{metric.Label}:** {metric.Value}{(metric.Hint is null ? "" : $" — {metric.Hint}")}");
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Text(metric.Label)}:** {Text(metric.Value)}{(metric.Hint is null ? "" : $" — {Text(metric.Hint)}")}");
                 }
             }
             if (check.Findings.Count > 0)
@@ -81,7 +83,7 @@ public static class ResultExport
                         Severity.Notice => "🟡 notice",
                         _ => "⚪ info",
                     };
-                    sb.AppendLine(CultureInfo.InvariantCulture, $"- {badge} **{finding.Title}**{(string.IsNullOrWhiteSpace(finding.Detail) ? "" : $" — {finding.Detail}")}");
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"- {badge} **{Text(finding.Title)}**{(string.IsNullOrWhiteSpace(finding.Detail) ? "" : $" — {Text(finding.Detail)}")}");
                     if (!string.IsNullOrWhiteSpace(finding.Evidence))
                         sb.AppendLine(CultureInfo.InvariantCulture, $"  ```{Environment.NewLine}  {finding.Evidence}{Environment.NewLine}  ```");
                 }
@@ -90,7 +92,7 @@ public static class ResultExport
 
         sb.AppendLine();
         sb.AppendLine("---");
-        sb.AppendLine("Сформировано NetworkChecker. Методика: обнаружение VPN и прокси на Windows.");
+        sb.AppendLine(Label("Сформировано NetworkChecker. Методика: обнаружение VPN и прокси на Windows.", "Generated by NetworkChecker. Indicators are heuristic and do not establish browser routing."));
         return sb.ToString();
     }
 }

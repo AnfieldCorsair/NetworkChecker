@@ -12,6 +12,35 @@ public class ReportFormatTests
     private static readonly CheckRunResult Rich = Sample.RichRun();
 
     [Fact]
+    public void English_csv_localizes_headers_and_known_fields_without_mutating_source()
+    {
+        var source = Sample.RichRun();
+        var originalTitle = source.Checks[0].Title;
+        var file = ReportExporter.Build(ReportFormat.Csv, source, language: "en-US",
+            translate: text => text == originalTitle ? "Translated check" : text);
+        var csv = Encoding.UTF8.GetString(file.Content);
+        Assert.Contains("Check;Status;Status (plain language);Severity;Finding;Details;Evidence;Time, s", csv);
+        Assert.Contains("Translated check", csv);
+        Assert.Equal(originalTitle, source.Checks[0].Title);
+        Assert.Contains("Модуль;Статус", Encoding.UTF8.GetString(ReportExporter.Build(ReportFormat.Csv, source).Content));
+    }
+
+    [Fact]
+    public void English_markdown_uses_english_headings_without_changing_source()
+    {
+        var run = Sample.RichRun();
+        var title = run.Checks[0].Title;
+        var file = ReportExporter.Build(ReportFormat.Markdown, run, language: "en-US",
+            translate: text => text == title ? "Translated check" : text);
+        var content = Encoding.UTF8.GetString(file.Content);
+        Assert.Contains("# NetworkChecker — diagnostic report", content);
+        Assert.Contains("## Checks", content);
+        Assert.Contains("Translated check", content);
+        Assert.Equal(title, run.Checks[0].Title);
+        Assert.Contains("## Модули", Encoding.UTF8.GetString(ReportExporter.Build(ReportFormat.Markdown, run).Content));
+    }
+
+    [Fact]
     public void Catalog_lists_all_formats_with_extensions()
     {
         Assert.Equal(7, ReportExporter.Catalog.Count);

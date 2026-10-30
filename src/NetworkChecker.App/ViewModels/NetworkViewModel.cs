@@ -59,7 +59,12 @@ public sealed class TraceHopViewModel(TraceHop hop)
     public Avalonia.Media.IBrush AsnBrush { get; } = Ui.Brush(TraceGraph.ColorForAsn(hop.Asn));
 }
 
-public sealed record KeyValueRow(string Key, string Value, string? Hint = null);
+public sealed class KeyValueRow(string key, string value, string? hint = null)
+{
+    public string Key { get; } = Localizer.T(key);
+    public string Value { get; } = Localizer.T(value);
+    public string? Hint { get; } = hint is null ? null : Localizer.T(hint);
+}
 
 /// <summary>Понятный факт о сети для простого режима.</summary>
 public sealed class SimpleNetFact(string label, string value, string hint, string tone)
@@ -215,19 +220,19 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
             StunText = Masking.Ip(overview.StunIp);
             ProxyText = overview.Proxy.HasProxy || overview.Proxy.HasMachineWideProxy
                 ? overview.Proxy.Display
-                : "не обнаружен (данные могут быть неполными)";
-            DnsText = overview.Dns.Servers.Count == 0 ? "не удалось определить" : string.Join(", ", overview.Dns.Servers.Take(3));
+                : Localizer.T("не обнаружен (данные могут быть неполными)");
+            DnsText = overview.Dns.Servers.Count == 0 ? Localizer.T("не удалось определить") : string.Join(", ", overview.Dns.Servers.Take(3));
             GatewayText = overview.GatewaysText;
             MtuText = overview.MtuText;
-            AdaptersCountText = $"{overview.ActiveAdapters.Count} из {overview.Adapters.Count}";
-            OverviewRefreshed = $"обновлено {overview.RefreshedAt:HH:mm:ss}";
+            AdaptersCountText = Localizer.Culture == "en-US" ? $"{overview.ActiveAdapters.Count} of {overview.Adapters.Count}" : $"{overview.ActiveAdapters.Count} из {overview.Adapters.Count}";
+            OverviewRefreshed = Localizer.Culture == "en-US" ? $"updated {overview.RefreshedAt:HH:mm:ss}" : $"обновлено {overview.RefreshedAt:HH:mm:ss}";
             UpdateSimpleFacts(overview);
             StatusLine = Localizer.T("Обзор прочитан. Пустые данные не исключают ошибки доступа или недоступный компонент.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ошибка чтения сетевой конфигурации");
-            StatusLine = "Ошибка: " + ex.GetBaseException().Message;
+            StatusLine = Localizer.T("Ошибка: ") + ex.GetBaseException().Message;
         }
         finally
         {
@@ -244,7 +249,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
         SimpleFacts.Add(new SimpleNetFact(
             "Соединение",
             primary is null ? "не найдено" : $"{primary.KindText} · {primary.Name}",
-            primary is null ? "Сетевой адаптер не найден — возможно, нет подключения." : $"Адрес {primary.AddressText}",
+            primary is null ? "Сетевой адаптер не найден — возможно, нет подключения." : Localizer.Culture == "en-US" ? $"Address {primary.AddressText}" : $"Адрес {primary.AddressText}",
             primary is null ? "bad" : "good"));
 
         var tunnels = overview.Adapters.Where(a => a.IsUp && a.Kind == AdapterKind.Tunnel).ToList();
@@ -321,7 +326,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
         }
         IsRunningDiagnostics = true;
         RunDiagnosticsCommand.NotifyCanExecuteChanged();
-        var progress = new Progress<string>(text => StatusLine = text);
+        var progress = new Progress<string>(text => StatusLine = Localizer.T(text));
         try
         {
             var diagnostics = await _service.RunDiagnosticsAsync(_options, progress, CancellationToken.None).ConfigureAwait(true);
@@ -333,13 +338,13 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
             foreach (var row in diagnostics.Dns) Dns.Add(row);
             Tls.Clear();
             foreach (var row in diagnostics.Tls) Tls.Add(row);
-            DiagnosticsRefreshed = $"диагностика завершена за {diagnostics.Duration.TotalSeconds:F1} с";
+            DiagnosticsRefreshed = Localizer.Culture == "en-US" ? $"diagnostics completed in {diagnostics.Duration.TotalSeconds:F1} s" : $"диагностика завершена за {diagnostics.Duration.TotalSeconds:F1} с";
             StatusLine = Localizer.T("Диагностика завершена.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ошибка диагностики");
-            StatusLine = "Ошибка: " + ex.GetBaseException().Message;
+            StatusLine = Localizer.T("Ошибка: ") + ex.GetBaseException().Message;
         }
         finally
         {
@@ -363,14 +368,16 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
         CancelTraceCommand.NotifyCanExecuteChanged();
         Hops.Clear();
         _cts = new CancellationTokenSource();
-        TraceStatus = $"трассировка {TraceTarget}...";
+        TraceStatus = Localizer.Culture == "en-US" ? $"tracing {TraceTarget}..." : $"трассировка {TraceTarget}...";
         try
         {
             var result = await NetworkInfoService.TraceAsync(TraceTarget, _options.MaxTraceHops, null, _cts.Token).ConfigureAwait(true);
             foreach (var hop in result.Hops) Hops.Add(new TraceHopViewModel(hop));
             TraceStatus = result.Error is null
-                ? $"готово за {result.Duration.TotalSeconds:F1} с · {result.Hops.Count} хопов · режим: {result.Mode}"
-                : "ошибка: " + result.Error;
+                ? Localizer.Culture == "en-US"
+                    ? $"completed in {result.Duration.TotalSeconds:F1} s · {result.Hops.Count} hops · mode: {result.Mode}"
+                    : $"готово за {result.Duration.TotalSeconds:F1} с · {result.Hops.Count} хопов · режим: {result.Mode}"
+                : Localizer.T("ошибка: ") + result.Error;
         }
         catch (OperationCanceledException)
         {

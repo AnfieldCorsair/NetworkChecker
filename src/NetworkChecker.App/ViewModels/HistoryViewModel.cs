@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using NetworkChecker.App.Localization;
 using NetworkChecker.Core.Comparison;
 using NetworkChecker.Core.Models;
 using NetworkChecker.Core.Net;
@@ -14,7 +15,7 @@ public sealed class HistoryRowViewModel(RunRecord record)
 {
     public RunRecord Record { get; } = record;
     public string When { get; } = record.StartedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss", CultureInfo.InvariantCulture);
-    public string Headline { get; } = record.Headline;
+    public string Headline { get; } = Localizer.T(record.Headline);
     public string ScoreText { get; } = ScoreTextOf(record);
 
     private static string ScoreTextOf(RunRecord record)
@@ -30,7 +31,7 @@ public sealed class HistoryRowViewModel(RunRecord record)
         catch (System.Text.Json.JsonException) { return "—"; }
     }
     public string IpText { get; } = Masking.Ip(record.ExternalIp);
-    public string DurationText { get; } = $"{record.DurationMs / 1000.0:F1} с";
+    public string DurationText { get; } = $"{record.DurationMs / 1000.0:F1} {(Localizer.Culture == "en-US" ? "s" : "с")}";
     public string Color { get; } = record.RiskLevel switch
     {
         0 => "#35C48A",
@@ -39,12 +40,12 @@ public sealed class HistoryRowViewModel(RunRecord record)
     };
     public Avalonia.Media.IBrush ColorBrush => Ui.Brush(Color);
 
-    public string LevelText { get; } = record.RiskLevel switch
+    public string LevelText { get; } = Localizer.T(record.RiskLevel switch
     {
         0 => "Чисто",
         1 => "Проверка",
         _ => "Обнаружено",
-    };
+    });
 }
 
 /// <summary>Строка сравнения прогонов: что стало с одним модулем.</summary>
@@ -52,16 +53,16 @@ public sealed class ComparisonRowViewModel(CheckChange change)
 {
     private readonly CheckChange _change = change;
 
-    public string Title { get; } = change.Title;
+    public string Title { get; } = Localizer.T(change.Title);
     public string BeforeText { get; } = StatusTextOf(change.Before);
     public string AfterText { get; } = StatusTextOf(change.After);
-    public string DirectionText { get; } = change.Direction switch
+    public string DirectionText { get; } = Localizer.T(change.Direction switch
     {
         ChangeDirection.Worse => "больше сигналов",
         ChangeDirection.Better => "меньше сигналов",
         ChangeDirection.Same => "без изменений",
         _ => "несопоставимо",
-    };
+    });
 
     public string DirectionColor { get; } = change.Direction switch
     {
@@ -78,15 +79,15 @@ public sealed class ComparisonRowViewModel(CheckChange change)
         get
         {
             var parts = new List<string>();
-            if (_change.Appeared.Count > 0) parts.Add("появилось: " + string.Join("; ", _change.Appeared));
-            if (_change.Disappeared.Count > 0) parts.Add("исчезло: " + string.Join("; ", _change.Disappeared));
+            if (_change.Appeared.Count > 0) parts.Add(Localizer.T("появилось: ") + string.Join("; ", _change.Appeared.Select(Localizer.T)));
+            if (_change.Disappeared.Count > 0) parts.Add(Localizer.T("исчезло: ") + string.Join("; ", _change.Disappeared.Select(Localizer.T)));
             return string.Join(" · ", parts);
         }
     }
 
     public bool HasDetail => DetailText.Length > 0;
 
-    private static string StatusTextOf(CheckStatus status) => status switch
+    private static string StatusTextOf(CheckStatus status) => Localizer.T(status switch
     {
         CheckStatus.Clean => "чисто",
         CheckStatus.NeedsReview => "требует проверки",
@@ -94,7 +95,7 @@ public sealed class ComparisonRowViewModel(CheckChange change)
         CheckStatus.Skipped => "пропущено",
         CheckStatus.Failed => "ошибка",
         _ => "—",
-    };
+    });
 }
 
 public sealed partial class HistoryViewModel : ViewModelBase
@@ -122,10 +123,10 @@ public sealed partial class HistoryViewModel : ViewModelBase
     public partial HistoryRowViewModel? Selected { get; set; }
 
     [ObservableProperty]
-    public partial string Status { get; set; } = "История загружается...";
+    public partial string Status { get; set; } = Localizer.T("История загружается...");
 
     [ObservableProperty]
-    public partial string DetailHeadline { get; set; } = "Выберите прогон из списка";
+    public partial string DetailHeadline { get; set; } = Localizer.T("Выберите прогон из списка");
 
     [ObservableProperty]
     public partial string DetailSummary { get; set; } = string.Empty;
@@ -164,12 +165,12 @@ public sealed partial class HistoryViewModel : ViewModelBase
             Runs.Clear();
             foreach (var record in records) Runs.Add(new HistoryRowViewModel(record));
             Status = records.Count == 0
-                ? "Пока пусто: ни одна проверка не сохранена."
-                : $"Сохранено прогонов: {records.Count}";
+                ? Localizer.T("Пока пусто: ни одна проверка не сохранена.")
+                : Localizer.Culture == "en-US" ? $"Saved runs: {records.Count}" : $"Сохранено прогонов: {records.Count}";
         }
         catch (Exception ex)
         {
-            Status = "Не удалось прочитать историю: " + ex.GetBaseException().Message;
+            Status = Localizer.T("Не удалось прочитать историю: ") + ex.GetBaseException().Message;
         }
     }
 
@@ -180,9 +181,9 @@ public sealed partial class HistoryViewModel : ViewModelBase
         DetailChecks.Clear();
         foreach (var check in result.Checks) DetailChecks.Add(new CheckCardViewModel(check));
         DetailReasons.Clear();
-        foreach (var reason in result.Verdict.Reasons) DetailReasons.Add(reason);
-        DetailHeadline = $"{result.Verdict.Headline} · {result.Verdict.Score}/100";
-        DetailSummary = result.Verdict.Summary;
+        foreach (var reason in result.Verdict.Reasons) DetailReasons.Add(Localizer.T(reason));
+        DetailHeadline = $"{Localizer.T(result.Verdict.Headline)} · {result.Verdict.ScoreText}";
+        DetailSummary = Localizer.VerdictSummary(result.Verdict.Summary);
         HasDetail = true;
     }
 
@@ -197,8 +198,8 @@ public sealed partial class HistoryViewModel : ViewModelBase
         var index = Runs.IndexOf(Selected);
         if (index < 0 || index + 1 >= Runs.Count)
         {
-            ComparisonSummary = "Не с чем сравнивать: это самый старый сохранённый прогон.";
-            ComparisonHeadline = "Сравнение недоступно";
+            ComparisonSummary = Localizer.T("Не с чем сравнивать: это самый старый сохранённый прогон.");
+            ComparisonHeadline = Localizer.T("Сравнение недоступно");
             ComparisonRows.Clear();
             HasComparison = true;
             return;
@@ -209,7 +210,7 @@ public sealed partial class HistoryViewModel : ViewModelBase
         var before = await _history.GetAsync(previous.Record.Id).ConfigureAwait(true);
         if (after is null || before is null)
         {
-            ComparisonSummary = "Не удалось прочитать один из прогонов.";
+            ComparisonSummary = Localizer.T("Не удалось прочитать один из прогонов.");
             HasComparison = true;
             return;
         }
@@ -218,7 +219,9 @@ public sealed partial class HistoryViewModel : ViewModelBase
         ComparisonRows.Clear();
         foreach (var change in comparison.Changes) ComparisonRows.Add(new ComparisonRowViewModel(change));
         ComparisonHeadline = $"{comparison.Before.Verdict.ScoreText} → {comparison.After.Verdict.ScoreText}";
-        ComparisonSummary = comparison.Summary + $" Сравнение с прогоном от {previous.When}.";
+        ComparisonSummary = Localizer.Culture == "en-US"
+            ? $"Compared with the run from {previous.When}. More signals: {comparison.Changes.Count(c => c.Direction == ChangeDirection.Worse)}; fewer: {comparison.Changes.Count(c => c.Direction == ChangeDirection.Better)}; not comparable: {comparison.Changes.Count(c => c.Direction == ChangeDirection.Unknown)}. Scores and partial runs may not be comparable."
+            : comparison.Summary + $" Сравнение с прогоном от {previous.When}.";
         HasComparison = true;
     }
 
@@ -235,7 +238,7 @@ public sealed partial class HistoryViewModel : ViewModelBase
         if (row is null) return;
         await _history.DeleteAsync(row.Record.Id).ConfigureAwait(true);
         Runs.Remove(row);
-        Status = $"Удалено. Осталось прогонов: {Runs.Count}";
+        Status = Localizer.Culture == "en-US" ? $"Deleted. Runs remaining: {Runs.Count}" : $"Удалено. Осталось прогонов: {Runs.Count}";
     }
 
     private void ResetComparison()
@@ -252,8 +255,8 @@ public sealed partial class HistoryViewModel : ViewModelBase
         DetailChecks.Clear();
         ResetComparison();
         HasDetail = false;
-        DetailHeadline = "История очищена";
+        DetailHeadline = Localizer.T("История очищена");
         DetailSummary = string.Empty;
-        Status = "История очищена.";
+        Status = Localizer.T("История очищена.");
     }
 }

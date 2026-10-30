@@ -8,22 +8,25 @@ namespace NetworkChecker.Export.Formats;
 /// <summary>CSV для Excel/Google Sheets: одна строка — одна находка, плюс строка на модуль без находок.</summary>
 public static class CsvExporter
 {
-    public static byte[] Build(CheckRunResult result)
+    public static byte[] Build(CheckRunResult result, bool english = false, Func<string, string>? translate = null)
     {
+        string Text(string text) => english && translate is not null ? translate(text) : text;
         var sb = new StringBuilder();
-        sb.AppendLine("Модуль;Статус;Статус (простыми словами);Уровень;Находка;Подробности;Доказательство;Время, с");
+        sb.AppendLine(english
+            ? "Check;Status;Status (plain language);Severity;Finding;Details;Evidence;Time, s"
+            : "Модуль;Статус;Статус (простыми словами);Уровень;Находка;Подробности;Доказательство;Время, с");
 
         foreach (var check in result.Checks)
         {
             if (check.Findings.Count == 0)
             {
                 sb.AppendLine(Row(
-                    check.Title,
-                    check.StatusText,
-                    PlainLanguage.StatusInPlainWords(check.Status),
+                    Text(check.Title),
+                    Text(check.StatusText),
+                    Text(PlainLanguage.StatusInPlainWords(check.Status)),
                     "",
-                    check.Findings.Count == 0 ? "находок нет" : "",
-                    PlainLanguage.WhatWeChecked(check.Category),
+                    check.Findings.Count == 0 ? (english ? "no findings" : "находок нет") : "",
+                    Text(PlainLanguage.WhatWeChecked(check.Category)),
                     "",
                     check.Duration.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)));
                 continue;
@@ -32,21 +35,21 @@ public static class CsvExporter
             foreach (var finding in check.Findings.OrderByDescending(f => f.Severity))
             {
                 sb.AppendLine(Row(
-                    check.Title,
-                    check.StatusText,
-                    PlainLanguage.StatusInPlainWords(check.Status),
+                    Text(check.Title),
+                    Text(check.StatusText),
+                    Text(PlainLanguage.StatusInPlainWords(check.Status)),
                     finding.Severity.ToString(),
-                    finding.Title,
-                    finding.Detail,
+                    Text(finding.Title),
+                    Text(finding.Detail),
                     finding.Evidence ?? "",
                     check.Duration.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)));
             }
         }
 
         sb.AppendLine();
-        sb.AppendLine(Row("ИТОГ", result.Verdict.LevelText, result.Verdict.Headline,
-            result.Verdict.ScoreAvailable ? result.Verdict.Score.ToString(CultureInfo.InvariantCulture) : "", result.Verdict.Summary,
-            string.Join(" | ", result.Verdict.Reasons), result.IpConsensus.Summary,
+        sb.AppendLine(Row(english ? "SUMMARY" : "ИТОГ", Text(result.Verdict.LevelText), Text(result.Verdict.Headline),
+            result.Verdict.ScoreAvailable ? result.Verdict.Score.ToString(CultureInfo.InvariantCulture) : "", Text(result.Verdict.Summary),
+            string.Join(" | ", result.Verdict.Reasons.Select(Text)), Text(result.IpConsensus.Summary),
             result.Duration.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)));
 
         // BOM нужен, чтобы Excel корректно открыл кириллицу.

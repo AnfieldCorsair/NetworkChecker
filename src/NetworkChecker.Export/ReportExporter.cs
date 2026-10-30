@@ -39,7 +39,7 @@ public static class ReportExporter
         (ReportFormat.Html, "HTML", ".html", "один файл для браузера и писем"),
     ];
 
-    public static ReportFile Build(ReportFormat format, CheckRunResult result, string? baseName = null, bool forcePrivate = false)
+    public static ReportFile Build(ReportFormat format, CheckRunResult result, string? baseName = null, bool forcePrivate = false, string? language = null, Func<string, string>? translate = null)
     {
         if (forcePrivate || result.Environment.PrivacyMode) result = PrivateRunProjection.Create(result);
         var name = baseName ?? $"networkchecker-{result.StartedAt.ToLocalTime():yyyyMMdd-HHmm}";
@@ -50,8 +50,8 @@ public static class ReportExporter
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "документ Word"),
             ReportFormat.Xlsx => new ReportFile(name + ".xlsx", XlsxExporter.Build(result),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "книга Excel"),
-            ReportFormat.Csv => new ReportFile(name + ".csv", CsvExporter.Build(result), "text/csv", "таблица CSV"),
-            ReportFormat.Markdown => new ReportFile(name + ".md", System.Text.Encoding.UTF8.GetBytes(ResultExport.ToMarkdown(result)),
+            ReportFormat.Csv => new ReportFile(name + ".csv", CsvExporter.Build(result, language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) == true, translate), "text/csv", "таблица CSV"),
+            ReportFormat.Markdown => new ReportFile(name + ".md", System.Text.Encoding.UTF8.GetBytes(ResultExport.ToMarkdown(result, language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) == true, translate)),
                 "text/markdown", "Markdown-отчёт"),
             ReportFormat.Json => new ReportFile(name + ".json", System.Text.Encoding.UTF8.GetBytes(ResultExport.ToJson(result)),
                 "application/json", "JSON-данные"),

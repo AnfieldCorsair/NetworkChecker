@@ -64,10 +64,10 @@ public sealed partial class CheckCardViewModel : ObservableObject
     public string Title => Localizer.T(Result.Title);
     public string Subtitle => Localizer.T(Result.Subtitle);
     public string StatusText => Localizer.T(Result.StatusText);
-    public string DurationText => $"{Result.Duration.TotalSeconds:F1} с";
+    public string DurationText => $"{Result.Duration.TotalSeconds:F1} {(Localizer.Culture == "en-US" ? "s" : "с")}";
     public string FindingsCountText => Result.Findings.Count == 0
         ? (Result.Status == CheckStatus.Skipped ? Localizer.T("не запускалась") : Localizer.T("находок нет"))
-        : $"находок: {Result.Findings.Count}";
+        : Localizer.Culture == "en-US" ? $"findings: {Result.Findings.Count}" : $"находок: {Result.Findings.Count}";
     public ObservableCollection<MetricViewModel> Metrics { get; }
     public ObservableCollection<FindingViewModel> Findings { get; }
     public bool HasMetrics => Metrics.Count > 0;
@@ -110,14 +110,14 @@ public sealed class VerdictViewModel
         Score = verdict.Score;
         ScoreText = verdict.ScoreAvailable ? verdict.ScoreText : Localizer.T("не рассчитан");
         LevelText = Localizer.T(verdict.LevelText);
-        Reasons = new ObservableCollection<string>(verdict.Reasons);
+        Reasons = new ObservableCollection<string>(verdict.Reasons.Select(Localizer.T));
         HasReasons = Reasons.Count > 0;
         IpText = consensus.ConsensusIp is null ? Localizer.T("нет данных") : Masking.Ip(consensus.ConsensusIp);
         Observations = new ObservableCollection<string>(consensus.Observations
             .Select(o => $"{o.Source}: {Masking.Ip(o.Ip)}{(o.Note is null ? "" : $" · {o.Note}")}")
             .Distinct());
         ObservedCount = consensus.Observations.Count;
-        DurationText = $"{duration.TotalSeconds:F1} с";
+        DurationText = $"{duration.TotalSeconds:F1} {(Localizer.Culture == "en-US" ? "s" : "с")}";
         Color = verdict.Level switch
         {
             RiskLevel.Clean => "#35C48A",
@@ -486,7 +486,8 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         if (_lastResult is null) return;
         try
         {
-            var file = ReportExporter.Build(SelectedFormat.Format, _lastResult, forcePrivate: PrivacyMode);
+            var file = ReportExporter.Build(SelectedFormat.Format, _lastResult, forcePrivate: PrivacyMode, language: Localizer.Culture,
+                translate: text => Localizer.VerdictSummary(Localizer.T(text)));
             var path = await _files.SaveBytesAsync(file.FileName, file.Content, SelectedFormat.Extension, file.Description)
                 .ConfigureAwait(true);
             SaveMessage = path is null ? string.Empty : $"Отчёт сохранён: {path}";

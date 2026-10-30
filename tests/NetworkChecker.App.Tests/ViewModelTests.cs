@@ -403,6 +403,34 @@ public class LocalizationCoverageTests
         finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
     }
 
+    [AvaloniaFact]
+    public void History_row_and_comparison_localize_without_rewriting_saved_record()
+    {
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            var record = new NetworkChecker.Data.Entities.RunRecord { Headline = "Неизвестный сохранённый текст", DurationMs = 1500, ChecksJson = "[]" };
+            var row = new HistoryRowViewModel(record);
+            var change = new NetworkChecker.Core.Comparison.CheckChange
+            {
+                Title = "Сеть",
+                Before = NetworkChecker.Core.Models.CheckStatus.Skipped,
+                After = NetworkChecker.Core.Models.CheckStatus.Failed,
+                Appeared = [],
+                Disappeared = [],
+                Direction = NetworkChecker.Core.Comparison.ChangeDirection.Unknown
+            };
+            var comparison = new ComparisonRowViewModel(change);
+            Assert.Equal("1.5 s", row.DurationText);
+            Assert.Equal("—", row.ScoreText);
+            Assert.Equal("Неизвестный сохранённый текст", row.Headline);
+            Assert.Equal("Неизвестный сохранённый текст", record.Headline);
+            Assert.Equal("Network", comparison.Title);
+            Assert.Equal("not comparable", comparison.DirectionText);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+
     [Fact]
     public void Every_russian_static_resource_has_an_english_translation()
     {
