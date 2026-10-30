@@ -20,8 +20,9 @@ public static class PdfExporter
 
     public static byte[] Build(CheckRunResult result)
     {
-        // QuestPDF Community License: бесплатна для проектов с оборотом менее 1 млн USD.
-        // Если это не ваш случай — замените на свою лицензию.
+        // QuestPDF Community — source-available, не OSI; право использования и
+        // распространения зависит от условий соответствующей версии лицензии.
+        // До распространения необходимо отдельно проверить применимость условий.
         QuestPDF.Settings.License = LicenseType.Community;
         RegisterFonts();
 

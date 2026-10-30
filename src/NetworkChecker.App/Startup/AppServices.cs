@@ -78,6 +78,7 @@ public static class AppServices
         services.AddSingleton<GuideViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<ObservationViewModel>();
+        services.AddSingleton<CaptureViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         return builder.Build();

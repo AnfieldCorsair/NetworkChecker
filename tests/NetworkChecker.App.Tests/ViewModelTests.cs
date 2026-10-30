@@ -104,7 +104,7 @@ public class MainWindowViewModelTests
         Assert.Equal("История", main.CurrentPage.Title);
         Assert.True(main.NavItems[3].IsSelected);
         Assert.False(main.NavItems[0].IsSelected);
-        Assert.Equal(7, main.NavItems.Count);
+        Assert.Equal(8, main.NavItems.Count);
     }
 
     [AvaloniaFact]
@@ -364,5 +364,19 @@ public class LocalizationTests
         Assert.Equal("ASN неизвестен", hop.AsnLabel);
         Assert.Equal("—", hop.Asn);
         Assert.False(hop.HasPrevious);
+    }
+}
+
+public class CaptureViewModelTests
+{
+    [AvaloniaFact]
+    public async Task Invalid_capture_clears_old_data_and_reports_error()
+    {
+        var vm = new CaptureViewModel();
+        vm.Packets.Add(new global::NetworkChecker.Core.Capture.CapturePacket("old", "a", "b", 1, 1, "FF"));
+        await vm.LoadAsync(new MemoryStream([1, 2, 3]));
+        Assert.Empty(vm.Packets);
+        Assert.Contains("Не удалось", vm.Status);
+        Assert.False(vm.IsBusy);
     }
 }

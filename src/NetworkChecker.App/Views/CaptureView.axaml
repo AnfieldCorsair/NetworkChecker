@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels" xmlns:cap="using:NetworkChecker.Core.Capture"
+             x:Class="NetworkChecker.App.Views.CaptureView" x:DataType="vm:CaptureViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="24,18,24,28" Spacing="14">
+      <Border Classes="card"><StackPanel Spacing="10">
+        <TextBlock Text="СНИФФЕР · ПРОСМОТР ЗАХВАТА" Classes="h2" />
+        <TextBlock Text="Первый этап: просмотр локального PCAP/PCAPNG. Живой захват, фоновый журнал и отдельный мониторинг пока не подключены." Classes="muted" />
+        <TextBlock Text="Файл может содержать IP-адреса, токены, пароли и другие личные данные. HTTPS обычно зашифрован; расшифровка не выполняется. Первые 256 байт выбранного кадра показаны в шестнадцатеричном виде." Classes="muted" />
+        <Button Content="Открыть PCAP / PCAPNG" Click="OpenCapture" HorizontalAlignment="Left" />
+        <SelectableTextBlock Text="{Binding Status}" />
+      </StackPanel></Border>
+      <Border Classes="card"><StackPanel Spacing="8">
+        <TextBlock Text="ПАКЕТЫ" Classes="overline" />
+        <TextBlock Text="Максимум 32 МиБ и 2000 пакетов. Сейчас разбираются Ethernet и базовые заголовки IPv4/IPv6; нестандартные типы показываются без разбора." Classes="muted" />
+        <ListBox ItemsSource="{Binding Packets}" SelectedItem="{Binding Selected}" Height="360">
+          <ListBox.ItemTemplate><DataTemplate x:DataType="cap:CapturePacket">
+            <Grid ColumnDefinitions="105,*,*,95" ColumnSpacing="8">
+              <TextBlock Grid.Column="0" Text="{Binding Protocol}" />
+              <TextBlock Grid.Column="1" Text="{Binding Source}" Classes="mono" />
+              <TextBlock Grid.Column="2" Text="{Binding Destination}" Classes="mono" />
+              <TextBlock Grid.Column="3" Text="{Binding CapturedBytes, StringFormat='{}{0} байт'}" />
+            </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel></Border>
+      <Border Classes="card"><StackPanel Spacing="8">
+        <TextBlock Text="БАЙТЫ ВЫБРАННОГО КАДРА" Classes="overline" />
+        <SelectableTextBlock Text="{Binding Selected.HexPreview}" Classes="mono" />
+      </StackPanel></Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

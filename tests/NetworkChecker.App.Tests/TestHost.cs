@@ -49,7 +49,7 @@ public static class TestHost
         var guide = new GuideViewModel();
         var settings = new SettingsViewModel(store, opts, store.Ui, history, mode);
 
-        return new MainWindowViewModel(dashboard, network, site, historyVm, guide, settings, mode, new ObservationViewModel(new FakeObservationService()));
+        return new MainWindowViewModel(dashboard, network, site, historyVm, guide, settings, mode, new ObservationViewModel(new FakeObservationService()), new CaptureViewModel());
     }
 }
 
