@@ -12,8 +12,9 @@ public static class DocxExporter
 {
     private const string Font = "Calibri";
 
-    public static byte[] Build(CheckRunResult result)
+    public static byte[] Build(CheckRunResult result, string? language = null, Func<string, string>? translate = null)
     {
+        var l = new ReportLanguage(language, translate);
         using var stream = new MemoryStream();
         using (var document = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document))
         {
@@ -21,61 +22,61 @@ public static class DocxExporter
             var body = new Body();
             main.Document = new Document(body);
 
-            body.Append(Paragraph("Отчёт NetworkChecker", size: 36, bold: true, spaceAfter: 60));
+            body.Append(Paragraph(l.Text("Отчёт NetworkChecker"), size: 36, bold: true, spaceAfter: 60));
             body.Append(Paragraph($"{result.StartedAt.ToLocalTime():dd.MM.yyyy HH:mm} · {result.Environment.OsDescription}",
                 size: 18, color: "6B7C8F", spaceAfter: 240));
 
             // Вердикт
             var plain = PlainLanguage.ForVerdict(result.Verdict, result.Checks);
-            body.Append(Heading("Вердикт"));
-            body.Append(Paragraph($"{result.Verdict.Headline} · индекс {result.Verdict.ScoreText}", size: 26, bold: true,
+            body.Append(Heading(l.Text("Вердикт")));
+            body.Append(Paragraph($"{l.Text(result.Verdict.Headline)} · {l.Choose("индекс", "index")} {l.Text(result.Verdict.ScoreText)}", size: 26, bold: true,
                 color: ColourOf(result.Verdict.Level), spaceAfter: 80));
-            body.Append(Paragraph(plain.WhatItMeans, spaceAfter: 80));
-            body.Append(Paragraph($"Что делать: {plain.Advice}", size: 20, color: "44546A", spaceAfter: 200));
+            body.Append(Paragraph(l.Text(plain.WhatItMeans), spaceAfter: 80));
+            body.Append(Paragraph($"{l.Text("Что делать")}: {l.Text(plain.Advice)}", size: 20, color: "44546A", spaceAfter: 200));
 
             if (result.Verdict.Reasons.Count > 0)
             {
-                body.Append(Heading("Почему такой вывод"));
+                body.Append(Heading(l.Text("Почему такой вывод")));
                 foreach (var reason in result.Verdict.Reasons)
-                    body.Append(Bullet(reason));
+                    body.Append(Bullet(l.Text(reason)));
             }
 
-            body.Append(Heading("Коротко по проверкам"));
-            body.Append(BuildChecksTable(result));
+            body.Append(Heading(l.Text("Коротко по проверкам")));
+            body.Append(BuildChecksTable(result, l));
 
-            body.Append(Heading("Подробности"));
+            body.Append(Heading(l.Text("Подробности")));
             foreach (var check in result.Checks)
             {
-                body.Append(Paragraph($"{check.Title} — {check.StatusText}", size: 24, bold: true, spaceAfter: 40));
-                body.Append(Paragraph($"{PlainLanguage.WhatWeChecked(check.Category)}. {check.StatusText}. " +
-                                      $"Находок: {check.Findings.Count}, время: {check.Duration.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)} с.",
+                body.Append(Paragraph($"{l.Text(check.Title)} — {l.Text(check.StatusText)}", size: 24, bold: true, spaceAfter: 40));
+                body.Append(Paragraph($"{l.Text(PlainLanguage.WhatWeChecked(check.Category))}. {l.Text(check.StatusText)}. " +
+                                      $"{l.Text("Находок")}: {check.Findings.Count}, {l.Choose("время", "time")}: {check.Duration.TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)} {l.Choose("с", "s")}.",
                     size: 19, color: "6B7C8F", spaceAfter: 60));
 
                 if (!string.IsNullOrWhiteSpace(check.Error))
-                    body.Append(Paragraph($"Ошибка: {check.Error}", size: 19, color: "B03A38", spaceAfter: 60));
+                    body.Append(Paragraph($"{l.Choose("Ошибка", "Error")}: {check.Error}", size: 19, color: "B03A38", spaceAfter: 60));
 
                 if (check.Metrics.Count > 0)
                 {
                     foreach (var metric in check.Metrics)
-                        body.Append(Bullet($"{metric.Label}: {metric.Value}{(metric.Hint is null ? "" : $" ({metric.Hint})")}"));
+                        body.Append(Bullet($"{l.Text(metric.Label)}: {l.Text(metric.Value)}{(metric.Hint is null ? "" : $" ({l.Text(metric.Hint)})")}"));
                 }
 
                 foreach (var finding in check.Findings.OrderByDescending(f => f.Severity))
                 {
-                    body.Append(Bullet($"[{SeverityText(finding.Severity)}] {finding.Title}" +
-                                       (string.IsNullOrWhiteSpace(finding.Detail) ? "" : $" — {finding.Detail}"),
+                    body.Append(Bullet($"[{l.Text(SeverityText(finding.Severity))}] {l.Text(finding.Title)}" +
+                                       (string.IsNullOrWhiteSpace(finding.Detail) ? "" : $" — {l.Text(finding.Detail)}"),
                         severity: finding.Severity));
                     if (!string.IsNullOrWhiteSpace(finding.Evidence))
                         body.Append(Paragraph(finding.Evidence!, size: 17, color: "6B7C8F", indent: 720, spaceAfter: 60));
                 }
             }
 
-            body.Append(Heading("Служебное"));
-            body.Append(Bullet($"Внешний IP: {result.IpConsensus.ConsensusIp ?? "нет данных"}"));
-            body.Append(Bullet($"Наблюдений по IP: {result.IpConsensus.Observations.Count}"));
-            body.Append(Bullet($"Длительность: {result.Duration.TotalSeconds:F1} с"));
-            body.Append(Bullet($"Приватный режим: {(result.Environment.PrivacyMode ? "включён" : "выключен")}"));
-            body.Append(Bullet($"Компьютер: {result.Environment.MachineName} · пользователь: {result.Environment.UserName}"));
+            body.Append(Heading(l.Text("Служебное")));
+            body.Append(Bullet($"{l.Text("Внешний IP")}: {result.IpConsensus.ConsensusIp ?? l.Text("нет данных")}"));
+            body.Append(Bullet($"{l.Text("Наблюдений по IP")}: {result.IpConsensus.Observations.Count}"));
+            body.Append(Bullet($"{l.Text("Длительность")}: {result.Duration.TotalSeconds:F1} {l.Choose("с", "s")}"));
+            body.Append(Bullet($"{l.Text("Приватный режим")}: {l.Text(result.Environment.PrivacyMode ? "включён" : "выключен")}"));
+            body.Append(Bullet($"{l.Text("Компьютер")}: {result.Environment.MachineName} · {l.Choose("пользователь", "user")}: {result.Environment.UserName}"));
 
             main.Document.Save();
         }
@@ -83,7 +84,7 @@ public static class DocxExporter
         return stream.ToArray();
     }
 
-    private static Table BuildChecksTable(CheckRunResult result)
+    private static Table BuildChecksTable(CheckRunResult result, ReportLanguage l)
     {
         var table = new Table();
         table.AppendChild(new TableProperties(
@@ -95,11 +96,11 @@ public static class DocxExporter
                 new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4, Color = "E7ECF2" }),
             new TableWidth { Width = "5000", Type = TableWidthUnitValues.Pct }));
 
-        table.Append(TableRow(true, "Проверка", "Что проверяли", "Статус", "Находок"));
+        table.Append(TableRow(true, l.Text("Проверка"), l.Text("Что проверяли"), l.Text("Статус"), l.Text("Находок")));
         foreach (var check in result.Checks)
         {
-            table.Append(TableRow(false, check.Title, PlainLanguage.WhatWeChecked(check.Category),
-                check.StatusText, check.Findings.Count.ToString(CultureInfo.InvariantCulture)));
+            table.Append(TableRow(false, l.Text(check.Title), l.Text(PlainLanguage.WhatWeChecked(check.Category)),
+                l.Text(check.StatusText), check.Findings.Count.ToString(CultureInfo.InvariantCulture)));
         }
         return table;
     }

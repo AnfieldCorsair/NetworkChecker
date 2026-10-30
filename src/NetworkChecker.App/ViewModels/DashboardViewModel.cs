@@ -379,7 +379,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
             ExportReportCommand.NotifyCanExecuteChanged();
             UpdatePlainView(result);
             Progress = 100;
-            LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
+            LastRunText = Localizer.Culture == "en-US" ? $"last run: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}" : $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
             StatusLine = Localizer.T(result.Verdict.Headline);
             if (_options.SaveHistory)
             {
@@ -394,7 +394,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ошибка прогона");
-            StatusLine = "Ошибка: " + ex.GetBaseException().Message;
+            StatusLine = Localizer.T("Ошибка: ") + ex.GetBaseException().Message;
         }
         finally
         {
@@ -421,7 +421,7 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         ExportReportCommand.NotifyCanExecuteChanged();
         UpdatePlainView(result);
         Progress = 100;
-        LastRunText = $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
+        LastRunText = Localizer.Culture == "en-US" ? $"last run: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}" : $"последний прогон: {result.FinishedAt:dd.MM.yyyy HH:mm:ss}";
         StatusLine = Localizer.T(result.Verdict.Headline);
     }
 
@@ -435,21 +435,8 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
     {
         var explanation = PlainLanguage.ForVerdict(result.Verdict, result.Checks);
         PlainHeadline = Localizer.T(explanation.Headline);
-        PlainMeaning = explanation.WhatItMeans;
-        PlainAdvice = explanation.Advice;
-        if (Localizer.Culture == "en-US")
-        {
-            PlainMeaning = result.Verdict.Level switch
-            {
-                RiskLevel.Clean => "The checks found no indicators of a tunnel or proxy. This does not rule out a VPN.",
-                RiskLevel.NeedsReview => "Some observations need review, but they do not prove active bypass.",
-                RiskLevel.Detected => "Windows reports proxy settings or a connected Windows VPN. The browser route has not been verified.",
-                _ => "Insufficient data was collected for a conclusion.",
-            };
-            if (result.Checks.Any(c => c.Status is CheckStatus.Failed or CheckStatus.Skipped))
-                PlainMeaning += " Some checks were incomplete; review their individual statuses.";
-            PlainAdvice = "Open Detailed mode to inspect the findings and their limitations.";
-        }
+        PlainMeaning = Localizer.T(explanation.WhatItMeans);
+        PlainAdvice = Localizer.T(explanation.Advice);
         PlainConfiguration = Localizer.T(PlainFacts.OverallConfiguration(result));
         PlainAccent = result.Verdict.Level switch
         {
@@ -488,14 +475,14 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         {
             var file = ReportExporter.Build(SelectedFormat.Format, _lastResult, forcePrivate: PrivacyMode, language: Localizer.Culture,
                 translate: text => Localizer.VerdictSummary(Localizer.T(text)));
-            var path = await _files.SaveBytesAsync(file.FileName, file.Content, SelectedFormat.Extension, file.Description)
+            var path = await _files.SaveBytesAsync(file.FileName, file.Content, SelectedFormat.Extension, Localizer.T(file.Description))
                 .ConfigureAwait(true);
-            SaveMessage = path is null ? string.Empty : $"Отчёт сохранён: {path}";
+            SaveMessage = path is null ? string.Empty : (Localizer.Culture == "en-US" ? $"Report saved: {path}" : $"Отчёт сохранён: {path}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ошибка экспорта отчёта");
-            SaveMessage = "Не удалось сохранить отчёт: " + ex.GetBaseException().Message;
+            SaveMessage = Localizer.T("Не удалось сохранить отчёт: ") + ex.GetBaseException().Message;
         }
     }
 
@@ -515,11 +502,11 @@ public sealed partial class DashboardViewModel : ViewModelBase, IDisposable
         var window = (Application.Current.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow;
         var clipboard = window?.Clipboard;
         if (clipboard is null) return;
-        var text = $"{_lastResult.Verdict.Headline} · {_lastResult.Verdict.ScoreText}\n" +
-                   string.Join("\n", _lastResult.Checks.Select(c => $"{c.Title}: {c.StatusText}")) +
-                   $"\nВнешний IP: {(PrivacyMode || _lastResult.Environment.PrivacyMode ? "скрыт" : _lastResult.IpConsensus.Summary)}";
+        var text = $"{Localizer.T(_lastResult.Verdict.Headline)} · {Localizer.T(_lastResult.Verdict.ScoreText)}\n" +
+                   string.Join("\n", _lastResult.Checks.Select(c => $"{Localizer.T(c.Title)}: {Localizer.T(c.StatusText)}")) +
+                   $"\n{Localizer.T("Внешний IP")}: {(PrivacyMode || _lastResult.Environment.PrivacyMode ? Localizer.T("скрыт") : Localizer.T(_lastResult.IpConsensus.Summary))}";
         await Avalonia.Input.Platform.ClipboardExtensions.SetTextAsync(clipboard, text).ConfigureAwait(true);
-        SaveMessage = "Сводка скопирована в буфер обмена";
+        SaveMessage = Localizer.T("Сводка скопирована в буфер обмена");
     }
 
     /// <summary>Освобождает незавершённый прогон (например, при закрытии окна во время проверки).</summary>

@@ -50,7 +50,7 @@ public sealed partial class CaptureViewModel : ViewModelBase
             Packets.Clear();
             Selected = null;
             Status = Localizer.Culture == "en-US"
-                ? "Could not open the capture file. Check that it is supported and not truncated."
+                ? "Could not open the capture file: " + Localizer.T(ex.Message)
                 : "Не удалось открыть файл: " + ex.Message;
         }
         finally { IsBusy = false; }

@@ -107,7 +107,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
     public partial string Headline { get; set; } = Localizer.T("Ещё не смотрели");
 
     [ObservableProperty]
-    public partial string Summary { get; set; } = "Нажмите «Посмотреть», и приложение покажет, что о вас узнаёт сайт с первого запроса.";
+    public partial string Summary { get; set; } = Localizer.T("Нажмите «Посмотреть», чтобы увидеть модель сведений о посетителе.");
 
     [ObservableProperty]
     public partial string ExposureText { get; set; } = "—";
@@ -125,7 +125,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
     public partial string RequestLine { get; set; } = "GET / HTTP/1.1";
 
     [ObservableProperty]
-    public partial string StatusLine { get; set; } = "Готово к запуску";
+    public partial string StatusLine { get; set; } = Localizer.T("Готово к запуску");
 
     [ObservableProperty]
     public partial string? ErrorText { get; set; }
@@ -140,7 +140,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    public partial string UpdatedText { get; set; } = "прогонов ещё не было";
+    public partial string UpdatedText { get; set; } = Localizer.T("прогонов ещё не было");
 
     /// <summary>Задача текущего осмотра: нужна тестам и снятию скриншотов, чтобы дождаться результата.</summary>
     public Task PendingTask => _pending;
@@ -209,7 +209,7 @@ public sealed partial class SiteViewModel : ViewModelBase, IDisposable
                 ? $"Signals: {report.Signals.Count}; heuristic score: {report.Exposure}/100. This is not a VPN probability or a particular website's assessment. GeoIP can be incomplete or inaccurate; language and time zone are system values, not browser values. Captchas and restrictions depend on the website."
                 : "The public IP was not obtained: offline mode may be enabled or GeoIP services may be unavailable. Only local time zone, language and client information are shown.";
         ExposureText = report.HasGeo ? report.Exposure.ToString(CultureInfo.InvariantCulture) : "—";
-        IpText = report.HasGeo ? report.Ip! : "адрес ещё не получен";
+        IpText = report.HasGeo ? report.Ip! : Localizer.T("адрес ещё не получен");
         ErrorText = report.Error;
         HasError = !string.IsNullOrWhiteSpace(report.Error);
         HasReport = true;

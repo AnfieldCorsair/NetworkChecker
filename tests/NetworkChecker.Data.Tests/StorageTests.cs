@@ -21,7 +21,12 @@ public sealed class TempData : IDisposable
     public IDbContextFactory<AppDbContext> Factory()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite($"Data Source={System.IO.Path.Combine(Path, "history.db")}")
+            // Test databases must release SQLite file handles between operations on Windows.
+            .UseSqlite(new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder
+            {
+                DataSource = System.IO.Path.Combine(Path, "history.db"),
+                Pooling = false,
+            }.ToString())
             .Options;
         var factory = new PooledDbContextFactory<AppDbContext>(options);
         using var db = factory.CreateDbContext();
@@ -173,8 +178,14 @@ public class HistoryRepositoryTests
         Assert.Null(restored.IpConsensus.ConsensusIp);
         Assert.Empty(restored.IpConsensus.Observations);
         Assert.Empty(restored.Environment.Adapters);
-        var rawDb = await File.ReadAllBytesAsync(System.IO.Path.Combine(temp.Path, "history.db"));
-        Assert.DoesNotContain(baseRun.IpConsensus.ConsensusIp!, System.Text.Encoding.UTF8.GetString(rawDb), StringComparison.Ordinal);
+        // Inspect both SQLite database and WAL if present; all connections above are closed.
+        var databasePath = System.IO.Path.Combine(temp.Path, "history.db");
+        foreach (var path in new[] { databasePath, databasePath + "-wal" })
+        {
+            if (!File.Exists(path)) continue;
+            var bytes = await File.ReadAllBytesAsync(path);
+            Assert.DoesNotContain(baseRun.IpConsensus.ConsensusIp!, System.Text.Encoding.UTF8.GetString(bytes), StringComparison.Ordinal);
+        }
     }
 }
 

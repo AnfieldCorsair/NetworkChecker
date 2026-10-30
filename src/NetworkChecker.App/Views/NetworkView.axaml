@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NetworkChecker.App.ViewModels"
-             xmlns:ni="using:NetworkChecker.Core.NetInfo"
              xmlns:net="using:NetworkChecker.Core.Net"
              xmlns:local="using:NetworkChecker.App"
              x:Class="NetworkChecker.App.Views.NetworkView"
@@ -231,7 +230,7 @@
               </Grid>
               <ItemsControl ItemsSource="{Binding Latency}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="ni:HostLatency">
+                  <DataTemplate x:DataType="vm:LatencyRowViewModel">
                     <Grid ColumnDefinitions="1.2*,1.2*,80,70,60,60,70" Margin="0,4">
                       <SelectableTextBlock Grid.Column="0" Text="{Binding Host}" FontSize="11.5" />
                       <SelectableTextBlock Grid.Column="1" Text="{Binding Address}" Classes="mono" FontSize="10.5" />
@@ -252,7 +251,7 @@
               <TextBlock Text="{DynamicResource LocMore46}" Classes="overline" />
               <ItemsControl ItemsSource="{Binding Mtu}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="ni:MtuProbe">
+                  <DataTemplate x:DataType="vm:MtuRowViewModel">
                     <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,3">
                       <SelectableTextBlock Grid.Column="0" Text="{Binding Target}" FontSize="11.5" />
                       <SelectableTextBlock Grid.Column="1" Text="{Binding ResultText}" Classes="mono" FontSize="11" Margin="0,0,10,0" />
@@ -278,11 +277,11 @@
                 </Grid>
                 <ItemsControl ItemsSource="{Binding Dns}">
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="ni:DnsProbeResult">
+                    <DataTemplate x:DataType="vm:DnsRowViewModel">
                       <Grid ColumnDefinitions="1.3*,1*,90,60" Margin="0,4">
                         <SelectableTextBlock Grid.Column="0" Text="{Binding Server}" Classes="mono" FontSize="10.5" />
                         <SelectableTextBlock Grid.Column="1" Text="{Binding Answer}" Classes="mono" FontSize="10.5" />
-                        <SelectableTextBlock Grid.Column="2" Text="{Binding ElapsedMs, StringFormat='{}{0:F0} мс'}" Classes="mono" FontSize="10.5" />
+                        <SelectableTextBlock Grid.Column="2" Text="{Binding ElapsedText}" Classes="mono" FontSize="10.5" />
                         <SelectableTextBlock Grid.Column="3" Text="{Binding StatusText}" FontSize="10.5"
                                    Foreground="{DynamicResource TextMuted}" />
                       </Grid>
@@ -297,7 +296,7 @@
                 <TextBlock Text="{DynamicResource LocMore52}" Classes="overline" />
                 <ItemsControl ItemsSource="{Binding Tls}">
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="ni:TlsProbe">
+                    <DataTemplate x:DataType="vm:TlsRowViewModel">
                       <StackPanel Spacing="1" Margin="0,4">
                         <Grid ColumnDefinitions="*,Auto">
                           <SelectableTextBlock Grid.Column="0" Text="{Binding Host}" FontSize="11.5" FontWeight="SemiBold" />
@@ -349,7 +348,7 @@
                       <TextBlock Text=" → " Classes="muted" FontSize="16" IsVisible="{Binding HasPrevious}" />
                       <Border BorderBrush="{Binding AsnBrush}" BorderThickness="1" CornerRadius="8" Padding="10" MinWidth="150" Background="{DynamicResource AppBackground}">
                         <StackPanel Spacing="3">
-                          <SelectableTextBlock Text="{Binding Index, StringFormat='Хоп {0}'}" Foreground="{Binding AsnBrush}" FontWeight="Bold" FontSize="11" />
+                          <SelectableTextBlock Text="{Binding IndexText}" Foreground="{Binding AsnBrush}" FontWeight="Bold" FontSize="11" />
                           <SelectableTextBlock Text="{Binding HostText}" Classes="mono" FontSize="11" />
                           <SelectableTextBlock Text="{Binding AsnLabel}" Foreground="{Binding AsnBrush}" FontSize="11" />
                           <SelectableTextBlock Text="{Binding RttText}" Classes="muted" FontSize="10" />

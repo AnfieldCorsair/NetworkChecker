@@ -12,10 +12,44 @@ using NetworkChecker.Core.Platform;
 
 namespace NetworkChecker.App.ViewModels;
 
+public sealed class LatencyRowViewModel(HostLatency row)
+{
+    public string Host => row.Host;
+    public string? Address => row.Address;
+    public string MedianText => Localizer.T(row.MedianText);
+    public string JitterText => Localizer.T(row.JitterText);
+    public string LossText => row.LossText;
+    public string MethodText => row.MethodText;
+    public string StatusText => Localizer.T(row.StatusText);
+}
+
+public sealed class MtuRowViewModel(MtuProbe row)
+{
+    public string Target => row.Target;
+    public string ResultText => Localizer.T(row.ResultText);
+    public bool Suspicious => row.Suspicious;
+}
+
+public sealed class DnsRowViewModel(DnsProbeResult row)
+{
+    public string Server => row.Server;
+    public string? Answer => row.Answer;
+    public string ElapsedText => $"{row.ElapsedMs:F0} {(Localizer.Culture == "en-US" ? "ms" : "мс")}";
+    public string StatusText => Localizer.T(row.StatusText);
+}
+
+public sealed class TlsRowViewModel(TlsProbe row)
+{
+    public string Host => row.Host;
+    public string? Protocol => row.Protocol;
+    public string IssuerShort => row.IssuerShort;
+    public string ValidationText => Localizer.T(row.ValidationText);
+}
+
 public sealed class AdapterRowViewModel(AdapterInfo adapter)
 {
     public string Name { get; } = adapter.Name;
-    public string KindText { get; } = adapter.KindText;
+    public string KindText { get; } = Localizer.T(adapter.KindText);
     public string AddressText { get; } = adapter.AddressText;
     public string GatewayText { get; } = adapter.Gateways.Count == 0 ? "—" : string.Join(", ", adapter.Gateways);
     public string MtuText { get; } = adapter.Mtu.ToString(CultureInfo.InvariantCulture);
@@ -50,9 +84,10 @@ public sealed class RouteRowViewModel(RouteInfo route)
 public sealed class TraceHopViewModel(TraceHop hop)
 {
     public int Index { get; } = hop.Index;
+    public string IndexText => $"{Localizer.T("Хоп")} {Index}";
     public string HostText => hop.Address is null ? Localizer.T("нет ответа") : Masking.Ip(hop.Address);
     public bool HasPrevious => Index > 1;
-    public string RttText { get; } = hop.RttText;
+    public string RttText { get; } = Localizer.T(hop.RttText);
     public string Asn { get; } = TraceGraph.NormalizeAsn(hop.Asn) ?? "—";
     public string AsnLabel => Asn == "—" ? Localizer.T("ASN неизвестен") : Asn;
     public string AsName { get; } = string.IsNullOrWhiteSpace(hop.AsName) ? "—" : hop.AsName;
@@ -119,10 +154,10 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
     public ObservableCollection<AdapterRowViewModel> Adapters { get; } = [];
     public ObservableCollection<RouteRowViewModel> DefaultRoutes { get; } = [];
     public ObservableCollection<KeyValueRow> Overview { get; } = [];
-    public ObservableCollection<HostLatency> Latency { get; } = [];
-    public ObservableCollection<MtuProbe> Mtu { get; } = [];
-    public ObservableCollection<DnsProbeResult> Dns { get; } = [];
-    public ObservableCollection<TlsProbe> Tls { get; } = [];
+    public ObservableCollection<LatencyRowViewModel> Latency { get; } = [];
+    public ObservableCollection<MtuRowViewModel> Mtu { get; } = [];
+    public ObservableCollection<DnsRowViewModel> Dns { get; } = [];
+    public ObservableCollection<TlsRowViewModel> Tls { get; } = [];
     public ObservableCollection<TraceHopViewModel> Hops { get; } = [];
     public ObservableCollection<SimpleNetFact> SimpleFacts { get; } = [];
 
@@ -216,7 +251,7 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
             Overview.Add(new KeyValueRow("Маршрутов по умолчанию", overview.DefaultRoutes.Count.ToString(CultureInfo.InvariantCulture)));
 
             ExternalIp = Masking.Ip(overview.ExternalIp);
-            ExternalDetails = $"{GeoCountries.Name(overview.Country)} · {overview.City ?? "—"} · {overview.Isp ?? "—"}";
+            ExternalDetails = $"{Localizer.T(GeoCountries.Name(overview.Country))} · {overview.City ?? "—"} · {overview.Isp ?? "—"}";
             StunText = Masking.Ip(overview.StunIp);
             ProxyText = overview.Proxy.HasProxy || overview.Proxy.HasMachineWideProxy
                 ? overview.Proxy.Display
@@ -331,13 +366,13 @@ public sealed partial class NetworkViewModel : ViewModelBase, IDisposable
         {
             var diagnostics = await _service.RunDiagnosticsAsync(_options, progress, CancellationToken.None).ConfigureAwait(true);
             Latency.Clear();
-            foreach (var row in diagnostics.Latency) Latency.Add(row);
+            foreach (var row in diagnostics.Latency) Latency.Add(new LatencyRowViewModel(row));
             Mtu.Clear();
-            foreach (var row in diagnostics.Mtu) Mtu.Add(row);
+            foreach (var row in diagnostics.Mtu) Mtu.Add(new MtuRowViewModel(row));
             Dns.Clear();
-            foreach (var row in diagnostics.Dns) Dns.Add(row);
+            foreach (var row in diagnostics.Dns) Dns.Add(new DnsRowViewModel(row));
             Tls.Clear();
-            foreach (var row in diagnostics.Tls) Tls.Add(row);
+            foreach (var row in diagnostics.Tls) Tls.Add(new TlsRowViewModel(row));
             DiagnosticsRefreshed = Localizer.Culture == "en-US" ? $"diagnostics completed in {diagnostics.Duration.TotalSeconds:F1} s" : $"диагностика завершена за {diagnostics.Duration.TotalSeconds:F1} с";
             StatusLine = Localizer.T("Диагностика завершена.");
         }

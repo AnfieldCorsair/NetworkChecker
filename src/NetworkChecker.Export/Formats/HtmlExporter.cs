@@ -14,8 +14,10 @@ public static class HtmlExporter
 {
     private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
 
-    public static byte[] Build(CheckRunResult result)
+    public static byte[] Build(CheckRunResult result, string? language = null, Func<string, string>? translate = null)
     {
+        var l = new ReportLanguage(language, translate);
+        string E(string? text) => WebUtility.HtmlEncode(text is null ? string.Empty : l.Text(text));
         var explanation = PlainLanguage.ForVerdict(result.Verdict, result.Checks);
         var accent = result.Verdict.Level switch
         {
@@ -26,7 +28,7 @@ public static class HtmlExporter
 
         var html = new StringBuilder();
         html.AppendLine("<!DOCTYPE html>");
-        html.AppendLine("<html lang=\"ru\">");
+        html.AppendLine(l.Choose("<html lang=\"ru\">", "<html lang=\"en\">"));
         html.AppendLine("<head>");
         html.AppendLine("<meta charset=\"utf-8\">");
         html.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
@@ -41,7 +43,7 @@ public static class HtmlExporter
         // --- Шапка ---
         html.AppendLine("<header class=\"top\">");
         html.AppendLine("<div class=\"brand\">NetworkChecker</div>");
-        html.Append("<div class=\"sub\">отчёт о проверке · ")
+        html.Append(l.Choose("<div class=\"sub\">отчёт о проверке · ", "<div class=\"sub\">diagnostic report · "))
             .Append(E(result.StartedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm", Culture)))
             .AppendLine("</div>");
         html.AppendLine("</header>");
@@ -61,7 +63,7 @@ public static class HtmlExporter
         if (result.Verdict.Reasons.Count > 0)
         {
             html.AppendLine("<section>");
-            html.AppendLine("<h2>Что повлияло на вывод</h2>");
+            html.AppendLine(l.Choose("<h2>Что повлияло на вывод</h2>", "<h2>Factors in the verdict</h2>"));
             html.AppendLine("<ul class=\"reasons\">");
             foreach (var reason in result.Verdict.Reasons)
                 html.Append("<li>").Append(E(reason)).AppendLine("</li>");
@@ -71,7 +73,7 @@ public static class HtmlExporter
 
         // --- Простыми словами ---
         html.AppendLine("<section>");
-        html.AppendLine("<h2>Коротко по фактам</h2>");
+        html.AppendLine(l.Choose("<h2>Коротко по фактам</h2>", "<h2>Facts at a glance</h2>"));
         html.AppendLine("<div class=\"facts\">");
         foreach (var fact in PlainFacts.Build(result))
         {
@@ -89,14 +91,14 @@ public static class HtmlExporter
             html.AppendLine("</div>");
         }
         html.AppendLine("</div>");
-        html.Append("<p class=\"overall\"><strong>Общая картина:</strong> ").Append(E(PlainFacts.OverallConfiguration(result))).AppendLine("</p>");
+        html.Append(l.Choose("<p class=\"overall\"><strong>Общая картина:</strong> ", "<p class=\"overall\"><strong>Overall picture:</strong> ")).Append(E(PlainFacts.OverallConfiguration(result))).AppendLine("</p>");
         html.AppendLine("</section>");
 
         // --- Модули ---
         html.AppendLine("<section>");
-        html.AppendLine("<h2>Модули проверки</h2>");
+        html.AppendLine(l.Choose("<h2>Модули проверки</h2>", "<h2>Checks</h2>"));
         html.AppendLine("<table>");
-        html.AppendLine("<thead><tr><th>Модуль</th><th>Статус</th><th>Находок</th><th>Время</th></tr></thead>");
+        html.AppendLine(l.Choose("<thead><tr><th>Модуль</th><th>Статус</th><th>Находок</th><th>Время</th></tr></thead>", "<thead><tr><th>Check</th><th>Status</th><th>Findings</th><th>Time</th></tr></thead>"));
         html.AppendLine("<tbody>");
         foreach (var check in result.Checks)
         {
@@ -105,7 +107,7 @@ public static class HtmlExporter
             html.Append("<td><span class=\"status ").Append(StatusClass(check.Status)).Append("\">")
                 .Append(E(check.StatusText)).AppendLine("</span></td>");
             html.Append("<td>").Append(check.Findings.Count.ToString(Culture)).AppendLine("</td>");
-            html.Append("<td class=\"muted\">").Append(check.Duration.TotalSeconds.ToString("F1", Culture)).AppendLine(" с</td></tr>");
+            html.Append("<td class=\"muted\">").Append(check.Duration.TotalSeconds.ToString("F1", Culture)).AppendLine(l.Choose(" с</td></tr>", " s</td></tr>"));
         }
         html.AppendLine("</tbody></table>");
         html.AppendLine("</section>");
@@ -118,7 +120,7 @@ public static class HtmlExporter
         if (findings.Count > 0)
         {
             html.AppendLine("<section>");
-            html.AppendLine("<h2>Находки</h2>");
+            html.AppendLine(l.Choose("<h2>Находки</h2>", "<h2>Findings</h2>"));
             foreach (var (check, finding) in findings)
             {
                 html.Append("<article class=\"finding ").Append(SeverityClass(finding.Severity)).AppendLine("\">");
@@ -127,8 +129,8 @@ public static class HtmlExporter
                 if (!string.IsNullOrWhiteSpace(finding.Detail))
                     html.Append("<p>").Append(E(finding.Detail)).AppendLine("</p>");
                 if (!string.IsNullOrWhiteSpace(finding.Evidence))
-                    html.Append("<pre>").Append(E(finding.Evidence!)).AppendLine("</pre>");
-                html.Append("<div class=\"muted\">модуль: ").Append(E(check)).AppendLine("</div>");
+                    html.Append("<pre>").Append(WebUtility.HtmlEncode(finding.Evidence!)).AppendLine("</pre>");
+                html.Append(l.Choose("<div class=\"muted\">модуль: ", "<div class=\"muted\">check: ")).Append(E(check)).AppendLine("</div>");
                 html.AppendLine("</article>");
             }
             html.AppendLine("</section>");
@@ -137,20 +139,20 @@ public static class HtmlExporter
         // --- Окружение ---
         var env = result.Environment;
         html.AppendLine("<section>");
-        html.AppendLine("<h2>Окружение</h2>");
+        html.AppendLine(l.Choose("<h2>Окружение</h2>", "<h2>Environment</h2>"));
         html.AppendLine("<table class=\"kv\"><tbody>");
-        AppendRow(html, "Операционная система", env.OsDescription);
-        AppendRow(html, "Имя машины", env.MachineName);
-        AppendRow(html, "Пользователь", env.UserName);
-        AppendRow(html, "Права администратора", env.IsElevated ? "есть" : "нет");
-        AppendRow(html, "Приватный режим", env.PrivacyMode ? "включён (IP и имена маскированы)" : "выключен");
-        AppendRow(html, "IP-консенсус", result.IpConsensus.Summary);
-        AppendRow(html, "Длительность", result.Duration.TotalSeconds.ToString("F1", Culture) + " с");
+        AppendRow(html, l, "Операционная система", env.OsDescription);
+        AppendRow(html, l, "Имя машины", env.MachineName);
+        AppendRow(html, l, "Пользователь", env.UserName);
+        AppendRow(html, l, "Права администратора", l.Text(env.IsElevated ? "есть" : "нет"));
+        AppendRow(html, l, "Приватный режим", l.Text(env.PrivacyMode ? "включён (IP и имена маскированы)" : "выключен"));
+        AppendRow(html, l, "IP-консенсус", l.Text(result.IpConsensus.Summary));
+        AppendRow(html, l, "Длительность", result.Duration.TotalSeconds.ToString("F1", Culture) + l.Choose(" с", " s"));
         html.AppendLine("</tbody></table>");
         html.AppendLine("</section>");
 
         html.AppendLine("<footer>");
-        html.AppendLine("Отчёт сформирован NetworkChecker. Все данные собраны на этом компьютере, ничего не отправлялось на сервер.");
+        html.AppendLine(l.Choose("Отчёт сформирован NetworkChecker. Онлайн-проверки обращаются к внешним сервисам.", "Report generated by NetworkChecker. Online checks contact external services."));
         html.AppendLine("</footer>");
         html.AppendLine("</main>");
         html.AppendLine("</body>");
@@ -159,9 +161,9 @@ public static class HtmlExporter
         return Encoding.UTF8.GetBytes(html.ToString());
     }
 
-    private static void AppendRow(StringBuilder html, string key, string? value)
+    private static void AppendRow(StringBuilder html, ReportLanguage l, string key, string? value)
     {
-        html.Append("<tr><th>").Append(E(key)).Append("</th><td>").Append(E(value ?? "—")).AppendLine("</td></tr>");
+        html.Append("<tr><th>").Append(E(l.Text(key))).Append("</th><td>").Append(E(value ?? "—")).AppendLine("</td></tr>");
     }
 
     private static string StatusClass(CheckStatus status) => status switch

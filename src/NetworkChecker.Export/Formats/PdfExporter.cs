@@ -18,8 +18,9 @@ public static class PdfExporter
     private static readonly Lock FontLock = new();
     private static bool _fontsRegistered;
 
-    public static byte[] Build(CheckRunResult result)
+    public static byte[] Build(CheckRunResult result, string? language = null, Func<string, string>? translate = null)
     {
+        var l = new ReportLanguage(language, translate);
         // QuestPDF Community — source-available, не OSI; право использования и
         // распространения зависит от условий соответствующей версии лицензии.
         // До распространения необходимо отдельно проверить применимость условий.
@@ -36,9 +37,9 @@ public static class PdfExporter
                 page.Margin(28);
                 page.DefaultTextStyle(style => style.FontFamily(FontFamily).FontSize(9).FontColor(Colors.Grey.Darken4));
 
-                page.Header().Element(header => ComposeHeader(header, result));
-                page.Content().Element(content => ComposeContent(content, result, plain));
-                page.Footer().Element(footer => ComposeFooter(footer, result));
+                page.Header().Element(header => ComposeHeader(header, result, l));
+                page.Content().Element(content => ComposeContent(content, result, plain, l));
+                page.Footer().Element(footer => ComposeFooter(footer, result, l));
             });
         });
 
@@ -65,26 +66,26 @@ public static class PdfExporter
         }
     }
 
-    private static void ComposeHeader(IContainer container, CheckRunResult result)
+    private static void ComposeHeader(IContainer container, CheckRunResult result, ReportLanguage l)
     {
         container.Row(row =>
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().Text("Отчёт NetworkChecker").FontSize(16).SemiBold();
+                column.Item().Text(l.Text("Отчёт NetworkChecker")).FontSize(16).SemiBold();
                 column.Item().Text($"{result.StartedAt.ToLocalTime():dd.MM.yyyy HH:mm} · {result.Environment.OsDescription} · {result.Environment.MachineName}")
                     .FontSize(8).FontColor(Colors.Grey.Medium);
             });
             row.ConstantItem(150).AlignRight().Column(column =>
             {
-                column.Item().Text($"{(result.Environment.PrivacyMode ? "приватный режим" : "полные данные")}")
+                column.Item().Text(l.Text(result.Environment.PrivacyMode ? "приватный режим" : "полные данные"))
                     .FontSize(8).FontColor(Colors.Grey.Medium);
-                column.Item().Text($"{result.Duration.TotalSeconds:F1} с").FontSize(8).FontColor(Colors.Grey.Medium);
+                column.Item().Text($"{result.Duration.TotalSeconds:F1} {l.Choose("с", "s")}").FontSize(8).FontColor(Colors.Grey.Medium);
             });
         });
     }
 
-    private static void ComposeContent(IContainer container, CheckRunResult result, PlainExplanation plain)
+    private static void ComposeContent(IContainer container, CheckRunResult result, PlainExplanation plain, ReportLanguage l)
     {
         container.PaddingVertical(10).Column(column =>
         {
@@ -93,22 +94,22 @@ public static class PdfExporter
             // Вердикт
             column.Item().Background(VerdictBackground(result.Verdict.Level)).Padding(12).Column(box =>
             {
-                box.Item().Text(result.Verdict.Headline).FontSize(15).SemiBold().FontColor(VerdictColor(result.Verdict.Level));
-                box.Item().PaddingTop(2).Text($"Условный индекс {result.Verdict.ScoreText} · {result.Verdict.LevelText} · внешний IP: {result.IpConsensus.ConsensusIp ?? "нет данных"}")
+                box.Item().Text(l.Text(result.Verdict.Headline)).FontSize(15).SemiBold().FontColor(VerdictColor(result.Verdict.Level));
+                box.Item().PaddingTop(2).Text($"{l.Text("Условный индекс")} {l.Text(result.Verdict.ScoreText)} · {l.Text(result.Verdict.LevelText)} · {l.Text("Внешний IP")}: {result.IpConsensus.ConsensusIp ?? l.Text("нет данных")}")
                     .FontSize(8).FontColor(Colors.Grey.Darken2);
-                box.Item().PaddingTop(6).Text(plain.WhatItMeans).FontSize(9);
-                box.Item().PaddingTop(4).Text($"Что делать: {plain.Advice}").FontSize(9).Italic();
+                box.Item().PaddingTop(6).Text(l.Text(plain.WhatItMeans)).FontSize(9);
+                box.Item().PaddingTop(4).Text($"{l.Text("Что делать")}: {l.Text(plain.Advice)}").FontSize(9).Italic();
             });
 
             if (result.Verdict.Reasons.Count > 0)
             {
-                column.Item().PaddingTop(4).Text("Почему такой вывод").FontSize(11).SemiBold();
+                column.Item().PaddingTop(4).Text(l.Text("Почему такой вывод")).FontSize(11).SemiBold();
                 foreach (var reason in result.Verdict.Reasons)
-                    column.Item().Text("• " + reason).FontSize(9);
+                    column.Item().Text("• " + l.Text(reason)).FontSize(9);
             }
 
             // Таблица проверок
-            column.Item().PaddingTop(6).Text("Коротко по проверкам").FontSize(11).SemiBold();
+            column.Item().PaddingTop(6).Text(l.Text("Коротко по проверкам")).FontSize(11).SemiBold();
             column.Item().Table(table =>
             {
                 table.ColumnsDefinition(columns =>
@@ -121,17 +122,17 @@ public static class PdfExporter
 
                 table.Header(header =>
                 {
-                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).Text("Проверка").FontSize(8).SemiBold();
-                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).Text("Что проверяли").FontSize(8).SemiBold();
-                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).Text("Статус").FontSize(8).SemiBold();
-                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).AlignRight().Text("Находок").FontSize(8).SemiBold();
+                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).Text(l.Text("Проверка")).FontSize(8).SemiBold();
+                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).Text(l.Text("Что проверяли")).FontSize(8).SemiBold();
+                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).Text(l.Text("Статус")).FontSize(8).SemiBold();
+                    header.Cell().Background(Colors.Grey.Lighten2).Padding(4).AlignRight().Text(l.Text("Находок")).FontSize(8).SemiBold();
                 });
 
                 foreach (var check in result.Checks)
                 {
-                    table.Cell().Padding(4).Text(check.Title).FontSize(8);
-                    table.Cell().Padding(4).Text(PlainLanguage.WhatWeChecked(check.Category)).FontSize(8).FontColor(Colors.Grey.Darken2);
-                    table.Cell().Padding(4).Text(check.StatusText).FontSize(8).FontColor(StatusColor(check.Status));
+                    table.Cell().Padding(4).Text(l.Text(check.Title)).FontSize(8);
+                    table.Cell().Padding(4).Text(l.Text(PlainLanguage.WhatWeChecked(check.Category))).FontSize(8).FontColor(Colors.Grey.Darken2);
+                    table.Cell().Padding(4).Text(l.Text(check.StatusText)).FontSize(8).FontColor(StatusColor(check.Status));
                     table.Cell().Padding(4).AlignRight().Text(check.Findings.Count.ToString(CultureInfo.InvariantCulture)).FontSize(8);
                 }
             });
@@ -139,21 +140,21 @@ public static class PdfExporter
             // Находки
             foreach (var check in result.Checks.Where(c => c.Findings.Count > 0))
             {
-                column.Item().PaddingTop(8).Text(check.Title).FontSize(11).SemiBold();
-                column.Item().Text($"{PlainLanguage.WhatWeChecked(check.Category)} · {check.StatusText}")
+                column.Item().PaddingTop(8).Text(l.Text(check.Title)).FontSize(11).SemiBold();
+                column.Item().Text($"{l.Text(PlainLanguage.WhatWeChecked(check.Category))} · {l.Text(check.StatusText)}")
                     .FontSize(8).FontColor(Colors.Grey.Medium);
 
                 foreach (var finding in check.Findings.OrderByDescending(f => f.Severity))
                 {
                     column.Item().PaddingTop(3).Row(row =>
                     {
-                        row.ConstantItem(52).Text(SeverityText(finding.Severity))
+                        row.ConstantItem(52).Text(l.Text(SeverityText(finding.Severity)))
                             .FontSize(7).SemiBold().FontColor(SeverityColor(finding.Severity));
                         row.RelativeItem().Column(text =>
                         {
-                            text.Item().Text(finding.Title).FontSize(9).SemiBold();
+                            text.Item().Text(l.Text(finding.Title)).FontSize(9).SemiBold();
                             if (!string.IsNullOrWhiteSpace(finding.Detail))
-                                text.Item().Text(finding.Detail).FontSize(8).FontColor(Colors.Grey.Darken2);
+                                text.Item().Text(l.Text(finding.Detail)).FontSize(8).FontColor(Colors.Grey.Darken2);
                             if (!string.IsNullOrWhiteSpace(finding.Evidence))
                                 text.Item().PaddingTop(1).Text(finding.Evidence).FontSize(7).FontColor(Colors.Grey.Medium);
                         });
@@ -163,7 +164,7 @@ public static class PdfExporter
 
             if (result.IpConsensus.Observations.Count > 0)
             {
-                column.Item().PaddingTop(8).Text("Наблюдения по внешнему IP").FontSize(11).SemiBold();
+                column.Item().PaddingTop(8).Text(l.Text("Наблюдения по внешнему IP")).FontSize(11).SemiBold();
                 foreach (var observation in result.IpConsensus.Observations)
                     column.Item().Text($"• {observation.Source}: {observation.Ip}{(observation.Note is null ? "" : $" — {observation.Note}")}")
                         .FontSize(8);
@@ -171,11 +172,11 @@ public static class PdfExporter
         });
     }
 
-    private static void ComposeFooter(IContainer container, CheckRunResult result)
+    private static void ComposeFooter(IContainer container, CheckRunResult result, ReportLanguage l)
     {
         container.Row(row =>
         {
-            row.RelativeItem().Text($"{result.Verdict.Headline} · сформировано NetworkChecker")
+            row.RelativeItem().Text($"{l.Text(result.Verdict.Headline)} · {l.Choose("сформировано NetworkChecker", "generated by NetworkChecker")}")
                 .FontSize(7).FontColor(Colors.Grey.Medium);
             row.ConstantItem(80).AlignRight().Text(text =>
             {

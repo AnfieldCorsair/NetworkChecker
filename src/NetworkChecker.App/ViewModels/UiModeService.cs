@@ -27,5 +27,5 @@ public sealed partial class UiModeService(UiOptions ui, Data.SettingsStore? stor
         OnPropertyChanged(nameof(ModeText));
     }
 
-    public string ModeText => IsSimple ? "Просто" : "Подробно";
+    public string ModeText => Localization.Localizer.T(IsSimple ? "Просто" : "Подробно");
 }

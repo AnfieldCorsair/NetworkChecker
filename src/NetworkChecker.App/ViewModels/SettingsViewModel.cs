@@ -63,7 +63,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
     [ObservableProperty] private string _stunServers = string.Join(Environment.NewLine, options.StunServers);
     [ObservableProperty] private string _localProxyPorts = string.Join(", ", options.LocalProxyPorts);
     [ObservableProperty] private string _theme = "Dark";
-    [ObservableProperty] private string _saveStatus = "Изменения применяются по кнопке «Сохранить».";
+    [ObservableProperty] private string _saveStatus = Localizer.T("Изменения применяются по кнопке «Сохранить».");
     [ObservableProperty] private string _dbStatus = string.Empty;
 
     public string DataDirectory { get; } = store.DataDirectory;
@@ -134,7 +134,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
     private async Task ClearHistoryAsync()
     {
         await _history.ClearAsync().ConfigureAwait(true);
-        DbStatus = "История очищена.";
+        DbStatus = Localizer.T("История очищена.");
     }
 
     [RelayCommand]
@@ -150,7 +150,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
         }
         catch (Exception ex)
         {
-            DbStatus = "Не удалось открыть папку: " + ex.Message;
+            DbStatus = Localizer.T("Не удалось открыть папку: ") + ex.Message;
         }
     }
 

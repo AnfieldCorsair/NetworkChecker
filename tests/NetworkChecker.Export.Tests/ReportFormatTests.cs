@@ -40,6 +40,59 @@ public class ReportFormatTests
         Assert.Contains("## Модули", Encoding.UTF8.GetString(ReportExporter.Build(ReportFormat.Markdown, run).Content));
     }
 
+    [Theory]
+    [InlineData(ReportFormat.Docx)]
+    [InlineData(ReportFormat.Xlsx)]
+    [InlineData(ReportFormat.Html)]
+    [InlineData(ReportFormat.Pdf)]
+    public void Human_readable_formats_accept_explicit_english_without_changing_system_culture(ReportFormat format)
+    {
+        var run = Sample.RichRun();
+        var title = run.Checks[0].Title;
+        var before = System.Globalization.CultureInfo.CurrentUICulture;
+        var calls = 0;
+        var report = ReportExporter.Build(format, run, language: "en-US", translate: text =>
+        {
+            Interlocked.Increment(ref calls);
+            return text == title ? "Localized check" : text;
+        });
+        Assert.Equal(before, System.Globalization.CultureInfo.CurrentUICulture);
+        Assert.True(calls > 0);
+        Assert.Equal(title, run.Checks[0].Title);
+        if (format == ReportFormat.Docx)
+        {
+            var xml = ReadZipEntry(report, "word/document.xml");
+            Assert.Contains("NetworkChecker report", xml);
+            Assert.Contains("Localized check", xml);
+        }
+        if (format == ReportFormat.Xlsx)
+        {
+            var workbook = ReadZipEntry(report, "xl/workbook.xml");
+            var strings = ReadZipEntry(report, "xl/sharedStrings.xml");
+            Assert.Contains("Summary", workbook);
+            Assert.Contains("Checks", workbook);
+            Assert.Contains("Localized check", strings);
+        }
+        if (format == ReportFormat.Html)
+        {
+            var html = Encoding.UTF8.GetString(report.Content);
+            Assert.Contains("<html lang=\"en\">", html);
+            Assert.Contains("<h2>Checks</h2>", html);
+            Assert.Contains("Localized check", html);
+            Assert.DoesNotContain("ничего не отправлялось на сервер", html);
+        }
+        if (format == ReportFormat.Pdf) Assert.Equal("%PDF-", Encoding.ASCII.GetString(report.Content, 0, 5));
+    }
+
+    [Fact]
+    public void Machine_readable_json_remains_identical_when_language_changes()
+    {
+        var run = Sample.RichRun();
+        var russian = ReportExporter.Build(ReportFormat.Json, run, language: "ru-RU");
+        var english = ReportExporter.Build(ReportFormat.Json, run, language: "en-US", translate: _ => "replacement");
+        Assert.Equal(russian.Content, english.Content);
+    }
+
     [Fact]
     public void Catalog_lists_all_formats_with_extensions()
     {

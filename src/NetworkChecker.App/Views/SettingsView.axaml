@@ -12,7 +12,7 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="{DynamicResource SettingsLanguageTitle}" Classes="overline" />
-          <TextBlock Text="English: часть результатов и отчётов пока на русском. Сохраните и перезапустите приложение. / Some detailed results and reports remain in Russian. Save and restart." Classes="muted" TextWrapping="Wrap" />
+          <TextBlock Text="{DynamicResource LanguageNotice}" Classes="muted" TextWrapping="Wrap" />
           <ComboBox ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" Width="180" HorizontalAlignment="Left" />
         </StackPanel>
       </Border>

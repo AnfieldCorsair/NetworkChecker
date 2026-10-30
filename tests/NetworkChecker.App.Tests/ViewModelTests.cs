@@ -431,6 +431,81 @@ public class LocalizationCoverageTests
         finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
     }
 
+    [Theory]
+    [InlineData("DNS не разрешает example.com", "DNS could not resolve example.com")]
+    [InlineData("Активен туннельный интерфейс «Моя сеть»", "Active tunnel interface: Моя сеть")]
+    [InlineData("1 из 4", "1 of 4")]
+    [InlineData("12 мс", "12 ms")]
+    [InlineData("Неизвестное сообщение ОС", "Неизвестное сообщение ОС")]
+    public void English_templates_preserve_dynamic_values_and_unknown_text(string input, string expected)
+    {
+        Assert.Equal(expected, NetworkChecker.App.Localization.Localizer.Translate(input, "en-US"));
+        Assert.Equal(input, NetworkChecker.App.Localization.Localizer.Translate(input, "ru-RU"));
+    }
+
+    [AvaloniaFact]
+    public void Plain_explanation_preserves_failed_check_count_in_english()
+    {
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            var checks = new[] { new NetworkChecker.Core.Models.CheckResult
+            {
+                Category = NetworkChecker.Core.Models.CheckCategory.GeoIp,
+                Title = "GeoIP", Status = NetworkChecker.Core.Models.CheckStatus.Failed
+            } };
+            var explanation = NetworkChecker.Core.Plain.PlainLanguage.ForVerdict(Sample.CleanRun().Verdict, checks);
+            var translated = NetworkChecker.App.Localization.Localizer.T(explanation.WhatItMeans);
+            Assert.Contains("1 checks were skipped or failed", translated);
+            Assert.DoesNotMatch("[А-Яа-яЁё]", translated);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+
+    [AvaloniaFact]
+    public void English_site_model_translates_product_signals_without_changing_site_data()
+    {
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            var geo = new NetworkChecker.Core.SiteView.SiteGeo("203.0.113.8", "NL", null, null, "Example ISP", "AS123", "UTC", true, true, null);
+            var local = new NetworkChecker.Core.SiteView.SiteLocalProfile("Europe/Moscow", TimeSpan.FromHours(3), "ru-RU", "Windows", "NetworkChecker");
+            var report = NetworkChecker.Core.SiteView.SiteViewAnalyzer.Build(geo, local, DateTimeOffset.UtcNow, resolveTimeZone: _ => TimeZoneInfo.Utc);
+            foreach (var signal in report.Signals)
+            {
+                var view = new SiteSignalViewModel(signal);
+                Assert.DoesNotMatch("[А-Яа-яЁё]", view.Title);
+                Assert.DoesNotMatch("[А-Яа-яЁё]", view.Detail);
+            }
+            foreach (var row in report.Rows)
+            {
+                var view = new SiteRowViewModel(row);
+                Assert.DoesNotMatch("[А-Яа-яЁё]", view.Label);
+                Assert.DoesNotMatch("[А-Яа-яЁё]", view.Hint);
+            }
+            Assert.Equal("203.0.113.8", report.Ip);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+
+    [AvaloniaFact]
+    public void Network_diagnostic_rows_translate_units_statuses_and_tls_without_touching_data()
+    {
+        try
+        {
+            NetworkChecker.App.Localization.Localizer.Configure("en-US");
+            var latency = new LatencyRowViewModel(new NetworkChecker.Core.NetInfo.HostLatency("example.com", "203.0.113.1", 12, 2, 0, 64));
+            var mtu = new MtuRowViewModel(new NetworkChecker.Core.NetInfo.MtuProbe("example.com", 1500));
+            var tls = new TlsRowViewModel(new NetworkChecker.Core.NetInfo.TlsProbe("example.com", "CN=Example", null, null, "TLS 1.3", true, 12, null, false));
+            Assert.Equal("12 ms", latency.MedianText);
+            Assert.Equal("ok", latency.StatusText);
+            Assert.Equal("1500 bytes", mtu.ResultText);
+            Assert.Equal("Certificate validation failed or status unknown", tls.ValidationText);
+            Assert.Equal("203.0.113.1", latency.Address);
+        }
+        finally { NetworkChecker.App.Localization.Localizer.Configure("ru-RU"); }
+    }
+
     [Fact]
     public void Every_russian_static_resource_has_an_english_translation()
     {

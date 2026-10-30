@@ -45,17 +45,17 @@ public static class ReportExporter
         var name = baseName ?? $"networkchecker-{result.StartedAt.ToLocalTime():yyyyMMdd-HHmm}";
         return format switch
         {
-            ReportFormat.Pdf => new ReportFile(name + ".pdf", PdfExporter.Build(result), "application/pdf", "PDF-отчёт"),
-            ReportFormat.Docx => new ReportFile(name + ".docx", DocxExporter.Build(result),
+            ReportFormat.Pdf => new ReportFile(name + ".pdf", PdfExporter.Build(result, language, translate), "application/pdf", "PDF-отчёт"),
+            ReportFormat.Docx => new ReportFile(name + ".docx", DocxExporter.Build(result, language, translate),
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "документ Word"),
-            ReportFormat.Xlsx => new ReportFile(name + ".xlsx", XlsxExporter.Build(result),
+            ReportFormat.Xlsx => new ReportFile(name + ".xlsx", XlsxExporter.Build(result, language, translate),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "книга Excel"),
             ReportFormat.Csv => new ReportFile(name + ".csv", CsvExporter.Build(result, language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) == true, translate), "text/csv", "таблица CSV"),
             ReportFormat.Markdown => new ReportFile(name + ".md", System.Text.Encoding.UTF8.GetBytes(ResultExport.ToMarkdown(result, language?.StartsWith("en", StringComparison.OrdinalIgnoreCase) == true, translate)),
                 "text/markdown", "Markdown-отчёт"),
             ReportFormat.Json => new ReportFile(name + ".json", System.Text.Encoding.UTF8.GetBytes(ResultExport.ToJson(result)),
                 "application/json", "JSON-данные"),
-            ReportFormat.Html => new ReportFile(name + ".html", HtmlExporter.Build(result),
+            ReportFormat.Html => new ReportFile(name + ".html", HtmlExporter.Build(result, language, translate),
                 "text/html", "HTML-отчёт одним файлом"),
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Неизвестный формат отчёта"),
         };

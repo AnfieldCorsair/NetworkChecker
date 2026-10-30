@@ -201,22 +201,43 @@ public class ReliabilityPatchTests
         using var key = System.Security.Cryptography.RSA.Create(2048);
         var req = new System.Security.Cryptography.X509Certificates.CertificateRequest("CN=localhost", key,
             System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.RSASignaturePadding.Pkcs1);
-        using var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+        var names = new System.Security.Cryptography.X509Certificates.SubjectAlternativeNameBuilder();
+        names.AddIpAddress(IPAddress.Loopback);
+        names.AddDnsName("localhost");
+        req.CertificateExtensions.Add(names.Build());
+        using var generated = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1));
+        // Schannel cannot use some ephemeral private keys for server authentication. Importing
+        // the test PFX with the default key storage avoids that Windows-specific limitation.
+        using var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12(
+            generated.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pfx), null,
+            System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.DefaultKeySet);
+        using var serverDeadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
         var server = Task.Run(async () =>
         {
-            using var client = await listener.AcceptTcpClientAsync();
-            using var ssl = new System.Net.Security.SslStream(client.GetStream());
-            await ssl.AuthenticateAsServerAsync(cert);
+            try
+            {
+                using var client = await listener.AcceptTcpClientAsync(serverDeadline.Token);
+                using var ssl = new System.Net.Security.SslStream(client.GetStream());
+                await ssl.AuthenticateAsServerAsync(new System.Net.Security.SslServerAuthenticationOptions
+                {
+                    ServerCertificate = cert,
+                }, serverDeadline.Token);
+                return (string?)null;
+            }
+            catch (Exception ex) { return ex.ToString(); }
         });
         try
         {
-            var probe = await ConnectivityProbes.TlsHandshakeAsync("localhost", port, TimeSpan.FromSeconds(5));
-            Assert.True(probe.Success);
+            // Bind and connect to the same family, without depending on localhost DNS ordering.
+            var probe = await ConnectivityProbes.TlsHandshakeAsync("127.0.0.1", port, TimeSpan.FromSeconds(10));
+            listener.Stop();
+            var serverError = await server.WaitAsync(TimeSpan.FromSeconds(16));
+            Assert.True(probe.Success, $"TLS probe failed: {probe.Error}; server: {serverError}");
+            Assert.Null(serverError);
             Assert.False(probe.ChainValid);
-            await server;
         }
         finally { listener.Stop(); }
     }

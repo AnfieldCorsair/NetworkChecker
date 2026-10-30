@@ -80,8 +80,7 @@ public sealed class DirectSignsCheck(IPlatformProbe platform, VpnClientCatalog c
             if (pac.HasLoopbackProxy)
             {
                 findings.Add(Finding.Critical("В PAC найден адрес локального прокси",
-                    "Текст PAC содержит адрес 127.0.0.1. Статический разбор не определяет, применится ли правило к конкретному сайту; " +
-                    "которые поднимают локальный прокси и перенаправляют в него браузер.",
+                    "Текст PAC содержит адрес 127.0.0.1. Статический разбор не определяет, применится ли правило к конкретному сайту.",
                     string.Join(", ", pac.Proxies.Select(p => p.ToString()))));
             }
             else if (pac.RoutesThroughProxy)
