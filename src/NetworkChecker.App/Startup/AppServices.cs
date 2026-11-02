@@ -49,6 +49,7 @@ public static class AppServices
         services.AddSingleton<VpnClientCatalog>();
         services.AddSingleton<IPlatformProbe, WindowsPlatformProbe>();
         services.AddSingleton<IHttpProbe, HttpProbe>();
+        services.AddSingleton<ITransportProbes, SystemTransportProbes>();
         services.AddSingleton<DnsClientLite>();
         services.AddSingleton<NetworkInfoService>();
         services.AddSingleton<ISiteEyeService, SiteEyeService>();
@@ -58,12 +59,16 @@ public static class AppServices
         services.AddSingleton<ICheck, IpComparisonCheck>();
         services.AddSingleton<ICheck, DirectSignsCheck>();
         services.AddSingleton<ICheck, IndirectSignsCheck>();
-        services.AddSingleton<ICheck, BypassCheck>();
+        // Явно передаём источник слушающих портов: в тестах и ограниченных окружениях
+        // его нет, и BypassCheck работает только по настроенному списку.
+        services.AddSingleton<ICheck>(sp => new BypassCheck(
+            sp.GetRequiredService<IHttpProbe>(), () => LocalPortScanner.GetLoopbackListeners()));
         services.AddSingleton<ICheck, CallTransportCheck>();
         services.AddSingleton<ICheck, CdnPullingCheck>();
         services.AddSingleton<ICheck, DomainReachabilityCheck>();
         services.AddSingleton<ICheck, RttTriangulationCheck>();
         services.AddSingleton<ICheck, IcmpSpoofingCheck>();
+        services.AddSingleton<ICheck, TransportObservationCheck>();
 
         services.AddSingleton<CheckRunner>();
 

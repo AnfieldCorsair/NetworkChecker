@@ -122,6 +122,9 @@
               <TextBlock Text="{DynamicResource LocExtra24}" Classes="muted" FontSize="10.5" />
               <TextBox Text="{Binding LocalProxyPorts}" FontSize="11" Classes="mono" Height="60" AcceptsReturn="True"
                        TextWrapping="Wrap" VerticalContentAlignment="Top" />
+              <TextBlock Text="{DynamicResource LocExtra24b}" Classes="muted" FontSize="10.5" TextWrapping="Wrap" />
+              <TextBox Text="{Binding LocalProxyPortRanges}" FontSize="11" Classes="mono" Height="34" AcceptsReturn="True"
+                       TextWrapping="Wrap" VerticalContentAlignment="Top" />
             </StackPanel>
           </Border>
         </StackPanel>

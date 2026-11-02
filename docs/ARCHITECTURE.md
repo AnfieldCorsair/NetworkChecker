@@ -11,10 +11,11 @@
                 │ CheckRunResult / Network*    │ ICheck, IPlatformProbe
 ┌───────────────┴──────────────────────────────▼──────────────┐
 │ NetworkChecker.Core (net10.0)                                  │
-│   Checks/ (10 модулей)  Verdict/  NetInfo/  Net/             │
+│   Checks/ (11 модулей)  Verdict/  NetInfo/  Net/             │
 │   Plain/ (человеческий язык)  Comparison/ (диф прогонов)      │
 │   SiteView/ (что видит сайт: GeoIP, таймзоны, выводы)         │
-│   Abstractions/ (ICheck, IPlatformProbe, IHttpProbe)         │
+│   Abstractions/ (ICheck, IPlatformProbe, IHttpProbe,         │
+│                  ITransportProbes)  Options/ (каталоги)      │
 └───────────────▲──────────────────────────────┬──────────────┘
                 │                               │
 ┌───────────────┴───────────────┐  ┌────────────▼────────────┐
@@ -37,7 +38,7 @@ Core не зависит от Avalonia; большая часть системн
 2. `CheckRunner` запускает все `ICheck` параллельно через `SemaphoreSlim(MaxParallelChecks)`. Каждый модуль получает общий `CheckContext`: настройки, колбэк прогресса и сборщик IP-наблюдений.
 3. Модуль возвращает `CheckResult`: статус (`Clean/NeedsReview/Detected/Skipped/Failed`), находки (`Finding` с уровнем серьёзности и evidence), метрики для плиток, длительность.
 4. `IpConsensusBuilder` группирует наблюдения IP по всем модулям: консенсус, голоса «российский/иностранный», признак расщепления.
-5. `VerdictEngine.Build` считает условный индекс по выполненным модулям и отдельно применяет типизированные правила конфигурации; браузерный маршрут не подтверждается.
+5. `VerdictEngine.Build` считает условный индекс по выполненным модулям и отдельно применяет типизированные правила конфигурации; браузерный маршрут не подтверждается. Там же из готовых `CheckResult` и `IpConsensus` строится `MethodologyMatrix` — модель соответствия опубликованной трёхэтапной методике (без новых сетевых запросов), которая попадает в `VerdictResult.Methodology` и в Markdown/JSON.
 6. `HistoryRepository.SaveAsync` пишет прогон в SQLite (если включено). UI обновляется через события `Progress`/`StatusText`.
 
 Ошибка одного модуля не рушит прогон: исключение превращается в `CheckResult.Failed`, вердикт помечается как неполный.
@@ -50,6 +51,9 @@ Core не зависит от Avalonia; большая часть системн
 | `CheckContext` | настройки + прогресс + `CollectIp(...)` |
 | `IPlatformProbe` | всё, что зависит от ОС: адаптеры, маршруты, DNS, прокси, приложения, процессы, службы, VPN-профили, hosts, файрвол |
 | `IHttpProbe` | HTTP с опцией «игнорировать системный прокси» и честным таймаутом |
+| `ITransportProbes` | системный резолвер, DoH, UDP/443 и TLS с заданным SNI; реализация — `SystemTransportProbes` |
+| `LocalPortScanner` / `BypassCheck` | настроенные порты, диапазоны методики, TCP LISTEN ОС, лимит и параллельные пробы |
+| `MethodologyMatrix` / `FalsePositiveCatalog` | матрица сигналов и оговорки о ложных срабатываниях; см. [THREAT-MODEL.md](THREAT-MODEL.md) |
 | `PacInspector` | разбор PAC-скрипта: какие прокси он задаёт, есть ли loopback и правила по подсетям |
 | `RunComparer` | сравнение двух прогонов: статусы модулей, появившиеся находки, направление изменений |
 | `PingTools` / `RawIcmp` / `TraceTool` | ICMP-эхо, MTU-проба, трассировка (raw + fallback) |

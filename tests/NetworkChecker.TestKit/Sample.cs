@@ -199,6 +199,9 @@ public static class Sample
         MaxParallelChecks = 4,
         OfflineMode = true,
         MaxTraceHops = 8,
+        // Юнит-тесты не должны сканировать 101 порт диапазона методики: он проверяется
+        // отдельно в LocalPortScannerTests на явном новом RknOptions.
+        LocalProxyPortRanges = [],
     };
 
     /// <summary>Контекст проверки для юнит-тестов (без сетевых вызовов).</summary>

@@ -57,6 +57,37 @@ public static class ResultExport
             sb.AppendLine(CultureInfo.InvariantCulture, $"| {Text(check.Title)} | {Text(check.StatusText)} | {check.Findings.Count} | {check.Duration.TotalSeconds:F1} {Label("с", "s")} |");
         }
 
+        if (result.Verdict.Methodology is { } matrix)
+        {
+            sb.AppendLine();
+            sb.AppendLine(Label("## Соответствие методике выявления обхода (модель)", "## Detection-methodology mapping (model)"));
+            sb.AppendLine();
+            sb.AppendLine(Text(matrix.Decision));
+            sb.AppendLine();
+            sb.AppendLine(Text(matrix.Explanation));
+            sb.AppendLine();
+            sb.AppendLine(Label("| Этап | Сигнал | Состояние | Примечание |", "| Stage | Signal | State | Note |"));
+            sb.AppendLine("|---|---|---|---|");
+            foreach (var signal in matrix.Signals)
+            {
+                var state = signal.State switch
+                {
+                    MethodologySignalState.Present => Label("есть", "present"),
+                    MethodologySignalState.Absent => Label("не найден", "absent"),
+                    _ => Label("нет данных", "unknown"),
+                };
+                sb.AppendLine(CultureInfo.InvariantCulture, $"| {Text(signal.Stage)} | {Text(signal.Name)} | {state} | {Text(signal.Note)} |");
+            }
+            sb.AppendLine();
+            sb.AppendLine(Label("### Почему одного сигнала недостаточно", "### Why one signal is not enough"));
+            foreach (var caveat in matrix.FalsePositiveCaveats)
+                sb.AppendLine(CultureInfo.InvariantCulture, $"- {Text(caveat)}");
+            sb.AppendLine();
+            sb.AppendLine(Label("### Что локально измерить нельзя", "### What cannot be measured locally"));
+            foreach (var item in matrix.NotMeasurable)
+                sb.AppendLine(CultureInfo.InvariantCulture, $"- {Text(item)}");
+        }
+
         foreach (var check in result.Checks)
         {
             sb.AppendLine();

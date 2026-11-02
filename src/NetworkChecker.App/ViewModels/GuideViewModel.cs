@@ -80,7 +80,7 @@ public sealed partial class GuideViewModel : ViewModelBase
                 Summary = "Модуль Bypass: сканирование loopback и управляющих API клиентов. Вес 30.",
                 Items =
                 [
-                    new("Сканирование портов", "20 типовых портов (1080, 1087, 2080, 3128, 7890, 7897, 8080, 8888, 9050, 10808, 20170...). Каждый проверяется на SOCKS5-приветствие и CONNECT-ответ.", "порты", "#4EA1FF"),
+                    new("Сканирование портов", "Типовые порты методики (1080, 5555, 9000, 9050, 9150, 3128, 8080, 8888...), диапазон 16000–16100 и порты, которые ОС сообщает как TCP LISTEN. Параллелизм и общее число ограничены; каждый порт проверяется на SOCKS5-приветствие и CONNECT-ответ.", "порты", "#4EA1FF"),
                     new("Xray API", "HTTP-ответ на порту 10085 не доказывает Xray. Проверка Xray gRPC пока не реализована.", "API", "#4EA1FF"),
                     new("Clash/Mihomo API", "Ответ /version на портах 9090/9091 не позволяет надёжно определить программу.", "API", "#4EA1FF"),
                     new("Связка SOCKS5 + TUN", "Сочетание SOCKS5 и адаптера возможно в разных конфигурациях; использование браузером не проверяется.", "эвристика", "#F2913D"),
@@ -142,6 +142,20 @@ public sealed partial class GuideViewModel : ViewModelBase
                     new("MCC/SIM/BeaconDB", "Не переносится: на ПК нет сотового модуля. Роль LocationSignals частично берёт на себя GeoIP.", "исключено", "#F2913D"),
                 ],
             },
+            new()
+            {
+                Title = "Методика 2026 и её границы",
+                Icon = global::NetworkChecker.App.Icons.Book,
+                Summary = "Сверка с опубликованными методами обнаружения: docs/THREAT-MODEL.md. Методичка официально не подтверждена; всё ниже — модель, а не решение площадки или ведомства.",
+                Items =
+                [
+                    new("Три этапа", "Серверный (IP, GeoIP, ASN/hosting, репутация VPN/Tor, SNITCH, XFF), мобильный (Android/iOS), десктопный (интерфейсы, маршруты, DNS, MTU, реестр). Приложение закрывает в основном этапы 1 и 3 в виде локальной модели.", "слои", "#4EA1FF"),
+                    new("Матрица решений", "В отчётах Markdown/JSON есть раздел «Соответствие методике»: какие сигналы есть, каких нет и почему одного сигнала недостаточно. Это не решение конкретного сайта и не вероятность VPN.", "матрица", "#B061D6"),
+                    new("Транспорт и DPI (β)", "Whoami-DNS против адреса выхода, сравнение системного DNS с DoH, UDP/443-наблюдение и TLS с разным SNI. Вес 0: эти наблюдения не влияют на индекс.", "диагностика", "#5C7A99"),
+                    new("Ложные срабатывания", "Корпоративный VPN, антивирусный фильтр, WSL2/Hyper-V/Docker, VPN на роутере, резидентные прокси, split tunneling, CDN и новые сервисы — методика сама называет их причинами ошибок.", "контекст", "#F2913D"),
+                    new("Чего здесь нет", "Активное зондирование и сигнатуры ТСПУ, JA3/JA4 и ECH, пассивный TCP/IP fingerprint, WebRTC и отпечаток браузера, СОРМ и серверные логи доступны только наблюдателю в сети или на стороне сайта.", "границы", "#F0524C"),
+                ],
+            },
         ];
     }
 
@@ -195,6 +209,13 @@ public sealed partial class GuideViewModel : ViewModelBase
                 "The PCAP viewer and the experimental Windows observation are separate features.",
                 new("Packet viewer", "Opens local PCAP and supported PCAPNG blocks. Live capture and monitoring are not implemented. Capture files may contain secrets.", "viewer", blue),
                 new("WFP / ETW", "Starts only on request. Results are limited, do not prove interception and do not affect the verdict.", "experimental", blue)),
+            Section("Published detection methodology (2026)", global::NetworkChecker.App.Icons.Book,
+                "A comparison with public sources is in docs/THREAT-MODEL.md. The leaked methodology is not officially confirmed; this is a model, not any service's decision.",
+                new("Three stages", "Server-side (IP, GeoIP, ASN/hosting, VPN/Tor reputation, RTT, forwarded headers), mobile (Android/iOS) and desktop (interfaces, routes, DNS, MTU, registry). This Windows tool mainly models stages 1 and 3.", "layers", blue),
+                new("Decision matrix", "Markdown/JSON reports include a methodology mapping: which signals are present, absent or unknown, and why one signal is not enough. Not a probability and not a website's decision.", "matrix", blue),
+                new("Transport observations (beta)", "Whoami-DNS versus egress address, system DNS versus DoH, UDP/443 observation and TLS with different SNI. Weight 0: these observations do not affect the index.", "diagnostics", blue),
+                new("False positives", "Corporate VPNs, security filters, WSL2/Hyper-V/Docker, router-level VPN, residential proxies, split tunneling, CDNs and new services are listed as error sources in the methodology itself.", "context", blue),
+                new("Out of scope", "TSPU active probing and signatures, JA3/JA4, ECH, passive TCP/IP fingerprints, WebRTC, browser fingerprints, SORM and server-side logs require an in-network or server-side observer.", "limits", blue)),
         ];
     }
 

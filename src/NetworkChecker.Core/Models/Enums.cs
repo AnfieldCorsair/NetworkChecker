@@ -41,6 +41,8 @@ public enum CheckCategory
     DomainReachability = 7,
     RttTriangulation = 8,
     IcmpSpoofing = 9,
+    /// <summary>Наблюдения за транспортом и помехами DPI (диагностика, вес 0).</summary>
+    TransportObservation = 10,
 }
 
 /// <summary>Итоговый вердикт.</summary>

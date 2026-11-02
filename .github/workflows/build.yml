@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  # Ручной прогон для рабочих веток: gh workflow run build.yml --ref <branch>
+  workflow_dispatch:
 
 jobs:
   build-windows:

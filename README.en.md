@@ -41,8 +41,15 @@ The checks combine GeoIP sources, HTTP and STUN address comparison, Windows prox
 | Domain reachability | DNS → TCP → TLS diagnostics | 10 |
 | RTT comparison (experimental) | ICMP and TCP measurements, without locating the actual route | 15 |
 | ICMP spoofing indicators (experimental) | Compare responses; a signal alone does not prove spoofing | 10 |
+| Transport and DPI observations (experimental) | Whoami-DNS vs egress, DNS vs DoH, UDP/443, control and trigger SNI; **weight 0** | 0 |
 
-The score excludes failed or skipped checks from its denominator. When there is insufficient weighted data, the score is not calculated. The system does not assert that a particular browser uses a detected route. [Detailed methodology and caveats](docs/CHECKS.md) are currently in Russian.
+Local proxy probes now include the ports and the `16000-16100` range from the published methodology, plus TCP ports the OS reports as LISTEN, with a configurable cap and parallel probes. The score excludes failed or skipped checks from its denominator. When there is insufficient weighted data, the score is not calculated. The system does not assert that a particular browser uses a detected route. [Detailed methodology and caveats](docs/CHECKS.md) are currently in Russian.
+
+## Detection-methodology research
+
+[docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) compares the tool with published RKN/TSPU, app-level and site-level detection methods. It separates three observation layers (server/site, mobile device, desktop) plus in-path DPI, lists sources, and maps each method to covered / partial / missing with false-positive caveats. The leaked "methodology" is not officially confirmed and the mobile-app study covers 30 APKs, so this is a self-audit model, not a reconstruction of any service's decision.
+
+`MethodologyMatrix` builds a decision matrix from results already collected: each signal is *present*, *absent* or *unknown*; skipped/failed modules stay unknown. A "Methodology mapping" section appears in Markdown and JSON (`verdict.methodology`) together with false-positive notes and what cannot be measured locally (TSPU signatures, active probing, JA3/JA4, ECH, WebRTC, server-side logs). The 0–100 index and `Detected` rules are unchanged; the new transport module has weight 0. See also [docs/CHECKS.md](docs/CHECKS.md) and [docs/REVIEW.md](docs/REVIEW.md).
 
 ## Diagnostics and trace
 

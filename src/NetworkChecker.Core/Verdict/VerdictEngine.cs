@@ -64,6 +64,14 @@ public static class VerdictEngine
         if (consensus.IsSplit)
             reasons.Add("Источники видят разные внешние IP одного семейства; причина не установлена.");
 
+        // Матрица соответствия опубликованной методике: модель, а не решение площадки.
+        var methodology = MethodologyMatrix.Build(checks, consensus);
+        if (methodology.RouterVpnHint)
+        {
+            reasons.Add("Внешние сервисы видят признаки туннеля, а локальных следов нет: " +
+                        "туннель может быть поднят на роутере, в другой сети или это ошибка GeoIP.");
+        }
+
         RiskLevel level;
         string headline;
         string summary;
@@ -120,6 +128,7 @@ public static class VerdictEngine
             Summary = summary,
             Reasons = reasons,
             TriggeredCategories = triggered,
+            Methodology = methodology,
         };
     }
 

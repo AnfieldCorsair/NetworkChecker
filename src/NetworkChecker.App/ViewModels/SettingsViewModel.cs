@@ -62,6 +62,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
     [ObservableProperty] private string _rttForeignHosts = string.Join(Environment.NewLine, options.RttForeignHosts);
     [ObservableProperty] private string _stunServers = string.Join(Environment.NewLine, options.StunServers);
     [ObservableProperty] private string _localProxyPorts = string.Join(", ", options.LocalProxyPorts);
+    [ObservableProperty] private string _localProxyPortRanges = string.Join(", ", options.LocalProxyPortRanges);
     [ObservableProperty] private string _theme = "Dark";
     [ObservableProperty] private string _saveStatus = Localizer.T("Изменения применяются по кнопке «Сохранить».");
     [ObservableProperty] private string _dbStatus = string.Empty;
@@ -97,6 +98,12 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
             .Select(p => int.TryParse(p.Trim(), out var port) ? port : 0)
             .Where(p => p is > 0 and < 65536)
             .Distinct()];
+        // Диапазоны проверяются при разборе в LocalPortScanner: здесь сохраняем строки как есть.
+        _options.LocalProxyPortRanges = [.. LocalProxyPortRanges
+            .Split([',', ';', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim())
+            .Where(p => p.Length > 0)
+            .Distinct()];
 
         _ui.Culture = Language == "en-US" ? "en-US" : "ru-RU";
         Masking.Enabled = PrivacyMode;
@@ -127,6 +134,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
         RttForeignHosts = string.Join(Environment.NewLine, defaults.RttForeignHosts);
         StunServers = string.Join(Environment.NewLine, defaults.StunServers);
         LocalProxyPorts = string.Join(", ", defaults.LocalProxyPorts);
+        LocalProxyPortRanges = string.Join(", ", defaults.LocalProxyPortRanges);
         SaveStatus = Localizer.Culture == "en-US" ? "Defaults restored. Select Save." : "Значения сброшены к дефолтным. Нажмите «Сохранить».";
     }
 

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Globalization;
 using NetworkChecker.Core.Abstractions;
 using NetworkChecker.Core.Models;
+using NetworkChecker.Core.Options;
 using NetworkChecker.Core.Platform;
 
 namespace NetworkChecker.Core.Checks;
@@ -133,10 +134,18 @@ public sealed class IndirectSignsCheck(IPlatformProbe platform) : ICheck
         var virtualAdapters = adapters.Where(a => a.IsUp && a.Kind == Models.AdapterKind.Virtual).ToList();
         if (virtualAdapters.Count > 0)
         {
+            var virtualNote = virtualAdapters.Select(a => FalsePositiveCatalog.Match(a.Name) ?? FalsePositiveCatalog.Match(a.Description))
+                .FirstOrDefault(note => note is not null);
             findings.Add(Finding.Notice($"Активны виртуальные адаптеры ({virtualAdapters.Count})",
-                "Виртуальные адаптеры сами по себе не признак обхода, но используются tun2socks-схемами.",
+                "Виртуальные адаптеры сами по себе не признак обхода, но используются tun2socks-схемами. " +
+                (virtualNote ?? "WSL2, Hyper-V, Docker и VirtualBox создают такие адаптеры без всякого обхода."),
                 string.Join(", ", virtualAdapters.Select(a => a.Name).Take(5))));
         }
+
+        findings.Add(Finding.Info("Граница локальных проверок",
+            "Если туннель поднят на роутере, в виртуальной машине или на другом устройстве, " +
+            "интерфейсов, маршрутов и процессов на этом компьютере может не быть. " +
+            "Отсутствие локальных признаков при иностранном адресе выхода — не доказательство отсутствия VPN."));
 
         var detected = findings.Any(f => f.Severity == Severity.Critical);
         var review = findings.Any(f => f.Severity is Severity.Warning or Severity.Notice);

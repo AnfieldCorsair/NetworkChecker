@@ -47,6 +47,21 @@ public sealed class VpnClientCatalog
         new("SSTap", "proxy", ["sstap"]),
         new("WireSock", "vpn", ["wiresock"]),
         new("Tun2socks", "driver", ["tun2socks"]),
+        // Протоколы и клиенты, появившиеся в публичных разборах ТСПУ 2025–2026 гг.
+        new("AmneziaWG", "vpn", ["amneziawg", "amnezia wg"]),
+        new("Hysteria 2", "proxy", ["hysteria2", "hysteria"]),
+        new("TUIC", "proxy", ["tuic.exe", "tuic-client", "tuic-v5"]),
+        new("Juicity", "proxy", ["juicity"]),
+        new("Mieru", "proxy", ["mieru"]),
+        new("NaiveProxy", "proxy", ["naiveproxy"]),
+        new("Trojan / Trojan-Go", "proxy", ["trojan-go", "trojan.exe"]),
+        new("ShadowTLS / Cloak / obfs4", "proxy", ["shadowtls", "cloak-client", "obfs4proxy", "meek-client"]),
+        new("XHTTP / XTLS", "proxy", ["xhttp", "xtls-rprx"]),
+        new("Throne / FlClash / Karing / Exclave", "proxy", ["throne", "flclash", "karing", "exclave", "owenclave"]),
+        new("Happ / Incy / Hiddify Next", "proxy", ["happ.exe", "incy.exe", "hiddify-next"]),
+        new("Proxifier / ProxyCap / SSTap-подобные", "proxy", ["proxifier", "proxycap", "sockscap"]),
+        new("Локальные HTTP/SOCKS-серверы", "proxy", ["privoxy", "3proxy", "squid for windows", "mitmproxy", "fiddler", "charles proxy", "burp suite"]),
+        new("WinDivert / WinPKFilter", "driver", ["windivert", "winpkfilter"]),
     ];
 
     /// <summary>Возвращает совпавшую запись каталога либо null.</summary>

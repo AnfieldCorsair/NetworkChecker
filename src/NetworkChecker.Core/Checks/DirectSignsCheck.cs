@@ -129,9 +129,11 @@ public sealed class DirectSignsCheck(IPlatformProbe platform, VpnClientCatalog c
         // --- запущенные клиенты обхода ---
         foreach (var process in processes)
         {
+            var contextNote = FalsePositiveCatalog.Match(process.MatchedMarker) ?? FalsePositiveCatalog.Match(process.Path);
             findings.Add(Finding.Critical(
                 $"Запущен процесс с VPN/прокси-маркером: {process.Name}",
-                $"Процесс совпал с маркером «{process.MatchedMarker}».",
+                $"Процесс совпал с маркером «{process.MatchedMarker}»." +
+                (contextNote is null ? string.Empty : " Возможная ложная тревога: " + contextNote),
                 process.Path));
         }
         metrics.Add(new Metric("Подозрительных процессов", processes.Count.ToString(CultureInfo.InvariantCulture),
@@ -172,6 +174,11 @@ public sealed class DirectSignsCheck(IPlatformProbe platform, VpnClientCatalog c
                 string.Join("; ", killSwitch.Select(r => r.Name).Take(5))));
             metrics.Add(new Metric("Правил kill switch", killSwitch.Count.ToString(CultureInfo.InvariantCulture)));
         }
+
+        // Явный контекст ложных срабатываний, который требует опубликованная методика:
+        // локальные признаки без серверного подтверждения не являются решением сервиса.
+        findings.Add(Finding.Info("Контекст ложных срабатываний",
+            FalsePositiveCatalog.GeneralNote + " VPN на роутере и в другой сети вообще не виден этим модулем."));
 
         var detected = findings.Any(f => f.Severity == Severity.Critical);
         var review = findings.Any(f => f.Severity == Severity.Warning);

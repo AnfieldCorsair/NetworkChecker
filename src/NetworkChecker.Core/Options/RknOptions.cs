@@ -80,19 +80,46 @@ public sealed class RknOptions
         "1.1.1.1",
     ];
 
-    /// <summary>Порты локальных прокси, которые сканирует BypassChecker.</summary>
+    /// <summary>
+    /// Порты локальных прокси, которые сканирует BypassCheck. Включены типовые значения
+    /// из опубликованной методики: SOCKS 1080/9000/5555, HTTP 3128/8080/8888, Tor 9050/9051/9150.
+    /// </summary>
     public List<int> LocalProxyPorts { get; set; } =
     [
-        1080, 1081, 1087, 1088, 2080, 3128, 7890, 7891, 7897, 8080, 8081,
-        8888, 9050, 9051, 9090, 9091, 10808, 10809, 20170, 20171,
+        1080, 1081, 1087, 1088, 2080, 3128, 5555, 7890, 7891, 7897, 8080, 8081,
+        8888, 9000, 9050, 9051, 9090, 9091, 9150, 10808, 10809, 20170, 20171,
     ];
 
-    /// <summary>Домены для DNS-проверки утечек.</summary>
+    /// <summary>
+    /// Диапазоны портов из методики (SOCKS 16000–16100 и др.). Записи вида «16000-16100»
+    /// или одиночный порт; некорректные значения игнорируются при разборе.
+    /// </summary>
+    public List<string> LocalProxyPortRanges { get; set; } = ["16000-16100"];
+
+    /// <summary>Добавлять к списку порты, которые ОС сообщает как TCP LISTEN на этой машине.</summary>
+    public bool ScanListeningSockets { get; set; } = true;
+
+    /// <summary>Ограничение на общее число проверяемых локальных портов за прогон.</summary>
+    public int MaxLocalProxyPorts { get; set; } = 200;
+
+    /// <summary>Домены для DNS-проверки утечек (whoami-имена возвращают адрес резолвера).</summary>
     public List<string> DnsLeakTestDomains { get; set; } =
     [
         "whoami.akamai.net",
         "o-o.myaddr.l.google.com",
     ];
+
+    /// <summary>Имена для сравнения ответов системного DNS и публичного DoH.</summary>
+    public List<string> DnsCompareDomains { get; set; } = ["example.com", "ya.ru"];
+
+    /// <summary>Узлы для наблюдательной UDP/443-пробы (QUIC-подобный датаграмм).</summary>
+    public List<string> QuicProbeTargets { get; set; } = ["cloudflare.com"];
+
+    /// <summary>Узел, к которому отправляются TLS-зонды с разным SNI.</summary>
+    public string SniControlHost { get; set; } = "cloudflare.com";
+
+    /// <summary>«Триггерные» SNI для сравнения с контрольным именем.</summary>
+    public List<string> SniProbeNames { get; set; } = ["rutracker.org", "instagram.com"];
 
     /// <summary>Узлы для трассировки по умолчанию.</summary>
     public string DefaultTraceTarget { get; set; } = "1.1.1.1";
@@ -111,7 +138,11 @@ public sealed class RknOptions
         copy.RttForeignHosts = [.. RttForeignHosts];
         copy.IcmpSpoofTargets = [.. IcmpSpoofTargets];
         copy.LocalProxyPorts = [.. LocalProxyPorts];
+        copy.LocalProxyPortRanges = [.. LocalProxyPortRanges];
         copy.DnsLeakTestDomains = [.. DnsLeakTestDomains];
+        copy.DnsCompareDomains = [.. DnsCompareDomains];
+        copy.QuicProbeTargets = [.. QuicProbeTargets];
+        copy.SniProbeNames = [.. SniProbeNames];
         return copy;
     }
 }

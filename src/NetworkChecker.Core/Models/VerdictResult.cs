@@ -12,6 +12,11 @@ public sealed class VerdictResult
     public required string Summary { get; init; }
     public IReadOnlyList<string> Reasons { get; init; } = Array.Empty<string>();
     public IReadOnlyList<CheckCategory> TriggeredCategories { get; init; } = Array.Empty<CheckCategory>();
+    /// <summary>
+    /// Модель соответствия прогона опубликованной трёхэтапной методике. Заполняется
+    /// движком вердикта; в старых сохранённых прогонах отсутствует.
+    /// </summary>
+    public MethodologyAssessment? Methodology { get; init; }
 
     public string LevelText => Level switch
     {

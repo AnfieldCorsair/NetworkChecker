@@ -57,7 +57,14 @@ public static class ConnectivityProbes
         }
     }
 
-    public static async Task<TlsProbeResult> TlsHandshakeAsync(string host, int port, TimeSpan timeout, CancellationToken ct = default)
+    public static Task<TlsProbeResult> TlsHandshakeAsync(string host, int port, TimeSpan timeout, CancellationToken ct = default) =>
+        TlsHandshakeAsync(host, port, null, timeout, ct);
+
+    /// <summary>
+    /// TLS-зонд с явно заданным SNI: позволяет сравнить реакцию пути на контрольное и
+    /// «триггерное» имя. Расхождение — наблюдение, а не доказательство фильтрации по SNI.
+    /// </summary>
+    public static async Task<TlsProbeResult> TlsHandshakeAsync(string host, int port, string? sni, TimeSpan timeout, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -83,7 +90,7 @@ public static class ConnectivityProbes
 #pragma warning restore CA5359
             await ssl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
             {
-                TargetHost = host,
+                TargetHost = string.IsNullOrWhiteSpace(sni) ? host : sni,
                 EnabledSslProtocols = System.Security.Authentication.SslProtocols.None,
                 ApplicationProtocols = [SslApplicationProtocol.Http11],
             }, deadline.Token).ConfigureAwait(false);
