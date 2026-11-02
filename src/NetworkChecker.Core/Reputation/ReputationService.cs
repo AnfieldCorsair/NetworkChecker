@@ -119,7 +119,7 @@ public sealed class ReputationService(IHttpProbe http, IExternalProbe external) 
             else
             {
                 var ip = identity.Ip!;
-                await AddDnsblAsync(o, ip, sources, ct, count => spamHits = count).ConfigureAwait(false);
+                await AddDnsblAsync(o, ip, sources, count => spamHits = count, ct).ConfigureAwait(false);
                 await AddKeyedAsync(o, identity, timeout, sources, scores, ct).ConfigureAwait(false);
             }
         }
@@ -175,7 +175,7 @@ public sealed class ReputationService(IHttpProbe http, IExternalProbe external) 
     }
 
     private async Task AddDnsblAsync(
-        RknOptions o, string ip, List<ReputationSource> sources, CancellationToken ct, Action<int> reportSpam)
+        RknOptions o, string ip, List<ReputationSource> sources, Action<int> reportSpam, CancellationToken ct)
     {
         var zones = o.DnsblZones.Take(Math.Clamp(o.DnsblMaxZones, 1, 24)).ToList();
         using var gate = new SemaphoreSlim(Math.Clamp(o.DnsblParallelism, 1, 12));
