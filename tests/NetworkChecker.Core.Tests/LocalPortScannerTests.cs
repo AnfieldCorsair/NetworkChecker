@@ -60,7 +60,10 @@ public class LocalPortScannerTests
     {
         var merged = LocalPortScanner.Merge([1080, 8080], [8080, 2080, 3128], maxPorts: 3);
 
-        Assert.True(merged.SequenceEqual(new[] { 1080, 8080, 2080 }));
+        Assert.Equal(3, merged.Count);
+        Assert.Equal(1080, merged[0]);
+        Assert.Equal(8080, merged[1]);
+        Assert.Equal(2080, merged[2]);
     }
 
     [Fact]
