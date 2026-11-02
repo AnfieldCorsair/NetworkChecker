@@ -70,12 +70,14 @@ public sealed class SystemTransportProbes(IHttpProbe http) : ITransportProbes
             using var client = new UdpClient(addresses[0].AddressFamily);
             client.Connect(addresses[0], port);
             await client.SendAsync(payload, payload.Length).ConfigureAwait(false);
-            var pending = client.ReceiveAsync();
-            var reply = await pending.WaitAsync(timeout, ct).ConfigureAwait(false);
+            // Общий deadline: отмена вызывающей стороны пробрасывается, таймаут пробы — нет.
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            deadline.CancelAfter(timeout);
+            var reply = await client.ReceiveAsync(deadline.Token).ConfigureAwait(false);
             return new UdpProbeResult(reply.Buffer.Length > 0, sw.Elapsed, null);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
-        catch (TimeoutException) { return new UdpProbeResult(false, sw.Elapsed, "ответа нет"); }
+        catch (OperationCanceledException) { return new UdpProbeResult(false, sw.Elapsed, "ответа нет"); }
         catch (Exception ex)
         {
             return new UdpProbeResult(false, sw.Elapsed, ConnectivityProbes.Describe(ex));
