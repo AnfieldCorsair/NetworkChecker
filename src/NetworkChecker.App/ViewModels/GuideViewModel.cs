@@ -142,6 +142,21 @@ public sealed partial class GuideViewModel : ViewModelBase
                     new("MCC/SIM/BeaconDB", "Не переносится: на ПК нет сотового модуля. Роль LocationSignals частично берёт на себя GeoIP.", "исключено", "#F2913D"),
                 ],
             },
+            new()
+            {
+                Title = "Репутация IP и метка Google",
+                Icon = global::NetworkChecker.App.Icons.Globe,
+                Summary = "Отдельная вкладка: спам-базы, жалобы, риск-скоры и то, какой регион приписал адресу сам Google. Вес 0, на индекс не влияет.",
+                Items =
+                [
+                    new("Зачем это", "Увидеть, нет ли адреса в почтовых чёрных списках, сколько на него жалоб и насколько ему доверяют антифрод-сервисы. Это не проверка VPN и не вероятность капчи.", "смысл", "#4EA1FF"),
+                    new("Спам-базы", "DNSBL-запросы к zen.spamhaus.org, SpamCop, Barracuda, SORBS, UCEPROTECT и др. Коды 127.0.0.10/.11 — это PBL, обычная «динамика» провайдера, а не спам.", "dnsbl", "#F2913D"),
+                    new("Метка RU на YouTube", "Из ytcfg мобильной главной YouTube читается поле GL — собственная карта регионов Google. Иностранный IP с GL=RU и есть та самая метка: меняет YouTube и закрывает Google AI Studio.", "gl", "#B061D6"),
+                    new("Google AI Studio", "Проверяем, не ушёл ли запрос на страницу «Available regions». России в списке доступных регионов нет, но редирект бывает и из-за аккаунта, возраста или платёжного профиля.", "aistudio", "#F5C542"),
+                    new("Чего нет", "Публичного API «доверия Google» и прогноза капч не существует: reCAPTCHA v3 считается для конкретного сайта, Postmaster Tools v2 не отдаёт репутацию IP. Зонд без cookies видит только сетевую часть метки.", "границы", "#F0524C"),
+                    new("Приватность и ключи", "Проверка отправляет внешний IP сторонним сервисам. Все API-ключи необязательны, хранятся в settings.json и не попадают в отчёты; «нет данных» не означает «чисто».", "приватность", "#35C48A"),
+                ],
+            },
         ];
     }
 
@@ -195,6 +210,14 @@ public sealed partial class GuideViewModel : ViewModelBase
                 "The PCAP viewer and the experimental Windows observation are separate features.",
                 new("Packet viewer", "Opens local PCAP and supported PCAPNG blocks. Live capture and monitoring are not implemented. Capture files may contain secrets.", "viewer", blue),
                 new("WFP / ETW", "Starts only on request. Results are limited, do not prove interception and do not affect the verdict.", "experimental", blue)),
+            Section("IP reputation and the Google region label", global::NetworkChecker.App.Icons.Globe,
+                "A separate tab: spam lists, abuse reports, risk scores and the region that Google itself assigns to this IP. Weight 0, it does not affect the index.",
+                new("Why", "See whether the address is in mail blacklists, how many reports it has and what anti-fraud services think. This is not a VPN test and not a CAPTCHA probability.", "purpose", blue),
+                new("Spam lists", "DNSBL lookups against zen.spamhaus.org, SpamCop, Barracuda, SORBS, UCEPROTECT and others. Codes 127.0.0.10/.11 are PBL — normal ISP dynamic ranges, not spam.", "dnsbl", blue),
+                new("The RU label on YouTube", "The GL field from ytcfg on the mobile YouTube homepage is Google's own region map. A foreign IP with GL=RU is exactly that label: it changes YouTube and blocks Google AI Studio.", "gl", blue),
+                new("Google AI Studio", "We check whether the request redirects to the 'Available regions' page. Russia is not on the supported list, but the redirect can also come from account age, payments profile or Workspace policy.", "aistudio", blue),
+                new("What is missing", "There is no public API for Google trust or CAPTCHA likelihood: reCAPTCHA v3 is scored for a specific site, Postmaster Tools v2 does not expose IP reputation. The cookie-free probe sees only the network part of the label.", "limits", blue),
+                new("Privacy and keys", "The check sends your public IP to third-party services. All API keys are optional, stay in settings.json and never appear in reports; 'no data' does not mean 'clean'.", "privacy", blue)),
         ];
     }
 

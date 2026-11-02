@@ -11,10 +11,11 @@
                 │ CheckRunResult / Network*    │ ICheck, IPlatformProbe
 ┌───────────────┴──────────────────────────────▼──────────────┐
 │ NetworkChecker.Core (net10.0)                                  │
-│   Checks/ (10 модулей)  Verdict/  NetInfo/  Net/             │
+│   Checks/ (11 модулей)  Verdict/  NetInfo/  Net/             │
 │   Plain/ (человеческий язык)  Comparison/ (диф прогонов)      │
 │   SiteView/ (что видит сайт: GeoIP, таймзоны, выводы)         │
-│   Abstractions/ (ICheck, IPlatformProbe, IHttpProbe)         │
+│   Abstractions/ (ICheck, IPlatformProbe, IHttpProbe,         │
+│                  IExternalProbe)  Reputation/ (сервис)       │
 └───────────────▲──────────────────────────────┬──────────────┘
                 │                               │
 ┌───────────────┴───────────────┐  ┌────────────▼────────────┐
@@ -56,6 +57,9 @@ Core не зависит от Avalonia; большая часть системн
 | `DnsClientLite` / `DnsWire` | запросы к конкретному резолверу, парсер DNS-сообщений, DoH |
 | `AsnLookup` | ASN/оператор по IP через DNS Team Cymru |
 | `HttpProbe`, `GeoIpParser`, `Masking` | сеть, нормализация GeoIP-ответов, приватный режим |
+| `IExternalProbe` / `ExternalHttpProbe` | HTTP с произвольными заголовками и User-Agent + DNSBL-запросы к системному резолверу |
+| `ReputationService` / `ReputationParsers` | сбор репутации IP, коды DNSBL, JSON риск-скоров, поле `GL` из ytcfg и редирект AI Studio; кэш на 3 минуты |
+| `ReputationCheck` / `ReputationViewModel` | модуль веса 0 в `CheckResult.Reputation` и вкладка «Репутация»: см. [REPUTATION.md](REPUTATION.md) |
 
 ## Потоки вкладки «Сеть»
 

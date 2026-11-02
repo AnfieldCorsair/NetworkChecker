@@ -5,16 +5,24 @@ using CommunityToolkit.Mvvm.Input;
 using NetworkChecker.App.Localization;
 using NetworkChecker.Core.Net;
 using NetworkChecker.Core.Options;
+using NetworkChecker.Core.Reputation;
 using NetworkChecker.Data;
 
 namespace NetworkChecker.App.ViewModels;
 
-public sealed partial class SettingsViewModel(SettingsStore store, RknOptions options, UiOptions ui, HistoryRepository history, UiModeService mode) : ViewModelBase
+public sealed partial class SettingsViewModel(
+    SettingsStore store,
+    RknOptions options,
+    UiOptions ui,
+    HistoryRepository history,
+    UiModeService mode,
+    ReputationService? reputation = null) : ViewModelBase
 {
     private readonly SettingsStore _store = store;
     private readonly RknOptions _options = options;
     private readonly UiOptions _ui = ui;
     private readonly HistoryRepository _history = history;
+    private readonly ReputationService? _reputation = reputation;
 
     public UiModeService Mode { get; } = mode;
 
@@ -62,6 +70,19 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
     [ObservableProperty] private string _rttForeignHosts = string.Join(Environment.NewLine, options.RttForeignHosts);
     [ObservableProperty] private string _stunServers = string.Join(Environment.NewLine, options.StunServers);
     [ObservableProperty] private string _localProxyPorts = string.Join(", ", options.LocalProxyPorts);
+
+    // ---- Репутация IP и метка Google -------------------------------------------
+    [ObservableProperty] private bool _reputationEnabled = options.ReputationEnabled;
+    [ObservableProperty] private bool _googleRegionEnabled = options.GoogleRegionEnabled;
+    [ObservableProperty] private string _dnsblZones = string.Join(Environment.NewLine, options.DnsblZones);
+    [ObservableProperty] private string _abuseIpDbKey = options.AbuseIpDbKey ?? string.Empty;
+    [ObservableProperty] private string _ipQualityScoreKey = options.IpQualityScoreKey ?? string.Empty;
+    [ObservableProperty] private string _proxyCheckKey = options.ProxyCheckKey ?? string.Empty;
+    [ObservableProperty] private string _ipApiIsKey = options.IpApiIsKey ?? string.Empty;
+    [ObservableProperty] private string _scamalyticsUser = options.ScamalyticsUser ?? string.Empty;
+    [ObservableProperty] private string _scamalyticsKey = options.ScamalyticsKey ?? string.Empty;
+    [ObservableProperty] private string _spamhausDqsKey = options.SpamhausDqsKey ?? string.Empty;
+
     [ObservableProperty] private string _theme = "Dark";
     [ObservableProperty] private string _saveStatus = Localizer.T("Изменения применяются по кнопке «Сохранить».");
     [ObservableProperty] private string _dbStatus = string.Empty;
@@ -98,6 +119,19 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
             .Where(p => p is > 0 and < 65536)
             .Distinct()];
 
+        _options.ReputationEnabled = ReputationEnabled;
+        _options.GoogleRegionEnabled = GoogleRegionEnabled;
+        _options.DnsblZones = SplitLines(DnsblZones);
+        _options.AbuseIpDbKey = TrimOrNull(AbuseIpDbKey);
+        _options.IpQualityScoreKey = TrimOrNull(IpQualityScoreKey);
+        _options.ProxyCheckKey = TrimOrNull(ProxyCheckKey);
+        _options.IpApiIsKey = TrimOrNull(IpApiIsKey);
+        _options.ScamalyticsUser = TrimOrNull(ScamalyticsUser);
+        _options.ScamalyticsKey = TrimOrNull(ScamalyticsKey);
+        _options.SpamhausDqsKey = TrimOrNull(SpamhausDqsKey);
+        // Ключи и список зон изменились: закэшированный отчёт больше не актуален.
+        _reputation?.Invalidate();
+
         _ui.Culture = Language == "en-US" ? "en-US" : "ru-RU";
         Masking.Enabled = PrivacyMode;
         SaveStatus = _store.Save(_options, _ui)
@@ -127,6 +161,16 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
         RttForeignHosts = string.Join(Environment.NewLine, defaults.RttForeignHosts);
         StunServers = string.Join(Environment.NewLine, defaults.StunServers);
         LocalProxyPorts = string.Join(", ", defaults.LocalProxyPorts);
+        ReputationEnabled = defaults.ReputationEnabled;
+        GoogleRegionEnabled = defaults.GoogleRegionEnabled;
+        DnsblZones = string.Join(Environment.NewLine, defaults.DnsblZones);
+        AbuseIpDbKey = string.Empty;
+        IpQualityScoreKey = string.Empty;
+        ProxyCheckKey = string.Empty;
+        IpApiIsKey = string.Empty;
+        ScamalyticsUser = string.Empty;
+        ScamalyticsKey = string.Empty;
+        SpamhausDqsKey = string.Empty;
         SaveStatus = Localizer.Culture == "en-US" ? "Defaults restored. Select Save." : "Значения сброшены к дефолтным. Нажмите «Сохранить».";
     }
 
@@ -159,4 +203,7 @@ public sealed partial class SettingsViewModel(SettingsStore store, RknOptions op
             .Select(line => line.Trim())
             .Where(line => line.Length > 0)
             .Distinct()];
+
+    private static string? TrimOrNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

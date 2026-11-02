@@ -131,6 +131,55 @@ public sealed class FakeHttpProbe : IHttpProbe
     }
 }
 
+/// <summary>Заглушка внешних проб репутации: HTTP с заголовками и DNSBL без сети.</summary>
+public sealed class FakeExternalProbe : IExternalProbe
+{
+    public Dictionary<string, string> Responses { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, string> FinalUris { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, DnsLookupResult> Dns { get; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<string> Requested { get; } = [];
+    public List<string> DnsRequested { get; } = [];
+
+    public FakeExternalProbe With(string urlFragment, string body)
+    {
+        Responses[urlFragment] = body;
+        return this;
+    }
+
+    public FakeExternalProbe WithRedirect(string urlFragment, string finalUri, string body)
+    {
+        Responses[urlFragment] = body;
+        FinalUris[urlFragment] = finalUri;
+        return this;
+    }
+
+    public FakeExternalProbe WithDns(string name, bool found, params string[] addresses)
+    {
+        Dns[name] = new DnsLookupResult(found, addresses, found ? null : "HostNotFound");
+        return this;
+    }
+
+    public Task<HttpProbeResult> GetAsync(ExternalProbeRequest request, CancellationToken ct = default)
+    {
+        var url = request.Uri.ToString();
+        Requested.Add(url);
+        var match = Responses.FirstOrDefault(pair => url.Contains(pair.Key, StringComparison.OrdinalIgnoreCase));
+        if (match.Value is null)
+            return Task.FromResult(new HttpProbeResult(false, 0, null, "нет ответа (тест)", TimeSpan.Zero, null, null));
+
+        var final = FinalUris.FirstOrDefault(pair => url.Contains(pair.Key, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(new HttpProbeResult(true, 200, match.Value, null,
+            TimeSpan.FromMilliseconds(12), final.Value ?? url, "test"));
+    }
+
+    public Task<DnsLookupResult> ResolveAAsync(string name, CancellationToken ct = default)
+    {
+        DnsRequested.Add(name);
+        var match = Dns.FirstOrDefault(pair => name.Contains(pair.Key, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(match.Value ?? new DnsLookupResult(false, [], "HostNotFound"));
+    }
+}
+
 /// <summary>Проверка-заглушка с управляемым результатом.</summary>
 public sealed class FakeCheck(
     CheckCategory category,

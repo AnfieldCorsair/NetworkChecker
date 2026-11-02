@@ -127,6 +127,53 @@
         </StackPanel>
       </Grid>
 
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="{DynamicResource RepSettingsTitle}" Classes="overline" />
+          <TextBlock Text="{DynamicResource RepSettingsHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="18">
+            <CheckBox Content="{DynamicResource RepEnable}" IsChecked="{Binding ReputationEnabled}" FontSize="12.5" />
+            <CheckBox Content="{DynamicResource RepGoogleEnable}" IsChecked="{Binding GoogleRegionEnabled}" FontSize="12.5" />
+          </StackPanel>
+          <TextBlock Text="{DynamicResource RepZones}" Classes="muted" FontSize="10.5" />
+          <TextBox Text="{Binding DnsblZones}" FontSize="11" Classes="mono" Height="96" AcceptsReturn="True"
+                   TextWrapping="Wrap" VerticalContentAlignment="Top" />
+          <TextBlock Text="{DynamicResource RepKeys}" Classes="muted" FontSize="10.5" />
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto">
+            <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeyAbuse}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding AbuseIpDbKey}" FontSize="11" Classes="mono" PasswordChar="•" />
+            </StackPanel>
+            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeyIpqs}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding IpQualityScoreKey}" FontSize="11" Classes="mono" PasswordChar="•" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeyProxy}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding ProxyCheckKey}" FontSize="11" Classes="mono" PasswordChar="•" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeyIpapi}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding IpApiIsKey}" FontSize="11" Classes="mono" PasswordChar="•" />
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.Column="0" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeySpamhaus}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding SpamhausDqsKey}" FontSize="11" Classes="mono" PasswordChar="•" />
+            </StackPanel>
+            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeyScamUser}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding ScamalyticsUser}" FontSize="11" Classes="mono" />
+            </StackPanel>
+            <StackPanel Grid.Row="3" Grid.Column="0" Spacing="2">
+              <TextBlock Text="{DynamicResource RepKeyScam}" Classes="muted" FontSize="10" />
+              <TextBox Text="{Binding ScamalyticsKey}" FontSize="11" Classes="mono" PasswordChar="•" />
+            </StackPanel>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource RepKeysNote}" Classes="muted"
+                       FontSize="10.5" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
       <Border Classes="card" Padding="14">
         <Grid ColumnDefinitions="*,Auto,Auto">
           <TextBlock Grid.Column="0" Text="{Binding SaveStatus}" Classes="muted" VerticalAlignment="Center" FontSize="11.5" />

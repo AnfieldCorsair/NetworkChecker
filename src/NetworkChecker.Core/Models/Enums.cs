@@ -41,6 +41,8 @@ public enum CheckCategory
     DomainReachability = 7,
     RttTriangulation = 8,
     IcmpSpoofing = 9,
+    /// <summary>Репутация IP: спам-базы, жалобы, риск-скоры и метка региона Google (диагностика, вес 0).</summary>
+    Reputation = 10,
 }
 
 /// <summary>Итоговый вердикт.</summary>

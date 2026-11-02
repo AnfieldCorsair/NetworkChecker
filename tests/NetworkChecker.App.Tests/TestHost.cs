@@ -7,6 +7,7 @@ using NetworkChecker.Core.Models;
 using NetworkChecker.Core.Net;
 using NetworkChecker.Core.NetInfo;
 using NetworkChecker.Core.Options;
+using NetworkChecker.Core.Reputation;
 using NetworkChecker.Core.SiteView;
 using NetworkChecker.TestKit;
 
@@ -47,9 +48,12 @@ public static class TestHost
         var site = new SiteViewModel(siteEye ?? new SiteEyeService(http, opts), mode, NullLogger<SiteViewModel>.Instance);
         var historyVm = new HistoryViewModel(history, mode);
         var guide = new GuideViewModel();
-        var settings = new SettingsViewModel(store, opts, store.Ui, history, mode);
+        var reputationService = new ReputationService(http, new FakeExternalProbe());
+        var settings = new SettingsViewModel(store, opts, store.Ui, history, mode, reputationService);
+        var reputation = new ReputationViewModel(reputationService, opts, NullLogger<ReputationViewModel>.Instance);
 
-        return new MainWindowViewModel(dashboard, network, site, historyVm, guide, settings, mode, new ObservationViewModel(new FakeObservationService()), new CaptureViewModel());
+        return new MainWindowViewModel(dashboard, network, site, historyVm, guide, settings, mode,
+            new ObservationViewModel(new FakeObservationService()), new CaptureViewModel(), reputation);
     }
 }
 

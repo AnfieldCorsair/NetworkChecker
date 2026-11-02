@@ -57,6 +57,7 @@ public static class PrivateRunProjection
         CheckCategory.DomainReachability => "Доступность доменов",
         CheckCategory.RttTriangulation => "RTT-триангуляция (β)",
         CheckCategory.IcmpSpoofing => "ICMP-спуфинг (β)",
+        CheckCategory.Reputation => "Репутация IP и метка Google",
         _ => "Дополнительная проверка",
     };
 }

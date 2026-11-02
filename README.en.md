@@ -41,8 +41,26 @@ The checks combine GeoIP sources, HTTP and STUN address comparison, Windows prox
 | Domain reachability | DNS → TCP → TLS diagnostics | 10 |
 | RTT comparison (experimental) | ICMP and TCP measurements, without locating the actual route | 15 |
 | ICMP spoofing indicators (experimental) | Compare responses; a signal alone does not prove spoofing | 10 |
+| IP reputation and Google region (observational) | DNSBL, abuse reports, risk scores, YouTube `GL`, AI Studio redirect; **weight 0** | 0 |
 
 The score excludes failed or skipped checks from its denominator. When there is insufficient weighted data, the score is not calculated. The system does not assert that a particular browser uses a detected route. [Detailed methodology and caveats](docs/CHECKS.md) are currently in Russian.
+
+## IP reputation and the Google region label
+
+A new **Reputation** tab answers practical questions: is the public IP in spam/DNSBL lists, how many abuse reports exist, what fraud scores say, and which region **Google itself** assigned. The `GL` field is read from `ytcfg` on the mobile YouTube homepage — Google's own IP-to-region map, which may disagree with GeoIP. A foreign IP marked `RU` is highlighted explicitly, together with a check for the Google AI Studio redirect to the ["Available regions" page](https://ai.google.dev/gemini-api/docs/available-regions?hl=en) (Russia is not on that list).
+
+| Source | Key needed | Signal |
+|---|---|---|
+| Spamhaus ZEN, SpamCop, Barracuda, SORBS, UCEPROTECT, PSBL, DroneBL | no (optional free Spamhaus DQS key) | DNSBL return codes; PBL `.10/.11` is normal, not spam |
+| proxycheck.io | no (100/day), optional | `risk`, proxy type |
+| AbuseIPDB | optional | `abuseConfidenceScore`, report count |
+| IPQualityScore | optional | `fraud_score`, `recent_abuse`, VPN/Tor |
+| Scamalytics, ipapi.is | optional | fraud score, `is_abuser` / `is_vpn` / `is_tor` |
+| YouTube `GL` + AI Studio | no | region label, region-redirect detection |
+
+There is **no public Google "trust" or CAPTCHA-probability API**: reCAPTCHA v3 is scored for a specific site and Postmaster Tools v2 no longer exposes IP reputation. The block shows indirect correlates and says so; it does not probe `google.com` for CAPTCHAs. The cookie-free probe sees only the network part of the label — account, cookies, language and past activity can change what your browser sees.
+
+API keys are optional and stay in `settings.json`; they never appear in reports. The module has **weight 0**, so the score and `Detected` rules are unchanged. Offline mode disables every external request. Full details and sources: [docs/REPUTATION.md](docs/REPUTATION.md).
 
 ## Diagnostics and trace
 

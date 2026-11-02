@@ -10,6 +10,7 @@ using NetworkChecker.Core.Net;
 using NetworkChecker.Core.NetInfo;
 using NetworkChecker.Core.Observation;
 using NetworkChecker.Core.Options;
+using NetworkChecker.Core.Reputation;
 using NetworkChecker.Core.SiteView;
 using NetworkChecker.Data;
 using NetworkChecker.Platform.Windows;
@@ -49,6 +50,8 @@ public static class AppServices
         services.AddSingleton<VpnClientCatalog>();
         services.AddSingleton<IPlatformProbe, WindowsPlatformProbe>();
         services.AddSingleton<IHttpProbe, HttpProbe>();
+        services.AddSingleton<IExternalProbe, ExternalHttpProbe>();
+        services.AddSingleton<ReputationService>();
         services.AddSingleton<DnsClientLite>();
         services.AddSingleton<NetworkInfoService>();
         services.AddSingleton<ISiteEyeService, SiteEyeService>();
@@ -64,6 +67,7 @@ public static class AppServices
         services.AddSingleton<ICheck, DomainReachabilityCheck>();
         services.AddSingleton<ICheck, RttTriangulationCheck>();
         services.AddSingleton<ICheck, IcmpSpoofingCheck>();
+        services.AddSingleton<ICheck, ReputationCheck>();
 
         services.AddSingleton<CheckRunner>();
 
@@ -79,6 +83,7 @@ public static class AppServices
         services.AddSingleton<SettingsViewModel>();
         services.AddSingleton<ObservationViewModel>();
         services.AddSingleton<CaptureViewModel>();
+        services.AddSingleton<ReputationViewModel>();
         services.AddSingleton<MainWindowViewModel>();
 
         return builder.Build();

@@ -2,8 +2,10 @@ name: build
 
 on:
   push:
-    branches: [ main ]
+    # Рабочие ветки тоже собираются: реальные build/test без ручного вызова.
+    branches: [ main, 'arena/**' ]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build-windows:

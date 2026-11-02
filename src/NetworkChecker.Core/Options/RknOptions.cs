@@ -100,6 +100,69 @@ public sealed class RknOptions
     /// <summary>Максимум хопов в трассировке.</summary>
     public int MaxTraceHops { get; set; } = 20;
 
+    // ---- Репутация IP и метка региона Google ----------------------------------
+
+    /// <summary>
+    /// Разрешить внешние проверки репутации. Это отправляет внешний IP сторонним
+    /// сервисам и DNSBL-зонам; в офлайн-режиме проверка всё равно не выполняется.
+    /// </summary>
+    public bool ReputationEnabled { get; set; } = true;
+
+    /// <summary>Проверять метку GL (YouTube) и доступность Google AI Studio.</summary>
+    public bool GoogleRegionEnabled { get; set; } = true;
+
+    /// <summary>DNSBL-зоны для проверки адреса в спам-базах.</summary>
+    public List<string> DnsblZones { get; set; } =
+    [
+        "zen.spamhaus.org",
+        "bl.spamcop.net",
+        "b.barracudacentral.org",
+        "dnsbl.sorbs.net",
+        "dnsbl-1.uceprotect.net",
+        "psbl.surriel.com",
+        "dnsbl.dronebl.org",
+    ];
+
+    /// <summary>Максимум DNSBL-зон за один прогон.</summary>
+    public int DnsblMaxZones { get; set; } = 12;
+
+    /// <summary>Одновременных DNSBL-запросов.</summary>
+    public int DnsblParallelism { get; set; } = 6;
+
+    /// <summary>Бесплатный ключ Spamhaus DQS: заменяет публичное зеркало на *.dq.spamhaus.net.</summary>
+    public string? SpamhausDqsKey { get; set; }
+
+    /// <summary>Ключ AbuseIPDB (заголовок Key).</summary>
+    public string? AbuseIpDbKey { get; set; }
+
+    /// <summary>Ключ IPQualityScore (в пути URL).</summary>
+    public string? IpQualityScoreKey { get; set; }
+
+    /// <summary>Ключ proxycheck.io; без ключа доступно 100 проверок в день.</summary>
+    public string? ProxyCheckKey { get; set; }
+
+    /// <summary>Ключ ipapi.is: без него сервис не отдаёт флаги is_abuser / is_vpn / is_tor.</summary>
+    public string? IpApiIsKey { get; set; }
+
+    /// <summary>Логин и ключ Scamalytics v3.</summary>
+    public string? ScamalyticsUser { get; set; }
+    public string? ScamalyticsKey { get; set; }
+
+    /// <summary>Сервис, у которого спрашивают внешний IP и страну.</summary>
+    public string EgressIpProvider { get; set; } = "https://api.ipapi.is/";
+
+    /// <summary>Запасной сервис внешнего адреса.</summary>
+    public string EgressIpFallback { get; set; } = "https://api.ipify.org?format=json";
+
+    /// <summary>Мобильная главная YouTube: из ytcfg читается поле GL.</summary>
+    public string GoogleRegionUrl { get; set; } = "https://m.youtube.com/";
+
+    /// <summary>Страница, переход на которую означает «регион не поддерживается».</summary>
+    public string GoogleAiStudioUrl { get; set; } = "https://aistudio.google.com/";
+
+    /// <summary>Код региона, который особенно проверяем (метка RU).</summary>
+    public string GoogleRegionWatchCode { get; set; } = "RU";
+
     public RknOptions Clone()
     {
         var copy = (RknOptions)MemberwiseClone();
@@ -112,6 +175,7 @@ public sealed class RknOptions
         copy.IcmpSpoofTargets = [.. IcmpSpoofTargets];
         copy.LocalProxyPorts = [.. LocalProxyPorts];
         copy.DnsLeakTestDomains = [.. DnsLeakTestDomains];
+        copy.DnsblZones = [.. DnsblZones];
         return copy;
     }
 }

@@ -15,10 +15,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         SettingsViewModel settings,
         UiModeService mode,
         ObservationViewModel observation,
-        CaptureViewModel capture)
+        CaptureViewModel capture,
+        ReputationViewModel reputation)
     {
         Mode = mode;
-        Pages = [dashboard, network, site, history, guide, settings, observation, capture];
+        Pages = [dashboard, network, site, history, guide, settings, observation, capture, reputation];
         NavItems = new ObservableCollection<NavItem>(Pages.Select(p => new NavItem(p) { Command = NavigateCommand }));
         NavItems[0].IsSelected = true;
         CurrentNav = NavItems[0];
@@ -51,6 +52,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase, IDisposable
         foreach (var nav in NavItems) nav.IsSelected = ReferenceEquals(nav, item);
         // Экран «Глазами сайта» подгружает данные сам — вкладку открывают, чтобы сразу увидеть ответ.
         if (item.Page is SiteViewModel site) site.EnsureLoaded();
+        // «Репутация» показывает уже готовый отчёт без новых сетевых запросов.
+        if (item.Page is ReputationViewModel reputation) reputation.EnsureLoaded();
     }
 
     [RelayCommand]

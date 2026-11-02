@@ -57,6 +57,32 @@ public static class ResultExport
             sb.AppendLine(CultureInfo.InvariantCulture, $"| {Text(check.Title)} | {Text(check.StatusText)} | {check.Findings.Count} | {check.Duration.TotalSeconds:F1} {Label("с", "s")} |");
         }
 
+        var reputation = result.Checks.FirstOrDefault(c => c.Reputation is not null)?.Reputation;
+        if (reputation is { } rep)
+        {
+            sb.AppendLine();
+            sb.AppendLine(Label("## Репутация IP и метка Google (наблюдения)", "## IP reputation and the Google region label (observations)"));
+            sb.AppendLine();
+            sb.AppendLine(Text(rep.Headline));
+            sb.AppendLine();
+            sb.AppendLine(Text(rep.Summary));
+            sb.AppendLine();
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Внешний адрес", "Public IP")}:** {Text(rep.Ip ?? "нет данных")}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Условный индекс риска", "Conditional risk index")}:** {(rep.RiskAvailable ? rep.Risk.ToString(CultureInfo.InvariantCulture) : "—")} / 100 — {Label("не вероятность и не мнение Google", "not a probability and not Google's opinion")}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Регион GL (YouTube)", "YouTube GL region")}:** {Text(rep.Google.Region ?? "нет данных")}; **{Label("GeoIP", "GeoIP")}:** {Text(rep.Google.GeoCountry ?? "нет данных")}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"- **{Label("Google AI Studio", "Google AI Studio")}:** {Text(rep.Google.AiStudioStatus ?? "нет данных")}");
+            sb.AppendLine();
+            sb.AppendLine(Label("| Группа | Источник | Результат | Пояснение |", "| Group | Source | Result | Note |"));
+            sb.AppendLine("|---|---|---|---|");
+            foreach (var source in rep.Sources)
+            {
+                sb.AppendLine(CultureInfo.InvariantCulture, $"| {Text(source.Group)} | {Text(source.Name)} | {Text(source.Status)} | {Text(source.Detail ?? string.Empty)} |");
+            }
+            sb.AppendLine();
+            sb.AppendLine(Label("### Оговорки", "### Caveats"));
+            foreach (var caveat in rep.Caveats) sb.AppendLine(CultureInfo.InvariantCulture, $"- {Text(caveat)}");
+        }
+
         foreach (var check in result.Checks)
         {
             sb.AppendLine();

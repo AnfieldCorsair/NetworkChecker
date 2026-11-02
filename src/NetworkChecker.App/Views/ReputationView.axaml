@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels"
+             xmlns:local="using:NetworkChecker.App"
+             x:Class="NetworkChecker.App.Views.ReputationView"
+             x:DataType="vm:ReputationViewModel">
+
+  <ScrollViewer>
+    <StackPanel Margin="24,18,24,28" Spacing="14">
+
+      <!-- ===== Итог ===== -->
+      <Border Classes="card" Padding="0">
+        <Grid ColumnDefinitions="6,*,Auto">
+          <Border Grid.Column="0" CornerRadius="12,0,0,12" Background="{Binding AccentBrush}" />
+          <StackPanel Grid.Column="1" Margin="22,18" Spacing="9">
+            <TextBlock Text="{DynamicResource RepTitle}" Classes="overline" />
+            <SelectableTextBlock Text="{Binding Headline}" Classes="h1" FontSize="23" TextWrapping="Wrap" />
+            <SelectableTextBlock Text="{Binding Summary}" TextWrapping="Wrap" MaxWidth="760" HorizontalAlignment="Left"
+                                 Foreground="{DynamicResource TextMuted}" LineHeight="19" />
+            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+              <Button Classes="primary" Command="{Binding RefreshCommand}" Padding="16,9">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                  <Path Data="{x:Static local:Icons.Refresh}" Stretch="Uniform" Width="12" Height="12"
+                        Stroke="White" StrokeThickness="1.8" VerticalAlignment="Center" />
+                  <TextBlock Text="{DynamicResource RepRefresh}" Foreground="White" FontSize="12.5" />
+                </StackPanel>
+              </Button>
+              <SelectableTextBlock Text="{Binding StatusLine}" Classes="muted" FontSize="11.5" VerticalAlignment="Center" />
+              <SelectableTextBlock Text="{Binding UpdatedText}" Classes="mono muted" FontSize="10.5" VerticalAlignment="Center" />
+            </StackPanel>
+            <Border Classes="inset" Padding="10,7" IsVisible="{Binding HasError}">
+              <SelectableTextBlock Text="{Binding ErrorText}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+            </Border>
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Margin="0,18,24,18" Spacing="2" VerticalAlignment="Center" MinWidth="148">
+            <TextBlock Text="{DynamicResource RepRisk}" Classes="overline" HorizontalAlignment="Right" />
+            <TextBlock Text="{DynamicResource RepNotProbability}" Classes="overline" HorizontalAlignment="Right" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" Margin="0,4,0,0">
+              <SelectableTextBlock Text="{Binding RiskText}" FontSize="38" FontWeight="Bold" Foreground="{Binding AccentBrush}" />
+              <TextBlock Text="/100" FontSize="13" Classes="muted" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+            </StackPanel>
+            <Border Classes="chip" HorizontalAlignment="Right" Margin="0,6,0,0">
+              <SelectableTextBlock Text="{Binding IpText}" Classes="mono" FontSize="10.5" />
+            </Border>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- ===== Метка Google ===== -->
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{DynamicResource RepGoogleBlock}" Classes="overline" />
+          <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+            <Border Grid.Column="0" Classes="inset" Padding="12,10">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource RepGl}" Classes="muted" FontSize="10" />
+                <SelectableTextBlock Text="{Binding GlText}" Classes="mono" FontSize="17" FontWeight="SemiBold" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="inset" Padding="12,10">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource RepGeo}" Classes="muted" FontSize="10" />
+                <SelectableTextBlock Text="{Binding GeoText}" Classes="mono" FontSize="17" FontWeight="SemiBold" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="inset" Padding="12,10">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource RepRu}" Classes="muted" FontSize="10" />
+                <SelectableTextBlock Text="{Binding RuText}" Classes="mono" FontSize="17" FontWeight="SemiBold" />
+              </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Classes="inset" Padding="12,10">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{DynamicResource RepAi}" Classes="muted" FontSize="10" />
+                <SelectableTextBlock Text="{Binding AiStudioText}" FontSize="11.5" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </Grid>
+          <TextBlock Text="{DynamicResource RepGoogleHint}" Classes="muted" FontSize="11" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <!-- ===== Источники ===== -->
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Text="{DynamicResource RepSources}" Classes="overline" />
+          <TextBlock Text="{DynamicResource RepEmpty}" Classes="muted" FontSize="11.5"
+                     IsVisible="{Binding !HasData}" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding Sources}" IsVisible="{Binding HasData}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ReputationRowViewModel">
+                <Border BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="0,1,0,0" Padding="0,9">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto">
+                    <Ellipse Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Width="7" Height="7"
+                             Fill="{Binding DotBrush}" VerticalAlignment="Top" Margin="0,6,10,0" />
+                    <SelectableTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Name}" FontSize="12"
+                                         FontWeight="SemiBold" />
+                    <SelectableTextBlock Grid.Row="0" Grid.Column="2" Text="{Binding Status}" Classes="mono"
+                                         FontSize="11.5" TextWrapping="Wrap" TextAlignment="Right" MaxWidth="330" />
+                    <SelectableTextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Group}"
+                                         Classes="muted" FontSize="10" Margin="0,2,0,0" />
+                    <SelectableTextBlock Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Detail}"
+                                         Classes="muted" FontSize="10.5" TextWrapping="Wrap" Margin="0,3,0,0"
+                                         IsVisible="{Binding HasDetail}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <!-- ===== Оговорки ===== -->
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="{DynamicResource RepCaveats}" Classes="overline" />
+          <ItemsControl ItemsSource="{Binding Caveats}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <SelectableTextBlock Text="{Binding}" Classes="muted" FontSize="11" TextWrapping="Wrap"
+                                     Margin="0,3" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <TextBlock Classes="muted" FontSize="10.5" MaxWidth="980" HorizontalAlignment="Left"
+                 Text="{DynamicResource RepDisclaimer}" TextWrapping="Wrap" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

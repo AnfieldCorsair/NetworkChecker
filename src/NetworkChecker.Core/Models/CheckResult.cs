@@ -19,6 +19,12 @@ public sealed class CheckResult
     /// <summary>Вес модуля в итоговом вердикте (0 — не влияет, только диагностика).</summary>
     public int Weight { get; init; }
 
+    /// <summary>
+    /// Структурированный отчёт блока репутации (только у <see cref="CheckCategory.Reputation"/>).
+    /// Приватная проекция и старые сохранённые прогоны его не содержат.
+    /// </summary>
+    public ReputationReport? Reputation { get; init; }
+
     public int HighestSeverity => Findings.Count == 0 ? -1 : Findings.Max(f => (int)f.Severity);
     public int CriticalCount => Findings.Count(f => f.Severity == Severity.Critical);
     public int WarningCount => Findings.Count(f => f.Severity == Severity.Warning);
