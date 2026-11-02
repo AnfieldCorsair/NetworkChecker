@@ -16,8 +16,8 @@ A Windows desktop app for exploring network configuration, connectivity and poss
 |:--:|:--:|
 | ![Network overview / обзор сети](screenshots/05-network-overview.png) | ![Website perspective / глазами сайта](screenshots/10-site-view.png) |
 
-Screenshots show an earlier 1.6 interface; current layout and text may differ. The new Reputation tab is not in them.  
-Скриншоты показывают предыдущий вариант интерфейса 1.6; актуальная компоновка и тексты могут отличаться, вкладка «Репутация» в них отсутствует.
+Screenshots show an earlier 1.6 interface; current layout and text may differ. The new Reputation tab is not in them; `tools/NetworkChecker.Screenshots` can produce `14-reputation-demo.png` (synthetic data) on Windows.  
+Скриншоты показывают предыдущий вариант интерфейса 1.6; актуальная компоновка и тексты могут отличаться, вкладка «Репутация» в них отсутствует. Генератор `tools/NetworkChecker.Screenshots` на Windows снимает `14-reputation-demo.png` с вымышленными данными.
 
 [Source code](https://github.com/AnfieldCorsair/NetworkChecker) · [Licence / Лицензия](LICENSE) · [Changelog / История изменений](CHANGELOG.md) · [HTML presentation / Презентация](presentation.html)
 

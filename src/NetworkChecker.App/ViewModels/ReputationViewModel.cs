@@ -120,8 +120,10 @@ public sealed partial class ReputationViewModel : ViewModelBase, IDisposable
     /// <summary>Настройки прогона: тот же объект, что используют остальные экраны.</summary>
     public RknOptions CurrentOptions { get; }
 
-    private void Apply(ReputationReport report)
+    /// <summary>Применить готовый отчёт. Публичный: используется генератором скриншотов и тестами.</summary>
+    public void Apply(ReputationReport report)
     {
+        ArgumentNullException.ThrowIfNull(report);
         Sources.Clear();
         foreach (var source in report.Sources) Sources.Add(new ReputationRowViewModel(source));
         Caveats.Clear();

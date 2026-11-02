@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NetworkChecker.App.Startup;
 using NetworkChecker.App.ViewModels;
 using NetworkChecker.App.Views;
+using NetworkChecker.Core.Models;
 
 namespace NetworkChecker.Screenshots;
 
@@ -180,8 +181,57 @@ internal static class Program
             Console.WriteLine("Отчёты: " + Path.GetFullPath(samplesDir));
         }
 
+        // 14. Репутация IP: демонстрационный отчёт (данные вымышлены, сеть не нужна).
+        // Реальный кадр зависит от живых DNSBL/Google, поэтому в репозиторий кладём честный демо-снимок.
+        main.NavigateCommand.Execute(main.NavItems[8]);
+        var reputation = host.Services.GetRequiredService<ReputationViewModel>();
+        reputation.Apply(DemoReputation());
+        Pump(10);
+        Save(window, Path.Combine(output, "14-reputation-demo.png"));
+
         Console.WriteLine("Готово: " + Path.GetFullPath(output));
         return 0;
+    }
+
+    /// <summary>Вымышленный отчёт для демонстрационного кадра вкладки «Репутация».</summary>
+    private static ReputationReport DemoReputation()
+    {
+        var sources = new List<ReputationSource>
+        {
+            new("Спам-базы (DNSBL)", "zen.spamhaus.org", "не в списке",
+                "NXDOMAIN: у зоны нет записи для этого адреса.", ReputationTone.Good, null),
+            new("Спам-базы (DNSBL)", "bl.spamcop.net", "спам-листинг (SBL/CSS)",
+                "Источник спама или автоматически пониженная репутация отправителя.", ReputationTone.Bad, null),
+            new("Спам-базы (DNSBL)", "dnsbl.sorbs.net", "PBL (не спам)",
+                "Динамический диапазон провайдера: норма для домашнего подключения.", ReputationTone.Good, null),
+            new("Жалобы и абьюз", "AbuseIPDB", "abuse 0/100", "жалоб: 0; последняя: нет данных", ReputationTone.Good, null),
+            new("Риск и анонимность", "proxycheck.io", "risk 33/100", "proxy: no; тип: Business", ReputationTone.Warn, null),
+            new("Метка Google", "YouTube / регион GL", "RU",
+                "Собственная карта регионов Google из ytcfg. Зонд без cookies и аккаунта.", ReputationTone.Bad, null),
+            new("Метка Google", "Метка RU", "да",
+                "Google считает адрес RU, а GeoIP — DE. Это и есть «метка на иностранном IP».", ReputationTone.Bad, null),
+            new("Метка Google", "GL против GeoIP", "RU ≠ DE",
+                "Расхождение — не ошибка GeoIP: у Google своя эвристическая карта.", ReputationTone.Warn, null),
+            new("Метка Google", "Google AI Studio", "переход на страницу регионов",
+                "России нет в списке доступных регионов; редирект бывает и из-за аккаунта.", ReputationTone.Warn, null),
+            new("Метка Google", "Капчи и «доверие Google»", "прямого API нет",
+                "reCAPTCHA v3 считается для конкретного сайта; Postmaster Tools v2 не отдаёт репутацию IP.", ReputationTone.Neutral, null),
+        };
+        var google = new GoogleRegionInfo("RU", "DE", true, true, true,
+            "переход на страницу регионов", "https://ai.google.dev/gemini-api/docs/available-regions",
+            "прочитан из ytcfg", "ДЕМО · данные вымышлены");
+        return new ReputationReport(
+            DateTimeOffset.Now,
+            "203.0.113.7",
+            ReputationReportState.Ok,
+            true,
+            70,
+            "Метка RU при зарубежном адресе",
+            "Google/YouTube присвоил адресу метку RU, хотя GeoIP определяет страну как DE. " +
+            "Это похоже на описанную «метку»: она меняет регион YouTube и закрывает Google AI Studio. ДЕМО: данные вымышлены.",
+            sources,
+            google,
+            ReputationReport.DefaultCaveats());
     }
 
     /// <summary>

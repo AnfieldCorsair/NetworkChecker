@@ -165,6 +165,15 @@ GeoIP — у Google собственная карта соответствия I
 Настройки: `docs/ADMIN.md`, `docs/BUILD.md`. Тесты парсеров и сервиса —
 `tests/NetworkChecker.Core.Tests/ReputationTests.cs`.
 
+### Скриншоты
+
+`tools/NetworkChecker.Screenshots` теперь снимает и новую вкладку: `14-reputation-demo.png`
+с **вымышленными** данными (как `07b-network-trace-demo.png` и `13b-observation-demo.png`),
+чтобы кадр не зависел от живых DNSBL/Google и не содержал настоящий IP. Утилита требует
+Windows (`net10.0-windows`); запуск: `dotnet run --project tools/NetworkChecker.Screenshots -- <папка>`.
+Снимки в `screenshots/` относятся к раннему интерфейсу 1.6 и этой вкладки не содержат —
+README прямо это оговаривает.
+
 ## 6. Известные границы
 
 - YouTube может изменить разметку, отдать страницу согласия или 429 — тогда `GL`
