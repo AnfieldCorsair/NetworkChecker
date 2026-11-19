@@ -25,6 +25,15 @@ public sealed class VpnEndpointProbe
         _defaultTimeout = defaultTimeout;
     }
 
+    public Task<VpnEndpointProbeResult> ProbeAsync(
+        string host,
+        int port,
+        string? sni,
+        bool checkTls,
+        int timeoutMs,
+        CancellationToken ct = default) =>
+        ProbeAsync(host, port, sni, checkTls, TimeSpan.FromMilliseconds(timeoutMs), ct);
+
     public async Task<VpnEndpointProbeResult> ProbeAsync(
         string host,
         int port,

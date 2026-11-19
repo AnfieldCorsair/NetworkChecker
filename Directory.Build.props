@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,9 +16,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
 
-    <!-- Держим bin/obj вне снапшота воркспейса -->
+    <!-- Держим bin/obj вне снапшота воркспейса и не даём VS пропускать пересборку Core после распаковки архива -->
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory).cache\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <BaseOutputPath>$(MSBuildThisFileDirectory).cache\bin\$(MSBuildProjectName)\</BaseOutputPath>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
     <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
   </PropertyGroup>
 </Project>

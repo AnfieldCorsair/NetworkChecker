@@ -23,7 +23,7 @@ public sealed record RttBenchmarkResult(
 
 /// <summary>
 /// Серийный замер TCP RTT (Round Trip Time) напрямую с локального ПК Windows.
-/// Позволяет сравнивать реальную задержку и джиттер разных узлов VLESS до и после патчей.
+/// Поддерживает IPv4 и IPv6, корректно обрабатывает пустые DNS-ответы.
 /// </summary>
 public static class RttBenchmarkProbe
 {
@@ -34,22 +34,45 @@ public static class RttBenchmarkProbe
         int timeoutMs = 4000,
         CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(host);
+        var cleanHost = host.Trim();
         var count = Math.Clamp(attempts, 3, 10);
         var dnsSw = Stopwatch.StartNew();
-        IPAddress targetIp;
+        IPAddress? targetIp;
 
-        if (!IPAddress.TryParse(host, out targetIp!))
+        if (!IPAddress.TryParse(cleanHost, out targetIp))
         {
-            var addresses = await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
+            var addresses = await Dns.GetHostAddressesAsync(cleanHost, cancellationToken).ConfigureAwait(false);
             targetIp = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
-                       ?? addresses.First();
+                       ?? addresses.FirstOrDefault();
         }
         dnsSw.Stop();
+
+        if (targetIp is null)
+        {
+            var failedSamples = Enumerable.Range(1, count)
+                .Select(i => new RttSample(i, false, null, "DNS не вернул ни одного IP-адреса"))
+                .ToList();
+            return new RttBenchmarkResult(
+                cleanHost,
+                port,
+                null,
+                (int)dnsSw.ElapsedMilliseconds,
+                count,
+                0,
+                100,
+                null,
+                null,
+                null,
+                null,
+                null,
+                failedSamples);
+        }
 
         var samples = new List<RttSample>(count);
         for (var i = 1; i <= count; i++)
         {
-            using var client = new TcpClient();
+            using var client = new TcpClient(targetIp.AddressFamily);
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(timeoutMs);
 
@@ -95,7 +118,7 @@ public static class RttBenchmarkProbe
         var lossPct = (int)Math.Round(((double)(count - okValues.Length) / count) * 100);
 
         return new RttBenchmarkResult(
-            host,
+            cleanHost,
             port,
             targetIp.ToString(),
             (int)dnsSw.ElapsedMilliseconds,

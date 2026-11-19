@@ -1,11 +1,10 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NetworkChecker.App.ViewModels"
-             xmlns:core="using:NetworkChecker.Core.VpnAudit"
              x:Class="NetworkChecker.App.Views.WindowsStackSniView"
              x:DataType="vm:WindowsStackSniViewModel">
 
-  <Grid ColumnDefinitions="*,*" ColumnSpacing="16" Margin="20">
+  <Grid ColumnDefinitions="*,*" ColumnSpacing="16" Margin="20,14">
 
     <!-- Левая колонка: Нативный аудит сетевого стека Windows -->
     <Border Grid.Column="0" Classes="card" Padding="14">
@@ -13,10 +12,10 @@
         <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <StackPanel Spacing="2">
-              <TextBlock Text="Сетевой стек Windows (Wintun / DNS / IPv6)" Classes="h2" />
-              <TextBlock Text="{Binding OsSummary}" FontSize="12" Foreground="#93C5FD" TextWrapping="Wrap" />
+              <TextBlock Text="Состояние сети вашего компьютера (Windows / ВПН-адаптер)" Classes="h2" />
+              <TextBlock Text="{Binding OsSummary}" FontSize="12" Foreground="#93C5FD" FontWeight="SemiBold" TextWrapping="Wrap" />
             </StackPanel>
-            <Button Grid.Column="1" Content="Обновить стек ОС" Classes="primary" Command="{Binding RefreshOsStackCommand}" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="Обновить проверку ПК" Classes="primary" Command="{Binding RefreshOsStackCommand}" VerticalAlignment="Center" />
           </Grid>
         </StackPanel>
 
@@ -24,15 +23,44 @@
           <StackPanel Spacing="14">
             <!-- Выводы аудита ОС -->
             <StackPanel Spacing="6">
-              <TextBlock Text="Диагностика интерфейсов и утечек" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" />
+              <TextBlock Text="Что проверено на компьютере (простыми словами):" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" />
               <ItemsControl ItemsSource="{Binding OsFindings}">
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="core:VpnAuditFinding">
-                    <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="0,8,0,10">
-                      <StackPanel Spacing="3">
-                        <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding SimpleSummary}" FontSize="11.5" Foreground="#B8C5D9" TextWrapping="Wrap" />
-                        <TextBlock Text="{Binding Remediation}" FontSize="11" Foreground="#93C5FD" TextWrapping="Wrap" />
+                  <DataTemplate x:DataType="vm:AuditFindingDisplayItem">
+                    <Border Background="{StaticResource AppBackground}"
+                            BorderBrush="{StaticResource BorderBrush2}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="10,8"
+                            Margin="0,0,0,6">
+                      <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                          <TextBlock Text="{Binding SeverityLabel}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding SeverityBrush}" VerticalAlignment="Center" />
+                          <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="#FFFFFF" TextWrapping="Wrap" />
+                        </Grid>
+                        <TextBlock Text="{Binding SimpleSummary}" FontSize="12" Foreground="#D1DCF0" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding Remediation}" FontSize="11.5" Foreground="#93C5FD" TextWrapping="Wrap" />
+
+                        <Button Content="{Binding SpoilerButtonText}"
+                                Command="{Binding ToggleExpandedCommand}"
+                                HorizontalAlignment="Left"
+                                Padding="6,2"
+                                FontSize="10.5"
+                                Foreground="{StaticResource TextMuted}"
+                                Background="Transparent"
+                                BorderThickness="0" />
+
+                        <Border IsVisible="{Binding IsExpanded}"
+                                Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush2}"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="8,6">
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding TechnicalDetail}" FontSize="11" Foreground="#B8C5D9" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Evidence}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="#60A5FA" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </Border>
                       </StackPanel>
                     </Border>
                   </DataTemplate>
@@ -42,7 +70,7 @@
 
             <!-- Активные адаптеры -->
             <StackPanel Spacing="6">
-              <TextBlock Text="Активные сетевые адаптеры" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" />
+              <TextBlock Text="Сетевые подключения и виртуальный адаптер ВПН" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" />
               <ItemsControl ItemsSource="{Binding Adapters}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:AdapterDisplayItem">
@@ -60,13 +88,13 @@
 
             <!-- Локальные порты прокси -->
             <StackPanel Spacing="6">
-              <TextBlock Text="Локальные прокси-порты (TCP Listeners)" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" />
+              <TextBlock Text="Какие ВПН-программы сейчас запущены (локальные порты)" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource TextMuted}" />
               <ItemsControl ItemsSource="{Binding LocalPorts}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:PortDisplayItem">
                     <Grid ColumnDefinitions="*,Auto" Margin="0,2">
                       <TextBlock Text="{Binding PortLabel}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" />
-                      <TextBlock Grid.Column="1" Text="{Binding StateText}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource TextMuted}" />
+                      <TextBlock Grid.Column="1" Text="{Binding StateText}" Foreground="{Binding StateBrush}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" />
                     </Grid>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
@@ -77,25 +105,42 @@
       </DockPanel>
     </Border>
 
-    <!-- Правая колонка: Многопоточный сканер соседей SNI в подсети /24 -->
+    <!-- Правая колонка: Комбинированный перебор SNI для конфигураций и подписок -->
     <Border Grid.Column="1" Classes="card" Padding="14">
       <DockPanel LastChildFill="True">
-        <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,12">
-          <TextBlock Text="Сканер «родного» Reality SNI в подсети /24" Classes="h2" />
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,12">
+          <TextBlock Text="Перебор и подбор лучшего SNI для конфигураций (TLS 1.3 + ALPN h2)" Classes="h2" />
+
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <TextBox Grid.Column="0"
                      Text="{Binding TargetVpsHost, Mode=TwoWay}"
-                     Watermark="IP или домен вашего VPS (например 185.100.87.10)" />
+                     Watermark="IP или адрес сервера (например edge-eu.example.com или 203.0.113.10)" />
             <Button Grid.Column="1"
-                    Content="Из аудита"
+                    Content="Взять из Шага 1"
                     Command="{Binding FillFromActiveAuditCommand}" />
             <Button Grid.Column="2"
-                    Content="Сканировать /24"
+                    Content="Запустить полный перебор SNI"
                     Classes="primary"
                     Command="{Binding ScanSubnetCommand}"
                     IsEnabled="{Binding !IsScanningSubnet}" />
           </Grid>
-          <TextBlock Text="{Binding SubnetStatus}" FontSize="12" Foreground="#93C5FD" TextWrapping="Wrap" />
+
+          <WrapPanel Orientation="Horizontal">
+            <CheckBox Content="Проверить все SNI из текущей подписки"
+                      IsChecked="{Binding IncludeSubscriptionSnis, Mode=TwoWay}"
+                      Margin="0,0,14,4" />
+            <CheckBox Content="База белых доменов РФ и CDN (Microsoft, Apple, JSDelivr)"
+                      IsChecked="{Binding IncludeRfWhiteList, Mode=TwoWay}"
+                      Margin="0,0,14,4" />
+            <CheckBox Content="Соседи сервера в подсети /24"
+                      IsChecked="{Binding IncludeSlash24, Mode=TwoWay}"
+                      Margin="0,0,0,4" />
+          </WrapPanel>
+
+          <TextBox Text="{Binding CustomSniDomains, Mode=TwoWay}"
+                   Watermark="Свои домены для перебора через запятую (необязательно, например: cdn.jsdelivr.net, www.amd.com)" />
+
+          <TextBlock Text="{Binding SubnetStatus}" FontSize="12" Foreground="#93C5FD" FontWeight="SemiBold" TextWrapping="Wrap" />
         </StackPanel>
 
         <ScrollViewer>
@@ -103,20 +148,35 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:SniNeighborDisplayItem">
                 <Border Background="{StaticResource AppBackground}" BorderBrush="{StaticResource BorderBrush2}" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,8">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                    <StackPanel Spacing="2">
-                      <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding Domain}" FontFamily="{StaticResource MonoFont}" FontSize="12.5" FontWeight="SemiBold" />
-                        <TextBlock Text="{Binding Verdict}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" FontWeight="Bold" Foreground="{StaticResource CleanBrush}" VerticalAlignment="Center" />
+                  <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                      <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Text="{Binding Domain}" FontFamily="{StaticResource MonoFont}" FontSize="13" FontWeight="Bold" Foreground="#FFFFFF" />
+                          <TextBlock Text="{Binding Verdict}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" FontWeight="Bold" Foreground="{Binding VerdictBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap">
+                          <Run Text="{Binding IpAddress}" />
+                          <Run Text=" · " />
+                          <Run Text="{Binding Meta}" />
+                        </TextBlock>
                       </StackPanel>
-                      <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11" Foreground="{StaticResource TextMuted}">
-                        <Run Text="{Binding IpAddress}" />
-                        <Run Text=" · " />
-                        <Run Text="{Binding Meta}" />
-                      </TextBlock>
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="Копировать SNI" Command="{Binding CopyCommand}" VerticalAlignment="Center" Padding="10,5" />
-                  </Grid>
+                      <Button Grid.Column="1" Content="Копировать SNI" Command="{Binding CopyCommand}" VerticalAlignment="Center" Padding="8,4" />
+                    </Grid>
+
+                    <WrapPanel Orientation="Horizontal">
+                      <Button Content="Вшить этот SNI в выбранный узел и скопировать конфиг"
+                              Classes="primary"
+                              Command="{Binding ApplyToSelectedNodeCommand}"
+                              Margin="0,0,8,2"
+                              Padding="10,4"
+                              FontSize="11.5" />
+                      <Button Content="Вшить во всю подписку"
+                              Command="{Binding ApplyToAllNodesCommand}"
+                              Padding="10,4"
+                              FontSize="11.5" />
+                    </WrapPanel>
+                  </StackPanel>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>

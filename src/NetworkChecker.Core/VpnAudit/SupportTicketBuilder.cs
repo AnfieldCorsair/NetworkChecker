@@ -29,17 +29,20 @@ public sealed record SupportTicketDraft(
     SupportNetworkSnapshot? WithoutVpn = null,
     SupportNetworkSnapshot? WithVpn = null,
     VpnAuditReport? ActiveReport = null,
-    RttBenchmarkResult? RttBenchmark = null);
+    RttBenchmarkResult? RttBenchmark = null,
+    WindowsNetworkStackReport? OsStack = null);
 
 /// <summary>
 /// Формирует готовый диагностический пакет для техподдержки ВПН-сервиса:
-/// 1) Компактное сообщение для Telegram-бота / чата поддержки (с авто-маскировкой ключей/UUID).
+/// 1) Компактное сообщение для Telegram-бота / чата поддержки (с авто-маскировкой ключей/UUID и срезом стека Windows).
 /// 2) Полный Markdown-файл с таблицей «Без ВПН (провайдер РФ)» vs «С ВПН».
 /// </summary>
 public static class SupportTicketBuilder
 {
     public static string BuildTelegramMessage(SupportTicketDraft draft)
     {
+        ArgumentNullException.ThrowIfNull(draft);
+
         var sb = new StringBuilder();
         sb.AppendLine(CultureInfo.InvariantCulture, $"Здравствуйте! Прошу помочь с подключением ({DateTimeOffset.Now:dd.MM.yyyy HH:mm}).");
         sb.AppendLine();
@@ -49,8 +52,8 @@ public static class SupportTicketBuilder
 
         if (draft.WithoutVpn is { } w)
         {
-            var loc = string.Join(", ", new[] { w.City, w.Country }.Where(s => !string.IsNullOrWhiteSpace(s)));
-            var isp = string.Join(" ", new[] { w.Isp, w.Asn }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            var loc = JoinNonEmpty(", ", w.City, w.Country);
+            var isp = JoinNonEmpty(" ", w.Isp, w.Asn);
             sb.AppendLine();
             sb.AppendLine("1) Без ВПН (мой провайдер в РФ):");
             sb.AppendLine(CultureInfo.InvariantCulture, $"• Провайдер: {(string.IsNullOrWhiteSpace(isp) ? "не определён" : isp)}");
@@ -65,17 +68,29 @@ public static class SupportTicketBuilder
 
         if (draft.WithVpn is { } v)
         {
-            var loc = string.Join(", ", new[] { v.City, v.Country }.Where(s => !string.IsNullOrWhiteSpace(s)));
-            var isp = string.Join(" ", new[] { v.Isp, v.Asn }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            var loc = JoinNonEmpty(", ", v.City, v.Country);
+            var isp = JoinNonEmpty(" ", v.Isp, v.Asn);
+            var metaSuffix = JoinNonEmpty(", ", loc, isp);
             sb.AppendLine();
             sb.AppendLine("2) С включённым ВПН:");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"• Выходной IP: {FormatIp(v.Ip, false)} ({loc}, {isp})");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"• Выходной IP: {FormatIp(v.Ip, false)}{(string.IsNullOrWhiteSpace(metaSuffix) ? string.Empty : $" ({metaSuffix})")}");
             if (v.Speed?.DownloadMbps is not null)
             {
                 var up = v.Speed.UploadMbps?.ToString("F1", CultureInfo.InvariantCulture) ?? "—";
                 sb.AppendLine(CultureInfo.InvariantCulture, $"• Скорость с ВПН: ↓ {v.Speed.DownloadMbps:F1} Мбит/с | ↑ {up} Мбит/с");
             }
-            sb.AppendLine(CultureInfo.InvariantCulture, $"• Утечка IP (WebRTC): {EvaluateWebRtcSummary(draft.WithoutVpn, draft.WithVpn)}");
+
+            if (v.WebRtcSrflxIps is not null)
+            {
+                sb.AppendLine(CultureInfo.InvariantCulture, $"• Утечка IP (WebRTC): {EvaluateWebRtcSummary(draft.WithoutVpn, draft.WithVpn)}");
+            }
+        }
+
+        if (draft.OsStack is { } os)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Сетевой стек ОС Windows:");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"• {FormatOsStackLine(os)}");
         }
 
         if (draft.ActiveReport is { Profile.Protocol: not VpnProtocol.Unknown } rep)
@@ -110,6 +125,8 @@ public static class SupportTicketBuilder
 
     public static string BuildFullMarkdownReport(SupportTicketDraft draft)
     {
+        ArgumentNullException.ThrowIfNull(draft);
+
         var downWithout = draft.WithoutVpn?.Speed?.DownloadMbps is { } d1
             ? string.Create(CultureInfo.InvariantCulture, $"{d1:F1} Мбит/с")
             : "—";
@@ -124,7 +141,7 @@ public static class SupportTicketBuilder
             : "—";
 
         var sb = new StringBuilder();
-        sb.AppendLine("# Диагностический пакет для техподдержки ВПН (NetworkChecker)");
+        sb.AppendLine("# Диагностический пакет для техподдержки ВПН (NetworkChecker V2)");
         sb.AppendLine();
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Дата сбора:** {DateTimeOffset.UtcNow:O}");
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Симптом:** {draft.Symptom}");
@@ -139,9 +156,35 @@ public static class SupportTicketBuilder
         sb.AppendLine(CultureInfo.InvariantCulture, $"| Провайдер / ASN | {draft.WithoutVpn?.Isp ?? "—"} {draft.WithoutVpn?.Asn ?? ""} | {draft.WithVpn?.Isp ?? "—"} {draft.WithVpn?.Asn ?? ""} |");
         sb.AppendLine(CultureInfo.InvariantCulture, $"| Download | {downWithout} | {downWith} |");
         sb.AppendLine(CultureInfo.InvariantCulture, $"| Upload | {upWithout} | {upWith} |");
-        sb.AppendLine();
-        sb.AppendLine(CultureInfo.InvariantCulture, $"**Утечка WebRTC:** {EvaluateWebRtcSummary(draft.WithoutVpn, draft.WithVpn)}");
+
+        if (draft.OsStack is { } os)
+        {
+            sb.AppendLine();
+            sb.AppendLine(CultureInfo.InvariantCulture, $"**Стек ОС Windows:** {FormatOsStackLine(os)}");
+        }
+
+        if (draft.WithVpn?.WebRtcSrflxIps is not null)
+        {
+            sb.AppendLine();
+            sb.AppendLine(CultureInfo.InvariantCulture, $"**Утечка WebRTC:** {EvaluateWebRtcSummary(draft.WithoutVpn, draft.WithVpn)}");
+        }
+
         return sb.ToString().TrimEnd();
+    }
+
+    private static string FormatOsStackLine(WindowsNetworkStackReport os)
+    {
+        var tun = os.HasActiveTunAdapter ? $"TUN активен ({os.ActiveTunName})" : "TUN выключен (системный прокси / без ВПН)";
+        var dns = os.HasPlainIspDnsOutsideTun ? "риск SMHNR DNS на физ. адаптере" : "DNS защищён";
+        var v6 = os.HasGlobalIpv6OutsideTun ? "обнаружен глобальный IPv6 вне TUN" : "глобальный IPv6 вне TUN не найден";
+        return $"{tun} · {dns} · {v6}";
+    }
+
+    private static string JoinNonEmpty(string separator, string? first, string? second)
+    {
+        if (string.IsNullOrWhiteSpace(first)) return second?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(second)) return first.Trim();
+        return $"{first.Trim()}{separator}{second.Trim()}";
     }
 
     private static string EvaluateWebRtcSummary(SupportNetworkSnapshot? withoutVpn, SupportNetworkSnapshot? withVpn)

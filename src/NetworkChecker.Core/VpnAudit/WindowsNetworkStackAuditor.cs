@@ -30,13 +30,15 @@ public sealed record WindowsNetworkStackReport(
     bool HasGlobalIpv6OutsideTun,
     IReadOnlyList<NetworkAdapterSnapshot> Adapters,
     IReadOnlyList<LocalProxyPortStatus> LocalProxyPorts,
-    IReadOnlyList<VpnAuditFinding> Findings);
+    IReadOnlyList<VpnAuditFinding> Findings,
+    int HiddenServiceAdaptersCount = 0);
 
 /// <summary>
 /// Нативный аудит сетевого стека ОС Windows (недоступный из браузера):
 /// - обнаружение виртуальных интерфейсов Wintun / Sing-box TUN / WireGuard / AmneziaWG и их MTU,
-/// - выявление утечек DNS на физических адаптерах мимо TUN,
-/// - обнаружение глобальных маршрутов IPv6 вне туннеля,
+/// - фильтрация служебных интерфейсов (WSL / Hyper-V / Bluetooth) и фиктивных Windows DNS-заглушек fec0:0:0:ffff::,
+/// - выявление утечек DNS на физических адаптерах мимо TUN (SMHNR),
+/// - точное обнаружение глобальных маршрутов IPv6 (2000::/3) вне туннеля,
 /// - проверка занятости локальных портов прокси (10808, 10809, 2080, 7890).
 /// </summary>
 public static class WindowsNetworkStackAuditor
@@ -60,6 +62,25 @@ public static class WindowsNetworkStackAuditor
         "hiddify",
         "nekobox",
         "tap-windows",
+        "outline",
+        "xray",
+        "v2ray",
+    ];
+
+    private static readonly string[] ServiceNoiseKeywords =
+    [
+        "bluetooth",
+        "hyper-v",
+        "vethernet",
+        "wsl",
+        "vmware",
+        "virtualbox",
+        "teredo",
+        "isatap",
+        "6to4",
+        "km-test",
+        "loopback",
+        "npcap",
     ];
 
     public static WindowsNetworkStackReport AuditLiveOsStack()
@@ -67,7 +88,7 @@ public static class WindowsNetworkStackAuditor
         var adapters = new List<NetworkAdapterSnapshot>();
         foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
         {
-            if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+            if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback || nic.IsReceiveOnly)
             {
                 continue;
             }
@@ -77,7 +98,7 @@ public static class WindowsNetworkStackAuditor
             {
                 ipProps = nic.GetIPProperties();
             }
-            catch
+            catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or NotSupportedException or UnauthorizedAccessException)
             {
                 continue;
             }
@@ -89,22 +110,28 @@ public static class WindowsNetworkStackAuditor
                         TunKeywords.Any(k => combinedName.Contains(k, StringComparison.Ordinal));
 
             var ipv4 = ipProps.UnicastAddresses
-                .Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork)
+                .Where(u => u.Address.AddressFamily == AddressFamily.InterNetwork &&
+                            !IPAddress.IsLoopback(u.Address))
                 .Select(u => u.Address.ToString())
                 .ToList();
 
+            // Учитываем только глобальные маршрутизируемые IPv6 (2000::/3), отсекая link-local fe80:: и локальные ULA fd00::/fc00::
             var ipv6 = ipProps.UnicastAddresses
-                .Where(u => u.Address.AddressFamily == AddressFamily.InterNetworkV6 &&
-                            !u.Address.IsIPv6LinkLocal)
+                .Where(u => IsGlobalUnicastIpv6(u.Address))
                 .Select(u => u.Address.ToString())
                 .ToList();
 
+            // Отфильтровываем фиктивные Windows IPv6 site-local DNS-заглушки (fec0:0:0:ffff::1..3)
             var dns = ipProps.DnsAddresses
+                .Where(d => !IsWindowsFakeSiteLocalDns(d))
                 .Select(d => d.ToString())
+                .Distinct(StringComparer.Ordinal)
                 .ToList();
 
             var gateways = ipProps.GatewayAddresses
-                .Where(g => g.Address is not null && !g.Address.Equals(IPAddress.Any))
+                .Where(g => g.Address is not null &&
+                            !g.Address.Equals(IPAddress.Any) &&
+                            !g.Address.Equals(IPAddress.IPv6Any))
                 .Select(g => g.Address.ToString())
                 .ToList();
 
@@ -113,7 +140,7 @@ public static class WindowsNetworkStackAuditor
             {
                 mtu = ipProps.GetIPv4Properties()?.Mtu ?? 1500;
             }
-            catch
+            catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or NotSupportedException or InvalidOperationException)
             {
                 // ignore if IPv4 properties unavailable
             }
@@ -136,7 +163,7 @@ public static class WindowsNetworkStackAuditor
         {
             activeListeners = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
         }
-        catch
+        catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or NotSupportedException or UnauthorizedAccessException)
         {
             // ignore permission issues
         }
@@ -161,8 +188,32 @@ public static class WindowsNetworkStackAuditor
         IReadOnlyList<LocalProxyPortStatus> localPorts)
     {
         var findings = new List<VpnAuditFinding>();
-        var activeTuns = adapters.Where(a => a.IsUp && a.IsTunOrVpn).ToList();
-        var activePhysical = adapters.Where(a => a.IsUp && !a.IsTunOrVpn && a.Gateways.Count > 0).ToList();
+
+        // Отделяем реальные рабочие адаптеры (TUN/VPN или активные с шлюзом/IPv4) от служебных (WSL, Hyper-V, Bluetooth)
+        var relevantAdapters = new List<NetworkAdapterSnapshot>();
+        var hiddenServiceCount = 0;
+
+        foreach (var adapter in adapters)
+        {
+            if (!adapter.IsUp) continue;
+
+            var combined = $"{adapter.Name} {adapter.Description}".ToLowerInvariant();
+            var isNoise = !adapter.IsTunOrVpn &&
+                          adapter.Gateways.Count == 0 &&
+                          (ServiceNoiseKeywords.Any(k => combined.Contains(k, StringComparison.Ordinal)) ||
+                           (adapter.DnsServers.Count == 0 && adapter.Ipv6Addresses.Count == 0));
+
+            if (isNoise)
+            {
+                hiddenServiceCount++;
+                continue;
+            }
+
+            relevantAdapters.Add(adapter);
+        }
+
+        var activeTuns = relevantAdapters.Where(a => a.IsTunOrVpn).ToList();
+        var activePhysical = relevantAdapters.Where(a => !a.IsTunOrVpn && a.Gateways.Count > 0).ToList();
 
         var hasActiveTun = activeTuns.Count > 0;
         var activeTunName = activeTuns.FirstOrDefault()?.Name;
@@ -170,13 +221,17 @@ public static class WindowsNetworkStackAuditor
         if (hasActiveTun)
         {
             var tun = activeTuns[0];
+            var tunDnsText = tun.DnsServers.Count > 0
+                ? string.Join(", ", tun.DnsServers)
+                : "перехват через TUN (hijack-dns / FakeIP)";
+
             findings.Add(new VpnAuditFinding(
                 "os-tun-active",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Ok,
                 $"Активен виртуальный TUN-адаптер ({tun.Name}, MTU {tun.Mtu})",
                 "Весь трафик системы перехватывается на уровне сетевого интерфейса L3.",
-                $"Интерфейс: {tun.Description}, IPv4: {string.Join(", ", tun.Ipv4Addresses)}, DNS: {string.Join(", ", tun.DnsServers)}",
+                $"Интерфейс: {tun.Description}, IPv4: {(tun.Ipv4Addresses.Count > 0 ? string.Join(", ", tun.Ipv4Addresses) : "—")}, DNS: {tunDnsText}",
                 $"MTU={tun.Mtu}",
                 "Для сетей с ТСПУ и PPPoE/LTE рекомендуется держать MTU на TUN-интерфейсе в пределах 1280–1400."));
 
@@ -206,32 +261,44 @@ public static class WindowsNetworkStackAuditor
                 "Включите режим TUN (Sing-box / NekoBox / v2rayN Enable Tun) для перехвата всего UDP и TCP трафика ОС."));
         }
 
-        // Проверка утечки DNS на физических интерфейсах
-        var hasPlainIspDnsOutsideTun = activePhysical.Any(a =>
-            a.DnsServers.Any(ip =>
-                !ip.StartsWith("198.18.", StringComparison.Ordinal) &&
-                !ip.StartsWith("172.19.", StringComparison.Ordinal) &&
-                !ip.StartsWith("127.", StringComparison.Ordinal)));
+        // Проверка утечки DNS на физических интерфейсах (с фильтрацией заглушек fec0::)
+        var cleanedPhysicalDns = activePhysical
+            .SelectMany(a => a.DnsServers)
+            .Where(ip => !ip.StartsWith("fec0:", StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var hasPlainIspDnsOutsideTun = cleanedPhysicalDns.Any(ip =>
+            !ip.StartsWith("198.18.", StringComparison.Ordinal) &&
+            !ip.StartsWith("172.19.", StringComparison.Ordinal) &&
+            !ip.StartsWith("127.", StringComparison.Ordinal) &&
+            !string.Equals(ip, "::1", StringComparison.Ordinal));
 
         if (hasActiveTun && hasPlainIspDnsOutsideTun)
         {
-            var leakedDns = string.Join(", ", activePhysical.SelectMany(a => a.DnsServers).Distinct());
+            var leakedDns = string.Join(", ", cleanedPhysicalDns);
             findings.Add(new VpnAuditFinding(
                 "os-dns-leak-risk",
                 AuditCategory.Leaks,
                 AuditSeverity.Warning,
                 "На физическом адаптере Windows сохранены внешние/провайдерские DNS",
-                "Без правила hijack-dns (Sing-box) или block-outside-dns (OpenVPN) сервис Smart Multi-Homed Name Resolution (SMHNR) в Windows отправляет DNS-запросы параллельно во все адаптеры.",
+                "Без правила hijack-dns (Sing-box) или block-outside-dns сервис Smart Multi-Homed Name Resolution (SMHNR) в Windows отправляет DNS-запросы параллельно во все адаптеры.",
                 $"DNS физического адаптера: {leakedDns}",
                 leakedDns,
                 "Убедитесь, что в Sing-box включены strict_route: true и правило action: \"hijack-dns\" для протокола dns."));
         }
 
-        // Проверка глобального IPv6 вне TUN
-        var hasGlobalIpv6OutsideTun = activePhysical.Any(a => a.Ipv6Addresses.Count > 0);
+        // Проверка глобального маршрутизируемого IPv6 вне TUN (игнорируя ULA fd00::/fc00:: и link-local fe80::)
+        var globalV6List = activePhysical
+            .SelectMany(a => a.Ipv6Addresses)
+            .Where(addrStr => IPAddress.TryParse(addrStr, out var parsed) && IsGlobalUnicastIpv6(parsed))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var hasGlobalIpv6OutsideTun = globalV6List.Count > 0;
         if (hasGlobalIpv6OutsideTun)
         {
-            var v6List = string.Join(", ", activePhysical.SelectMany(a => a.Ipv6Addresses));
+            var v6List = string.Join(", ", globalV6List);
             findings.Add(new VpnAuditFinding(
                 "os-ipv6-outside-tun",
                 AuditCategory.Leaks,
@@ -265,8 +332,31 @@ public static class WindowsNetworkStackAuditor
             activeTunName,
             hasPlainIspDnsOutsideTun,
             hasGlobalIpv6OutsideTun,
-            adapters,
+            relevantAdapters,
             localPorts,
-            findings);
+            findings,
+            hiddenServiceCount);
+    }
+
+    public static bool IsGlobalUnicastIpv6(IPAddress address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        if (address.AddressFamily != AddressFamily.InterNetworkV6) return false;
+        if (address.IsIPv6LinkLocal || address.IsIPv6Multicast || address.IsIPv6SiteLocal || IPAddress.IsLoopback(address))
+        {
+            return false;
+        }
+
+        var bytes = address.GetAddressBytes();
+        // Глобальный Unicast IPv6 по RFC 4291: диапазон 2000::/3 (старшие 3 бита == 001)
+        return bytes.Length == 16 && (bytes[0] & 0xE0) == 0x20;
+    }
+
+    public static bool IsWindowsFakeSiteLocalDns(IPAddress address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        if (address.AddressFamily != AddressFamily.InterNetworkV6) return false;
+        // Windows подставляет fec0:0:0:ffff::1..3, когда IPv6 DNS на интерфейсе не настроен
+        return address.ToString().StartsWith("fec0:0:0:ffff::", StringComparison.OrdinalIgnoreCase);
     }
 }

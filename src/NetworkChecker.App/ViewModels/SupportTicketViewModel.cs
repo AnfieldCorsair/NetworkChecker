@@ -29,9 +29,11 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
         RebuildPreview();
     }
 
-    public override string Title => "Техподдержка";
-    public override string Subtitle => "Без ВПН vs С ВПН · .md";
-    public override string Description => "Сбор 2 срезов сети (ваш РФ-провайдер без ВПН и выход через туннель), замер скорости и готовое сообщение для чата/бота поддержки с маскировкой ключей.";
+    public override string Title => "Заявка в техподдержку";
+    public override string Subtitle => "Готовый отчёт без паролей";
+    public override string Description => "Собирает понятный технический отчёт для отправки в поддержку вашего ВПН-сервиса (при этом все ваши личные ключи и пароли автоматически скрываются).";
+    public override string SimpleGuideText =>
+        "Если ВПН плохо работает: 1) Выключите ВПН и нажмите «Снять замер БЕЗ ВПН». 2) Включите ВПН и нажмите «Снять замер С ВПН». 3) Нажмите «Скопировать готовый текст» и отправьте его в Telegram-бот или чат поддержки вашего ВПН.";
 
     public IReadOnlyList<string> SymptomChoices { get; } =
     [
@@ -44,17 +46,17 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
 
     public IReadOnlyList<string> ConnectionChoices { get; } =
     [
-        "Домашний проводной / Wi-Fi",
-        "Мобильный интернет (4G/LTE)",
-        "Корпоративная / публичная сеть",
+        "Домашний проводной интернет / Wi-Fi",
+        "Мобильный интернет (4G / LTE)",
+        "Рабочая / общественная сеть",
     ];
 
     public IReadOnlyList<string> ClientChoices { get; } =
     [
+        "Happ (Windows / iOS / Android)",
         "v2rayN (Windows)",
         "Hiddify / Sing-box",
         "NekoRay / NekoBox",
-        "Happ / Clash Verge",
         "AmneziaVPN / AmneziaWG",
     ];
 
@@ -62,10 +64,10 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     public partial string SelectedSymptom { get; set; } = "Сильно режет скорость (Download/Upload падает почти в ноль)";
 
     [ObservableProperty]
-    public partial string SelectedConnection { get; set; } = "Домашний проводной / Wi-Fi";
+    public partial string SelectedConnection { get; set; } = "Домашний проводной интернет / Wi-Fi";
 
     [ObservableProperty]
-    public partial string SelectedClient { get; set; } = "v2rayN (Windows)";
+    public partial string SelectedClient { get; set; } = "Happ (Windows / iOS / Android)";
 
     [ObservableProperty]
     public partial string UserComment { get; set; } = string.Empty;
@@ -77,16 +79,16 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    public partial string WithoutVpnSummary { get; set; } = "Шаг 1 ещё не выполнен — отключите ВПН и нажмите «Снять срез Без ВПН».";
+    public partial string WithoutVpnSummary { get; set; } = "Замер ещё не сделан — отключите ВПН и нажмите «Снять замер БЕЗ ВПН».";
 
     [ObservableProperty]
-    public partial string WithVpnSummary { get; set; } = "Шаг 2 ещё не выполнен — включите ВПН и нажмите «Снять срез С ВПН».";
+    public partial string WithVpnSummary { get; set; } = "Замер ещё не сделан — включите ВПН и нажмите «Снять замер С ВПН».";
 
     [ObservableProperty]
     public partial string TelegramPreview { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Данные профиля и последнего RTT-бенчмарка подтягиваются автоматически с маскировкой секретов.";
+    public partial string StatusText { get; set; } = "Все секретные ключи, пароли и ваш домашний IP автоматически скрыты звездочками — отчёт полностью безопасно отправлять в чат.";
 
     partial void OnSelectedSymptomChanged(string value) => RebuildPreview();
     partial void OnSelectedConnectionChanged(string value) => RebuildPreview();
@@ -106,13 +108,13 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     private async Task CaptureWithoutVpnAsync(CancellationToken ct)
     {
         IsBusy = true;
-        StatusText = "Шаг 1: определяем РФ-провайдера, ASN и скорость без ВПН...";
+        StatusText = "Шаг 1: определяем вашего интернет-провайдера и скорость линии без ВПН...";
         try
         {
             _withoutVpn = await SupportNetworkProbe.CaptureAsync(_http, "without_vpn", runSpeedTest: true, ct).ConfigureAwait(true);
             WithoutVpnSummary = FormatSnapshotSummary(_withoutVpn, MaskHomeIp);
             RebuildPreview();
-            StatusText = "Шаг 1 выполнен. Теперь включите ВПН и нажмите «Шаг 2: Срез С ВПН».";
+            StatusText = "Шаг 1 готов! Теперь включите ваш ВПН и нажмите кнопку «Шаг 2: Снять замер С ВПН».";
         }
         finally
         {
@@ -124,13 +126,13 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     private async Task CaptureWithVpnAsync(CancellationToken ct)
     {
         IsBusy = true;
-        StatusText = "Шаг 2: определяем выходной IP туннеля и скорость с ВПН...";
+        StatusText = "Шаг 2: проверяем выходной сервер ВПН и реальную скорость через туннель...";
         try
         {
             _withVpn = await SupportNetworkProbe.CaptureAsync(_http, "with_vpn", runSpeedTest: true, ct).ConfigureAwait(true);
             WithVpnSummary = FormatSnapshotSummary(_withVpn, maskIp: false);
             RebuildPreview();
-            StatusText = "Шаг 2 выполнен. Отчёт для техподдержки готов к копированию или сохранению.";
+            StatusText = "Оба замера готовы! Нажмите «Копировать текст» справа и отправьте сообщение в техподдержку.";
         }
         finally
         {
@@ -142,7 +144,7 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     private void RefreshFromAudit()
     {
         RebuildPreview();
-        StatusText = "Профиль и данные RTT обновлены из вкладки «Аудит и подписки».";
+        StatusText = "Данные о вашей подписке и проверке сервера обновлены из Шага 1.";
     }
 
     [RelayCommand]
@@ -150,7 +152,7 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     {
         RebuildPreview();
         var ok = await _ui.CopyTextAsync(TelegramPreview).ConfigureAwait(true);
-        StatusText = ok ? "Сообщение для Telegram-поддержки скопировано в буфер обмена." : "Буфер обмена недоступен.";
+        StatusText = ok ? "Готовое обращение скопировано! Просто вставьте его (Ctrl+V) в чат поддержки ВПН." : "Буфер обмена недоступен.";
     }
 
     [RelayCommand]
@@ -158,7 +160,7 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     {
         var md = SupportTicketBuilder.BuildFullMarkdownReport(BuildDraft());
         var path = await _ui.SaveTextFileAsync("vpn-support-report.md", md, ".md", "Markdown-отчёт").ConfigureAwait(true);
-        StatusText = path is not null ? $"Полный отчёт сохранён: {path}" : "Сохранение отменено.";
+        StatusText = path is not null ? $"Полный отчёт сохранён в файл: {path}" : "Сохранение отменено.";
     }
 
     private SupportTicketDraft BuildDraft() => new(
@@ -170,7 +172,8 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
         _withoutVpn,
         _withVpn,
         _configAudit.CurrentReport,
-        _configAudit.LastRttResult);
+        _configAudit.LastRttResult,
+        WindowsNetworkStackAuditor.AuditLiveOsStack());
 
     private void RebuildPreview()
     {
@@ -191,6 +194,6 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
 
         var down = snap.Speed?.DownloadMbps is { } d ? string.Create(CultureInfo.InvariantCulture, $"{d:F1} Мбит/с") : "—";
         var up = snap.Speed?.UploadMbps is { } u ? string.Create(CultureInfo.InvariantCulture, $"{u:F1} Мбит/с") : "—";
-        return $"IP: {ip} · {snap.Isp ?? "—"} {snap.Asn ?? string.Empty} · ↓ {down} / ↑ {up}";
+        return $"IP: {ip} · Провайдер: {snap.Isp ?? "—"} {snap.Asn ?? string.Empty} · Скорость ↓ {down} / ↑ {up}";
     }
 }

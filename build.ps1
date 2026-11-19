@@ -25,7 +25,7 @@ dotnet restore
 Assert-DotnetSuccess
 
 Write-Host "== build ($Configuration)" -ForegroundColor Cyan
-dotnet build -c $Configuration --no-restore
+dotnet build -c $Configuration --no-restore --no-incremental
 Assert-DotnetSuccess
 
 Write-Host "== tests" -ForegroundColor Cyan

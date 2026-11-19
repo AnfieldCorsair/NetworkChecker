@@ -7,12 +7,14 @@ namespace NetworkChecker.Core.VpnAudit;
 
 /// <summary>
 /// Живой сборщик среза сети (IP, страна, город, провайдер/ASN, Download/Upload Мбит/с)
-/// для 2-шагового отчёта в техподдержку ВПН («Без ВПН — РФ-провайдер» vs «С ВПН — туннель»).
+/// с 4-ступенчатой цепочкой резервных API для стабильной работы в РФ («Без ВПН» vs «С ВПН»).
 /// </summary>
 public static class SupportNetworkProbe
 {
     private static readonly Uri IpWhoIsUri = new("https://ipwho.is/");
     private static readonly Uri IpApiCoUri = new("https://ipapi.co/json/");
+    private static readonly Uri IpInfoUri = new("https://ipinfo.io/json");
+    private static readonly Uri IpifyUri = new("https://api.ipify.org?format=json");
     private static readonly Uri SpeedDownUri = new("https://speed.cloudflare.com/__down?bytes=2000000");
     private static readonly Uri SpeedUpUri = new("https://speed.cloudflare.com/__up");
 
@@ -46,14 +48,17 @@ public static class SupportNetworkProbe
         HttpClient http,
         CancellationToken ct)
     {
+        // 1. ipwho.is
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(6));
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
             var json = await http.GetStringAsync(IpWhoIsUri, cts.Token).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
-            if (root.TryGetProperty("success", out var ok) && ok.ValueKind == JsonValueKind.True)
+            if (root.ValueKind == JsonValueKind.Object &&
+                root.TryGetProperty("success", out var ok) &&
+                ok.ValueKind == JsonValueKind.True)
             {
                 var ip = ReadString(root, "ip");
                 var country = ReadString(root, "country");
@@ -68,32 +73,99 @@ public static class SupportNetworkProbe
                         asn = string.Create(CultureInfo.InvariantCulture, $"AS{asnNum}");
                     }
                 }
-                return (ip, country, city, isp, asn);
+                if (!string.IsNullOrWhiteSpace(ip)) return (ip, country, city, isp, asn);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
         {
-            // Fallback to ipapi.co below
+            // Fallback below
         }
 
+        // 2. ipapi.co
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(6));
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
             var json = await http.GetStringAsync(IpApiCoUri, cts.Token).ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
-            return (
-                ReadString(root, "ip"),
-                ReadString(root, "country_name"),
-                ReadString(root, "city"),
-                ReadString(root, "org"),
-                ReadString(root, "asn"));
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                var ip = ReadString(root, "ip");
+                if (!string.IsNullOrWhiteSpace(ip))
+                {
+                    return (
+                        ip,
+                        ReadString(root, "country_name"),
+                        ReadString(root, "city"),
+                        ReadString(root, "org"),
+                        ReadString(root, "asn"));
+                }
+            }
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
         {
-            return (null, null, null, null, null);
+            // Fallback below
         }
+
+        // 3. ipinfo.io
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            var json = await http.GetStringAsync(IpInfoUri, cts.Token).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Object)
+            {
+                var ip = ReadString(root, "ip");
+                if (!string.IsNullOrWhiteSpace(ip))
+                {
+                    var org = ReadString(root, "org");
+                    string? asn = null;
+                    string? isp = org;
+                    if (!string.IsNullOrWhiteSpace(org) && org.StartsWith("AS", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var space = org.IndexOf(' ');
+                        if (space > 2)
+                        {
+                            asn = org[..space];
+                            isp = org[(space + 1)..].Trim();
+                        }
+                    }
+
+                    return (
+                        ip,
+                        ReadString(root, "country"),
+                        ReadString(root, "city"),
+                        isp,
+                        asn);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
+        {
+            // Fallback below
+        }
+
+        // 4. api.ipify.org (минимальный фолбэк хотя бы для внешнего IP)
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            var json = await http.GetStringAsync(IpifyUri, cts.Token).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object)
+            {
+                return (ReadString(doc.RootElement, "ip"), null, null, null, null);
+            }
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException)
+        {
+            // All geo APIs failed
+        }
+
+        return (null, null, null, null, null);
     }
 
     private static async Task<SupportSpeedSample> MeasureSpeedAsync(HttpClient http, CancellationToken ct)

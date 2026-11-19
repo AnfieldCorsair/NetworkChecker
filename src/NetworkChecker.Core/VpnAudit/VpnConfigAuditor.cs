@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 namespace NetworkChecker.Core.VpnAudit;
 
 /// <summary>
-/// Детерминированный аудитор ВПН-конфигураций без условного балла 0–100.
-/// Фокус: VLESS (TCP Vision / XHTTP / WS), AmneziaWG, Hysteria2 и защита от DPI/ТСПУ в РФ.
+/// Детерминированный аудитор ВПН-конфигураций с понятными объяснениями для обычного пользователя
+/// и глубокими инженерными деталями (VLESS TCP Vision / XHTTP / WS, AmneziaWG, Hysteria2, Xray/Sing-box JSON и подписки Happ).
 /// </summary>
 public static partial class VpnConfigAuditor
 {
@@ -26,6 +26,20 @@ public static partial class VpnConfigAuditor
         var profile = VpnConfigParser.Parse(rawConfig);
         var findings = new List<VpnAuditFinding>();
 
+        if (VpnConfigParser.TryExtractHttpSubscriptionUrl(rawConfig, out var subUri) && subUri is not null)
+        {
+            findings.Add(new VpnAuditFinding(
+                "sub-url-detected",
+                AuditCategory.Routing,
+                AuditSeverity.Ok,
+                $"Распознана ссылка на подписку ({subUri.Host})",
+                "Вы вставили ссылку на подписку. Программа автоматически скачивает список всех локаций и проверяет каждую из них.",
+                $"URL подписки: {subUri}",
+                subUri.ToString(),
+                "Если автозагрузка ещё не началась, нажмите кнопку «Загрузить подписку по ссылке»."));
+            return new VpnAuditReport(DateTimeOffset.UtcNow, rawConfig, profile, findings);
+        }
+
         if (profile.Protocol == VpnProtocol.Unknown)
         {
             findings.Add(new VpnAuditFinding(
@@ -33,10 +47,10 @@ public static partial class VpnConfigAuditor
                 AuditCategory.Routing,
                 AuditSeverity.Critical,
                 "Формат конфигурации не распознан",
-                "Вставьте ссылку vless://, hy2://, конфиг AmneziaWG (.conf), Xray/Sing-box JSON или подписку.",
+                "Вставьте ссылку на подписку (https://...), ключ vless://, hy2://, конфиг AmneziaWG (.conf) или JSON-профиль Happ/Xray/Sing-box.",
                 string.Join(" ", profile.ParseWarnings),
                 rawConfig.Trim().Length > 80 ? rawConfig.Trim()[..80] : rawConfig.Trim(),
-                "Проверьте синтаксис конфигурации или загрузите готовый профиль."));
+                "Проверьте, что ссылка скопирована полностью, или выберите один из тестовых примеров."));
             return new VpnAuditReport(DateTimeOffset.UtcNow, rawConfig, profile, findings);
         }
 
@@ -47,10 +61,10 @@ public static partial class VpnConfigAuditor
                 AuditCategory.TransportDpi,
                 AuditSeverity.Critical,
                 "OpenVPN стабильно блокируется ТСПУ/DPI в РФ",
-                "Классический OpenVPN (даже с tls-crypt) детектируется по сигнатурам и размерам пакетов рукопожатия.",
-                "В текущих сетевых условиях РФ OpenVPN пригоден только внутри корпоративных белых списков.",
+                "Оборудование провайдеров легко узнаёт классический OpenVPN по первым пакетам подключения и обрывает связь.",
+                "Даже с tls-crypt OpenVPN детектируется по сигнатурам P_CONTROL_HARD_RESET_CLIENT_V2 и размерам пакетов рукопожатия.",
                 "Формат OpenVPN (.ovpn)",
-                "Перейдите на VLESS + XHTTP (или TCP Vision) с Reality либо AmneziaWG."));
+                "Попросите у провайдера ВПН ключ формата VLESS + XHTTP / Reality либо AmneziaWG."));
             return new VpnAuditReport(DateTimeOffset.UtcNow, rawConfig, profile, findings);
         }
 
@@ -60,11 +74,11 @@ public static partial class VpnConfigAuditor
                 "legacy-wg-rf",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Critical,
-                "Чистый WireGuard без модификации AmneziaWG не работает под DPI в РФ",
-                "Немодифицированный заголовок инициации WireGuard (148 байт) блокируется магистральными и мобильными операторами.",
-                "В секции [Interface] отсутствуют параметры обфускации AmneziaWG (Jc, Jmin, Jmax, S1, S2, H1–H4).",
+                "Обычный WireGuard без защиты AmneziaWG блокируется в РФ",
+                "Чистый WireGuard без маскировки пакетов блокируется на мобильном интернете и большинстве домашних провайдеров.",
+                "В секции [Interface] отсутствуют параметры обфускации AmneziaWG (Jc, Jmin, Jmax, S1, S2, H1–H4), поэтому пакет инициации (148 байт) сразу виден ТСПУ.",
                 "WireGuard без Jc/S1/S2/H1-H4",
-                "Переведите сервер и клиент на AmneziaWG либо используйте VLESS + XHTTP / TCP Vision."));
+                "Откройте конфиг в AmneziaWG (с параметрами Jc/S1/S2) или перейдите на VLESS + XHTTP / Reality."));
         }
 
         if (profile.Tls.AllowInsecure)
@@ -73,11 +87,11 @@ public static partial class VpnConfigAuditor
                 "sec-allow-insecure",
                 AuditCategory.Security,
                 AuditSeverity.Critical,
-                "Отключена проверка TLS-сертификата (allowInsecure / insecure=1)",
-                "Клиент принимает любой поддельный сертификат — соединение уязвимо к перехвату (MITM).",
-                "Флаг allowInsecure=1 / insecure=1 отключает проверку цепочки доверия TLS.",
+                "Отключена проверка подлинности сервера (allowInsecure=1)",
+                "С этой настройкой любой узел по пути может притвориться вашим ВПН-сервером и перехватить трафик.",
+                "Флаг allowInsecure=1 / insecure=1 отключает верификацию цепочки TLS X.509 сертификата.",
                 "allowInsecure=1 / insecure=1",
-                "Удалите allowInsecure=1 и используйте валидный TLS-сертификат или Reality.",
+                "Нажмите «Автолечение подписки (Блок-патч)», чтобы автоматически убрать небезопасный флаг allowInsecure.",
                 "allowInsecure=0"));
         }
 
@@ -93,9 +107,18 @@ public static partial class VpnConfigAuditor
             case VpnProtocol.Hysteria2:
                 AuditHysteria2(profile, findings);
                 break;
+            case VpnProtocol.Trojan:
+                AuditTrojan(profile, findings);
+                break;
+            case VpnProtocol.Vmess:
+                AuditVmess(profile, findings);
+                break;
+            case VpnProtocol.LegacyShadowsocks:
+                AuditShadowsocks(profile, findings);
+                break;
             case VpnProtocol.SingBoxJson:
             case VpnProtocol.XrayJson:
-                AuditCoreJson(profile, findings);
+                AuditCoreJson(profile, rawConfig, findings);
                 break;
         }
 
@@ -201,11 +224,11 @@ public static partial class VpnConfigAuditor
                 "vless-no-tls",
                 AuditCategory.Security,
                 AuditSeverity.Critical,
-                "VLESS без Reality или TLS (security=none)",
-                "VLESS сам не шифрует трафик — без внешней обёртки он открыт для анализа и мгновенной блокировки.",
+                "Узел VLESS не защищён шифрованием (security=none)",
+                "Без защиты Reality или TLS ваш трафик виден провайдеру в открытом виде и сразу блокируется.",
                 $"Обнаружен security=none на транспорте {p.Transport}.",
                 "security=none",
-                "Включите security=reality (для TCP/XHTTP) или полноценный TLS 1.3.",
+                "Используйте узел с включённым security=reality (XHTTP или TCP Vision) либо TLS 1.3.",
                 "&security=reality&fp=chrome"));
         }
 
@@ -219,10 +242,10 @@ public static partial class VpnConfigAuditor
                     AuditCategory.TransportDpi,
                     AuditSeverity.Warning,
                     $"Нестандартный режим XHTTP (mode={p.Xhttp.Mode})",
-                    "Для XHTTP рекомендуются режимы auto, packet-up или stream-up в зависимости от наличия CDN.",
-                    $"Задано mode={p.Xhttp.Mode}, path={p.Xhttp.Path}.",
+                    "В параметрах транспорта указан редкий режим, из-за которого клиент может не подключиться.",
+                    $"Задано mode={p.Xhttp.Mode}, path={p.Xhttp.Path}. Поддерживаемые режимы: auto, packet-up, stream-up, stream-one.",
                     $"mode={p.Xhttp.Mode}",
-                    "Используйте mode=auto (для прямого Reality) или mode=packet-up (через CDN/обратный прокси).",
+                    "Нажмите «Автолечение подписки (Блок-патч)», чтобы исправить режим на mode=auto.",
                     "&mode=auto"));
             }
             else
@@ -231,11 +254,11 @@ public static partial class VpnConfigAuditor
                     "vless-xhttp-ok",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Ok,
-                    $"Актуальный транспорт VLESS XHTTP (mode={p.Xhttp.Mode})",
-                    "XHTTP (SplitHTTP) хорошо проходит через современные фильтры и поддерживает разделение upload/download.",
-                    $"path={p.Xhttp.Path}, host={p.Xhttp.Host ?? "авто"}, padding={(p.Xhttp.HasPadding ? "да" : "по умолчанию")}, xmux={(p.Xhttp.HasXmux ? "настроен" : "авто")}.",
-                    $"type=xhttp&mode={p.Xhttp.Mode}",
-                    "Убедитесь, что клиент обновлён до Xray-core v24.11+ / v25+."));
+                    $"Современная защита от блокировок: VLESS XHTTP (mode={p.Xhttp.Mode})",
+                    "Протокол XHTTP (SplitHTTP) дробит и маскирует поток под обычные веб-запросы, отлично обходя лимит 16 КБ и фильтры ТСПУ.",
+                    $"path={p.Xhttp.Path}, host={p.Xhttp.Host ?? "авто"}, xPaddingBytes={(p.Xhttp.HasPadding ? "настроен" : "по умолчанию")}, xmux={(p.Xhttp.HasXmux ? "включён" : "авто")}.",
+                    $"type=xhttp&mode={p.Xhttp.Mode}&path={p.Xhttp.Path}",
+                    "Отличный выбор для РФ. Работает в Happ, v2rayN, Hiddify и NekoBox."));
             }
 
             if (p.Xhttp.Path == "/" && p.Tls.Mode == "tls")
@@ -244,26 +267,26 @@ public static partial class VpnConfigAuditor
                     "vless-xhttp-root-path",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Warning,
-                    "Корневой path=/ для XHTTP поверх TLS",
-                    "При использовании обратного прокси (Nginx/Caddy/CDN) случайный длинный путь лучше скрывает эндпоинт от активного сканирования.",
-                    "path=/ легко нащупать простым GET-запросом на корень домена.",
+                    "Простой корневой путь path=/ для XHTTP поверх TLS",
+                    "Длинный случайный путь лучше прячет сервер от автоматических проверок.",
+                    "path=/ легко проверить обычным GET-запросом к корню домена.",
                     "path=/",
-                    "Задайте неочевидный путь, например path=/assets/v2/stream-8f4a."));
+                    "При настройке своего сервера задайте путь вроде /api/v2/stream."));
             }
         }
 
-        // WebSocket (WS) — честное предупреждение по РФ
+        // WebSocket (WS)
         if (p.Transport == "WS")
         {
             findings.Add(new VpnAuditFinding(
                 "vless-ws-rf-stability",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                "WebSocket (WS) в РФ работает с переменной стабильностью",
-                "Часть операторов режет долгие WS-сессии или CDN-диапазоны; WS стоит держать как запасной вариант.",
+                "Транспорт WebSocket (WS) — лучше держать как запасной",
+                "На части российских провайдеров долгие соединения WebSocket могут замедляться или обрываться.",
                 $"path={p.WsPath ?? "/"}, host={p.WsHost ?? "не задан"}, earlyData={p.WsEarlyData?.ToString(CultureInfo.InvariantCulture) ?? "нет"}.",
                 "type=ws",
-                "Для основного канала рекомендуется VLESS + XHTTP (Reality) или VLESS + TCP + Vision (Reality)."));
+                "Для основной работы выбирайте узлы с VLESS + XHTTP или VLESS + TCP Vision (Reality)."));
 
             if (string.IsNullOrWhiteSpace(p.WsHost) && string.IsNullOrWhiteSpace(p.Tls.Sni))
             {
@@ -271,8 +294,8 @@ public static partial class VpnConfigAuditor
                     "vless-ws-no-host",
                     AuditCategory.Routing,
                     AuditSeverity.Critical,
-                    "Для VLESS WS не заданы ни host, ни sni",
-                    "Обратный прокси или CDN отклонит WebSocket Upgrade без заголовка Host.",
+                    "Не указан домен (host / sni) для WebSocket",
+                    "Без имени сайта сервер не поймёт, куда направить подключение, и выдаст ошибку.",
                     "Отсутствуют параметры host и sni в URI.",
                     "host=пусто, sni=пусто",
                     "Укажите рабочий домен в параметрах host и sni."));
@@ -288,11 +311,11 @@ public static partial class VpnConfigAuditor
                     "vless-tcp-no-vision",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Critical,
-                    "VLESS TCP + Reality без flow=xtls-rprx-vision",
-                    "Без XTLS-Vision вложенный TLS-трафик имеет характерную сигнатуру длины пакетов и легче детектируется.",
-                    $"Текущий flow: {p.Tls.Flow ?? "не указан"}.",
+                    "Отсутствует защита XTLS-Vision (flow=xtls-rprx-vision)",
+                    "Без этого параметра фильтр провайдера быстро замечает «шифрование внутри шифрования» и блокирует узел.",
+                    $"Текущий flow: {p.Tls.Flow ?? "не указан"}. Для VLESS TCP + Reality параметр xtls-rprx-vision обязателен.",
                     $"flow={p.Tls.Flow ?? "отсутствует"}",
-                    "Добавьте параметр flow=xtls-rprx-vision в клиентскую ссылку и серверный inbound.",
+                    "Нажмите «Автолечение подписки (Блок-патч)», чтобы автоматически добавить flow=xtls-rprx-vision.",
                     "&flow=xtls-rprx-vision"));
             }
             else
@@ -301,11 +324,11 @@ public static partial class VpnConfigAuditor
                     "vless-tcp-vision-ok",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Ok,
-                    "VLESS TCP + XTLS-Vision настроен корректно",
-                    "XTLS-Vision устраняет паттерн «TLS внутри TLS».",
+                    "Защита VLESS TCP + XTLS-Vision включена",
+                    "Трафик полностью маскируется под обычное HTTPS-соединение с сайтом.",
                     "flow=xtls-rprx-vision активен.",
                     "flow=xtls-rprx-vision",
-                    "Дополнительных изменений по flow не требуется."));
+                    "Настройка оптимальна, ничего менять не нужно."));
             }
         }
 
@@ -318,11 +341,11 @@ public static partial class VpnConfigAuditor
                     "reality-bad-pbk",
                     AuditCategory.Security,
                     AuditSeverity.Critical,
-                    "Отсутствует или некорректен Reality PublicKey (pbk)",
-                    "Ключ X25519 должен иметь длину ~43 символа (Base64URL), иначе рукопожатие Reality не пройдёт.",
-                    $"pbk={p.Tls.PublicKey ?? "отсутствует"}.",
+                    "Повреждён или отсутствует публичный ключ Reality (pbk)",
+                    "Ключ сервера обрезан или пуст — ВПН-клиент не сможет установить защищённое соединение.",
+                    $"pbk={p.Tls.PublicKey ?? "отсутствует"} (ожидается ~43 символа Base64URL X25519).",
                     $"pbk={p.Tls.PublicKey ?? "пусто"}",
-                    "Скопируйте корректный публичный ключ из серверного конфига Xray/Sing-box."));
+                    "Обновите подписку или скопируйте ссылку заново из личного кабинета."));
             }
 
             if (!string.IsNullOrWhiteSpace(p.Tls.ShortId) && !HexShortIdRegex().IsMatch(p.Tls.ShortId))
@@ -331,11 +354,11 @@ public static partial class VpnConfigAuditor
                     "reality-bad-sid",
                     AuditCategory.Security,
                     AuditSeverity.Warning,
-                    $"Некорректный формат ShortId (sid={p.Tls.ShortId})",
-                    "ShortId в Reality должен быть шестнадцатеричной строкой (hex) длиной от 1 до 16 символов.",
+                    $"Некорректный идентификатор ShortId (sid={p.Tls.ShortId})",
+                    "В параметре sid содержатся лишние символы (допускаются только цифры 0–9 и буквы a–f).",
                     $"Найдено sid={p.Tls.ShortId}.",
                     $"sid={p.Tls.ShortId}",
-                    "Задайте корректный hex shortId (например a1b2c3d4) совпадающий с сервером."));
+                    "Проверьте правильность ссылки или обновите подписку."));
             }
 
             if (string.IsNullOrWhiteSpace(p.Tls.Sni) ||
@@ -346,11 +369,23 @@ public static partial class VpnConfigAuditor
                     "reality-bad-sni",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Critical,
-                    $"Неподходящий SNI для Reality ({p.Tls.Sni ?? "не указан"})",
-                    "SNI должен указывать на реальный крупный внешний домен с TLS 1.3 + HTTP/2, а не на IP или сам сервер.",
+                    $"Неправильный маскировочный домен SNI ({p.Tls.Sni ?? "не указан"})",
+                    "Для маскировки Reality нужен реальный популярный сайт (а не IP-адрес), иначе блокировка сразу вычислит ВПН.",
                     $"sni={p.Tls.Sni ?? "отсутствует"}, server={p.ServerHost ?? "—"}.",
                     $"sni={p.Tls.Sni ?? "пусто"}",
-                    "Подберите стабильный зарубежный/нейтральный домен с TLS 1.3 + ALPN h2 и проверьте его кнопкой «Проверить SNI»."));
+                    "Подберите рабочий маскировочный домен на вкладке «4. Сетевой стек и подбор SNI»."));
+            }
+            else
+            {
+                findings.Add(new VpnAuditFinding(
+                    "reality-sni-ok",
+                    AuditCategory.TransportDpi,
+                    AuditSeverity.Ok,
+                    $"Маскировка Reality под сайт «{p.Tls.Sni}» настроена",
+                    "Для оборудования провайдера подключение к ВПН выглядит как обычный вход на этот сайт.",
+                    $"sni={p.Tls.Sni}, fp={p.Tls.Fingerprint ?? "по умолчанию"}.",
+                    $"sni={p.Tls.Sni}",
+                    "Нажмите «Проверить этот узел» или «Проверить все узлы подписки», чтобы убедиться, что сервер отвечает."));
             }
         }
 
@@ -360,11 +395,11 @@ public static partial class VpnConfigAuditor
                 "vless-no-fp",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                "Не задан uTLS-отпечаток браузера (fp)",
-                "Без fp клиент использует стандартный отпечаток Go TLS, который легко отличить от реального браузера.",
-                "Параметр fp отсутствует в URI.",
+                "Не указана маскировка под браузер (параметр fp)",
+                "Без этого параметра соединение выглядит как программа, а не как живой браузер Chrome или Firefox.",
+                "Параметр fp (uTLS fingerprint) отсутствует в конфигурации.",
                 "fp=отсутствует",
-                "Добавьте fp=chrome или fp=firefox (или randomized).",
+                "Нажмите «Автолечение подписки (Блок-патч)», чтобы автоматически прописать fp=chrome.",
                 "&fp=chrome"));
         }
 
@@ -374,11 +409,11 @@ public static partial class VpnConfigAuditor
                 "vless-non-443",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                $"Нестандартный порт для маскировки под HTTPS ({p.ServerPort.Value})",
-                "Порт 443 максимально сливается с обычным веб-трафиком и реже режется корпоративными/мобильными фильтрами.",
-                $"Порт: {p.ServerPort.Value}.",
+                $"Используется нестандартный порт {p.ServerPort.Value} вместо 443",
+                "Обычные сайты работают на порту 443. Другие порты чаще блокируются в мобильных сетях и офисах.",
+                $"Порт сервера: {p.ServerPort.Value}.",
                 $"port={p.ServerPort.Value}",
-                "При возможности переведите сервер на порт 443."));
+                "Если связь работает стабильно — можно оставить, но порт 443 надёжнее."));
         }
     }
 
@@ -392,11 +427,11 @@ public static partial class VpnConfigAuditor
                     "awg-s1-s2-collision",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Critical,
-                    $"Конфликт параметров AmneziaWG: S1 + 56 == S2 ({awg.S1} + 56 = {awg.S2})",
-                    "При равенстве S1 + 56 == S2 клиент и сервер не отличают пакет инициации от ответа — туннель не поднимется.",
-                    $"Текущие значения: S1={awg.S1}, S2={awg.S2}.",
+                    $"Ошибка параметров AmneziaWG: S1 + 56 равно S2 ({awg.S1} + 56 = {awg.S2})",
+                    "Из-за совпадения размеров пакетов клиент и сервер не поймут друг друга, и ВПН не подключится.",
+                    $"Текущие значения: S1={awg.S1}, S2={awg.S2}. По протоколу S1 + 56 не должно равняться S2.",
                     $"S1 = {awg.S1}, S2 = {awg.S2}",
-                    "Измените S1 или S2 на сервере и клиенте так, чтобы S1 + 56 != S2."));
+                    "Измените параметр S1 или S2 в настройках сервера Amnezia и скачайте конфиг заново."));
             }
 
             if (awg.Jmin.HasValue && awg.Jmax.HasValue && (awg.Jmin.Value > awg.Jmax.Value || awg.Jmax.Value > 1280))
@@ -405,11 +440,11 @@ public static partial class VpnConfigAuditor
                     "awg-junk-range",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Critical,
-                    $"Некорректный диапазон мусорных пакетов (Jmin={awg.Jmin}, Jmax={awg.Jmax})",
-                    "Должно выполняться Jmin <= Jmax <= 1280, иначе пакеты фрагментируются или отбрасываются.",
-                    $"Jmin={awg.Jmin}, Jmax={awg.Jmax}.",
+                    $"Неправильный размер шумовых пакетов (Jmin={awg.Jmin}, Jmax={awg.Jmax})",
+                    "Размер шумовых пакетов превышает допустимый предел (1280 байт), из-за чего пакеты будут теряться.",
+                    $"Jmin={awg.Jmin}, Jmax={awg.Jmax}. Требуется Jmin <= Jmax <= 1280.",
                     $"Jmin = {awg.Jmin}, Jmax = {awg.Jmax}",
-                    "Установите, например, Jmin = 50, Jmax = 1000 (синхронно с сервером)."));
+                    "Установите Jmin = 50 и Jmax = 1000."));
             }
 
             var headers = new[] { awg.H1, awg.H2, awg.H3, awg.H4 }.Where(h => h.HasValue).Select(h => h!.Value).ToArray();
@@ -419,11 +454,11 @@ public static partial class VpnConfigAuditor
                     "awg-duplicate-headers",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Critical,
-                    "Совпадающие магические заголовки H1–H4 в AmneziaWG",
-                    "Все четыре идентификатора H1, H2, H3, H4 должны быть уникальными числами.",
+                    "Одинаковые заголовки H1–H4 в AmneziaWG",
+                    "Четыре защитных кода H1, H2, H3 и H4 должны быть разными числами.",
                     $"Значения: H1={awg.H1}, H2={awg.H2}, H3={awg.H3}, H4={awg.H4}.",
-                    $"H1..H4 дублируются",
-                    "Задайте 4 разных случайных числа в диапазоне uint32 на сервере и клиенте."));
+                    "H1..H4 дублируются",
+                    "Задайте 4 разных числа для H1, H2, H3, H4 на сервере и в клиенте."));
             }
             else if (awg.S1.HasValue && awg.S2.HasValue && awg.S1.Value + 56 != awg.S2.Value)
             {
@@ -431,11 +466,11 @@ public static partial class VpnConfigAuditor
                     "awg-params-ok",
                     AuditCategory.TransportDpi,
                     AuditSeverity.Ok,
-                    "Параметры обфускации AmneziaWG согласованы",
-                    "S1 + 56 != S2, диапазон мусорных пакетов и заголовки H1–H4 корректны.",
+                    "Защита AmneziaWG от блокировок настроена правильно",
+                    "Шумовые пакеты и изменённые заголовки скрывают работу WireGuard от оборудования провайдера.",
                     $"Jc={awg.Jc}, Jmin={awg.Jmin}, Jmax={awg.Jmax}, S1={awg.S1}, S2={awg.S2}.",
                     "Параметры AWG валидны",
-                    "Убедитесь, что значения полностью совпадают с серверной стороной."));
+                    "Никаких изменений в параметрах обфускации не требуется."));
             }
         }
 
@@ -445,11 +480,11 @@ public static partial class VpnConfigAuditor
                 "wg-no-dns",
                 AuditCategory.Leaks,
                 AuditSeverity.Critical,
-                "Не задан DNS в [Interface] — утечка DNS-запросов",
-                "Без явного DNS система отправит все запросы резолверу провайдера в обход туннеля.",
-                "Директива DNS отсутствует.",
+                "В конфиге не указан DNS-сервер — сайты могут не открываться",
+                "Без строки DNS ваш компьютер продолжит спрашивать адреса сайтов у российского провайдера и получать отказ.",
+                "Директива DNS отсутствует в секции [Interface].",
                 "DNS не указан",
-                "Добавьте DNS = 1.1.1.1, 9.9.9.9 в секцию [Interface].",
+                "Добавьте строку DNS = 1.1.1.1, 9.9.9.9 в блок [Interface].",
                 "DNS = 1.1.1.1, 9.9.9.9"));
         }
 
@@ -459,11 +494,11 @@ public static partial class VpnConfigAuditor
                 "wg-ipv6-leak",
                 AuditCategory.Leaks,
                 AuditSeverity.Critical,
-                "Утечка IPv6 мимо туннеля (нет ::/0 в AllowedIPs)",
-                "На провайдерах с IPv6 браузер пойдёт напрямую в обход ВПН.",
-                $"AllowedIPs = {string.Join(", ", p.AllowedIps)}.",
+                "Возможна утечка трафика через IPv6 мимо ВПН",
+                "Если ваш провайдер раздаёт IPv6, браузер может пойти напрямую без ВПН.",
+                $"AllowedIPs = {string.Join(", ", p.AllowedIps)} (отсутствует ::/0).",
                 $"AllowedIPs = {string.Join(", ", p.AllowedIps)}",
-                "Добавьте ::/0 в AllowedIPs либо отключите IPv6 на локальном адаптере.",
+                "Добавьте , ::/0 в конец строки AllowedIPs.",
                 "AllowedIPs = 0.0.0.0/0, ::/0"));
         }
 
@@ -473,11 +508,11 @@ public static partial class VpnConfigAuditor
                 "wg-high-mtu",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                $"Завышенный или не заданный MTU ({p.Mtu?.ToString(CultureInfo.InvariantCulture) ?? "по умолчанию"})",
-                "Для AmneziaWG с добавленными заголовками S1/S2 высокий MTU часто приводит к «зависанию» сайтов на мобильной сети и PPPoE.",
-                $"Текущий MTU: {p.Mtu?.ToString(CultureInfo.InvariantCulture) ?? "не задан (1420)"}.",
+                $"Слишком большой размер пакета MTU ({p.Mtu?.ToString(CultureInfo.InvariantCulture) ?? "по умолчанию 1420"})",
+                "На мобильном интернете и домашних роутерах высокий MTU часто приводит к тому, что ВПН подключён, а страницы бесконечно грузятся.",
+                $"Текущий MTU: {p.Mtu?.ToString(CultureInfo.InvariantCulture) ?? "не задан"}.",
                 $"MTU = {p.Mtu?.ToString(CultureInfo.InvariantCulture) ?? "авто"}",
-                "Задайте MTU = 1280 или 1340 в секции [Interface].",
+                "Добавьте строку MTU = 1280 в секцию [Interface].",
                 "MTU = 1280"));
         }
 
@@ -487,11 +522,11 @@ public static partial class VpnConfigAuditor
                 "wg-no-keepalive",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                "Отключён PersistentKeepalive",
-                "За NAT провайдера UDP-сессия будет обрываться при простое.",
-                "PersistentKeepalive не задан в [Peer].",
+                "Не включено поддержание связи (PersistentKeepalive)",
+                "После 1–2 минут бездействия соединение может «засыпать».",
+                "PersistentKeepalive не задан в секции [Peer].",
                 "PersistentKeepalive отсутствует",
-                "Добавьте PersistentKeepalive = 25 в секцию [Peer].",
+                "Добавьте PersistentKeepalive = 25 в конец конфига.",
                 "PersistentKeepalive = 25"));
         }
     }
@@ -502,11 +537,11 @@ public static partial class VpnConfigAuditor
             "hy2-udp-rf-warning",
             AuditCategory.TransportDpi,
             AuditSeverity.Warning,
-            "Hysteria2 работает по UDP/QUIC — возможен троттлинг в сетях РФ",
-            "На части мобильных и региональных провайдеров в РФ UDP-трафик искусственно режется или блокируется.",
-            "Рекомендуется использовать Hysteria2 вместе с port hopping (mport) и держать резервный узел на VLESS TCP/XHTTP.",
-            $"QUIC/UDP :{p.ServerPort}",
-            "Настройте mport (прыжки по портам) и держите VLESS XHTTP/Vision как основной канал."));
+            "Протокол Hysteria2 работает по UDP — отличный запасной вариант",
+            "Hysteria2 даёт высокую скорость на плохих линиях, но некоторые мобильные операторы режут UDP. Хорошо подходит как резервный профиль.",
+            $"QUIC/UDP на порту {p.ServerPort ?? 443}.",
+            $"QUIC/UDP :{p.ServerPort ?? 443}",
+            "Используйте Hysteria2 вместе с основными узлами VLESS + XHTTP / Reality."));
 
         if (!string.Equals(p.Obfs, "salamander", StringComparison.OrdinalIgnoreCase) || !p.HasObfsPassword)
         {
@@ -514,11 +549,11 @@ public static partial class VpnConfigAuditor
                 "hy2-no-salamander",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                "Не включена обфускация Salamander (obfs=salamander)",
-                "Без Salamander QUIC-рукопожатие Hysteria2 легче классифицируется фильтрами операторов.",
+                "Не включена маскировка Salamander (obfs=salamander)",
+                "Дополнительная обфускация Salamander помогает скрыть протокол QUIC от фильтров провайдера.",
                 $"obfs={p.Obfs ?? "нет"}, obfs-password={(p.HasObfsPassword ? "задан" : "нет")}.",
                 "obfs не настроен",
-                "Включите obfs=salamander и задайте стойкий obfs-password на сервере и клиенте.",
+                "Если настраиваете свой сервер — включите obfs=salamander.",
                 "&obfs=salamander&obfs-password=<пароль>"));
         }
 
@@ -528,16 +563,55 @@ public static partial class VpnConfigAuditor
                 "hy2-no-mport",
                 AuditCategory.TransportDpi,
                 AuditSeverity.Warning,
-                "Не настроен Port Hopping (mport)",
-                "Прыжки по диапазону UDP-портов помогают обходить пороговое ограничение скорости на один UDP-поток.",
+                "Не настроена смена портов (Port Hopping / mport)",
+                "Прыжки по портам помогают обходить ограничение скорости на один UDP-поток.",
                 "Параметр mport отсутствует.",
                 "mport не задан",
-                "Настройте iptables DNAT на сервере и добавьте &mport=20000-40000 в ссылку."));
+                "При замедлении скорости можно добавить диапазон портов &mport=20000-40000."));
         }
     }
 
-    private static void AuditCoreJson(NormalizedVpnProfile p, List<VpnAuditFinding> findings)
+    private static void AuditCoreJson(NormalizedVpnProfile p, string rawConfig, List<VpnAuditFinding> findings)
     {
+        if (p.BalancerOutboundCount > 1)
+        {
+            findings.Add(new VpnAuditFinding(
+                "json-auto-balancer-ok",
+                AuditCategory.Routing,
+                AuditSeverity.Ok,
+                $"Включён умный автовыбор сервера ({p.BalancerOutboundCount} узлов в пуле)",
+                "Этот профиль сам измеряет задержку до всех серверов подписки и автоматически переключает вас на самый быстрый рабочий узел.",
+                $"Обнаружено {p.BalancerOutboundCount} прокси-аутбаундов с балансировщиком leastPing / AUTO.",
+                $"outbounds: {p.BalancerOutboundCount} шт.",
+                "Удобный режим «включи и забудь» для Happ и v2rayN."));
+        }
+
+        if (p.Xhttp is not null)
+        {
+            findings.Add(new VpnAuditFinding(
+                "json-xhttp-ok",
+                AuditCategory.TransportDpi,
+                AuditSeverity.Ok,
+                $"Современный транспорт XHTTP / SplitHTTP (mode={p.Xhttp.Mode})",
+                "Узел использует продвинутую маскировку XHTTP с рандомизацией размера пакетов и мультиплексированием (XMUX) против блокировок 16 КБ.",
+                $"path={p.Xhttp.Path}, host={p.Xhttp.Host ?? "авто"}, xPaddingBytes={(p.Xhttp.HasPadding ? "настроен" : "по умолчанию")}, xmux={(p.Xhttp.HasXmux ? "активен" : "авто")}.",
+                $"network=xhttp · mode={p.Xhttp.Mode} · path={p.Xhttp.Path}",
+                "Конфигурация транспорта полностью готова к работе в сетях РФ."));
+        }
+
+        if (p.HasRuSplitRules)
+        {
+            findings.Add(new VpnAuditFinding(
+                "json-ru-split-ok",
+                AuditCategory.Routing,
+                AuditSeverity.Ok,
+                "Российские сайты, банки и Госуслуги открываются напрямую без ВПН",
+                "В профиль уже встроены правила раздельного туннелирования: российские сервисы (.ru, .рф, банки, маркетплейсы) работают напрямую на полной скорости, а заблокированные — через ВПН.",
+                "Найдены правила маршрутизации geosite:category-ru / domain:ru / geoip:ru → DIRECT.",
+                "RU Split-Tunneling → DIRECT",
+                "Отключать ВПН для входа в российские банки и сервисы не придётся."));
+        }
+
         var plainDns = p.DnsServers
             .Where(d =>
                 !d.StartsWith("bootstrap:", StringComparison.OrdinalIgnoreCase) &&
@@ -554,55 +628,57 @@ public static partial class VpnConfigAuditor
                 d.StartsWith("tls://", StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
-        if (plainDns.Length > 0)
-        {
-            findings.Add(new VpnAuditFinding(
-                "json-plain-dns",
-                AuditCategory.Leaks,
-                AuditSeverity.Warning,
-                "Используется открытый UDP DNS",
-                "Незашифрованный UDP DNS (порт 53) легко подменяется провайдером.",
-                $"Открытые серверы: {string.Join(", ", plainDns)}.",
-                string.Join(", ", plainDns),
-                "Переведите основной DNS на DoH (https://1.1.1.1/dns-query) через прокси-outbound."));
-        }
-        else if (encryptedDns.Length > 0)
+        if (encryptedDns.Length > 0)
         {
             findings.Add(new VpnAuditFinding(
                 "json-encrypted-dns-ok",
                 AuditCategory.Leaks,
                 AuditSeverity.Ok,
-                "Настроен зашифрованный DNS (DoH / DoT)",
-                "Запросы доменов защищены от перехвата и подмены со стороны провайдера.",
+                "Зашифрованный DNS (DoH / DoT) защищает от подмены сайтов",
+                "Адреса сайтов запрашиваются по зашифрованному каналу, поэтому провайдер не сможет подменить страницу на заглушку.",
                 $"Серверы: {string.Join(", ", encryptedDns)}.",
                 string.Join(", ", encryptedDns),
-                "Изменения по транспорту DNS не требуются."));
+                "Защита DNS настроена правильно."));
+        }
+        else if (plainDns.Length > 0)
+        {
+            findings.Add(new VpnAuditFinding(
+                "json-plain-dns",
+                AuditCategory.Leaks,
+                AuditSeverity.Warning,
+                "Используется незашифрованный DNS",
+                "Обычный DNS без шифрования может перехватываться интернет-провайдером.",
+                $"Открытые серверы: {string.Join(", ", plainDns)}.",
+                string.Join(", ", plainDns),
+                "Рекомендуется добавить DoH (например https://8.8.8.8/dns-query или https://1.1.1.1/dns-query) на вкладке «2. Настройка DNS»."));
         }
 
-        if (!p.HasSniffing)
+        var hasInboundsDefined = rawConfig.Contains("\"inbounds\"", StringComparison.OrdinalIgnoreCase);
+
+        if (!p.HasSniffing && hasInboundsDefined)
         {
             findings.Add(new VpnAuditFinding(
                 "json-no-sniff",
                 AuditCategory.Leaks,
                 AuditSeverity.Warning,
-                "Не включён sniffing входящих соединений",
-                "Без восстановления домена по TLS SNI доменные правила split-tunneling срабатывают не полностью.",
-                "Правило { \"action\": \"sniff\" } не найдено.",
+                "Не включено распознавание доменов (sniffing)",
+                "Без этой функции умное разделение трафика (РФ напрямую / зарубежье через ВПН) может срабатывать не для всех программ.",
+                "В секции inbounds / route.rules не найдено правило sniffing.",
                 "sniff отключён",
-                "Включите { \"action\": \"sniff\" } в route.rules (Sing-box 1.11+ / 1.12+)."));
+                "Включите sniffing в настройках клиента или добавьте { \"action\": \"sniff\" }."));
         }
 
-        if (!p.HasDnsHijack)
+        if (!p.HasDnsHijack && p.Protocol == VpnProtocol.SingBoxJson && hasInboundsDefined)
         {
             findings.Add(new VpnAuditFinding(
                 "json-no-hijack-dns",
                 AuditCategory.Leaks,
                 AuditSeverity.Warning,
-                "Не найден перехват DNS (hijack-dns)",
-                "Приложения со вшитым 8.8.8.8 могут обходить DNS-правила конфига.",
-                "Правило hijack-dns не обнаружено.",
+                "Не найден принудительный перехват DNS (hijack-dns)",
+                "Некоторые программы и браузеры могут пытаться отправлять DNS-запросы в обход правил.",
+                "Правило hijack-dns не обнаружено в route.rules.",
                 "hijack-dns отсутствует",
-                "Добавьте правило перехвата протокола dns в route.rules."));
+                "Добавьте правило перехвата протокола dns на вкладке «2. Настройка DNS»."));
         }
 
         if (!p.HasPrivateBypass)
@@ -611,11 +687,141 @@ public static partial class VpnConfigAuditor
                 "json-no-private-bypass",
                 AuditCategory.Routing,
                 AuditSeverity.Warning,
-                "Не найдено правило обхода локальной сети (ip_is_private / geoip:private)",
-                "При полном туннелировании может пропасть доступ к роутеру и локальным сервисам.",
-                "Исключение приватных подсетей не обнаружено.",
+                "Не найдено правило для домашней локальной сети (geoip:private)",
+                "При включённом ВПН может не открываться страница настроек домашнего роутера (192.168.1.1) или сетевой принтер.",
+                "Исключение приватных подсетей (geoip:private / ip_is_private) не обнаружено.",
                 "ip_is_private не найден",
-                "Добавьте { \"ip_is_private\": true, \"outbound\": \"direct\" } в начало route.rules."));
+                "Добавьте правило пропуска приватных IP напрямую (direct)."));
         }
+
+        if (p.Tls.Mode == "reality" && !string.IsNullOrWhiteSpace(p.ServerHost))
+        {
+            if (string.IsNullOrWhiteSpace(p.Tls.Sni) || IPAddress.TryParse(p.Tls.Sni, out _))
+            {
+                findings.Add(new VpnAuditFinding(
+                    "json-reality-bad-sni",
+                    AuditCategory.TransportDpi,
+                    AuditSeverity.Warning,
+                    "Не указан маскировочный домен (SNI) для Reality",
+                    "Проверьте поле serverName в настройках Reality.",
+                    $"sni={p.Tls.Sni ?? "не указан"}.",
+                    $"sni={p.Tls.Sni ?? "пусто"}",
+                    "Укажите реальный домен с TLS 1.3 + ALPN h2."));
+            }
+            else
+            {
+                findings.Add(new VpnAuditFinding(
+                    "json-reality-ok",
+                    AuditCategory.TransportDpi,
+                    AuditSeverity.Ok,
+                    $"Маскировка Reality активна (сайт прикрытия: {p.Tls.Sni})",
+                    "Трафик маскируется под посещение реального сайта с отпечатком браузера.",
+                    $"Сервер: {p.ServerHost}:{p.ServerPort ?? 443}, транспорт: {p.Transport}, отпечаток uTLS: {p.Tls.Fingerprint ?? "авто"}.",
+                    $"SNI={p.Tls.Sni} · fp={p.Tls.Fingerprint ?? "auto"}",
+                    "Нажмите «Проверить все узлы подписки» или «Проверить этот узел» для проверки связи."));
+            }
+        }
+        else if (p.Transport == "QUIC (UDP)" && !string.IsNullOrWhiteSpace(p.ServerHost))
+        {
+            findings.Add(new VpnAuditFinding(
+                "json-hysteria-ok",
+                AuditCategory.TransportDpi,
+                AuditSeverity.Ok,
+                $"Запасной протокол Hysteria2 / QUIC ({p.ServerHost}:{p.ServerPort ?? 443})",
+                "Этот профиль использует скоростной UDP-протокол Hysteria2 на случай сбоев обычного TCP.",
+                $"Сервер: {p.ServerHost}:{p.ServerPort ?? 443}, SNI: {p.Tls.Sni ?? "—"}, ALPN: {string.Join(", ", p.Tls.Alpn)}.",
+                $"Hysteria2 QUIC · SNI={p.Tls.Sni ?? "—"}",
+                "Хорошо подходит как резервный канал связи."));
+        }
+    }
+
+    private static void AuditTrojan(NormalizedVpnProfile p, List<VpnAuditFinding> findings)
+    {
+        if (string.IsNullOrWhiteSpace(p.Tls.Fingerprint))
+        {
+            findings.Add(new VpnAuditFinding(
+                "trojan-no-fp",
+                AuditCategory.TransportDpi,
+                AuditSeverity.Warning,
+                "Для Trojan не задана маскировка под браузер (fp)",
+                "Добавление параметра fp=chrome делает подключение похожим на обычный браузер.",
+                "Параметр fp отсутствует в URI.",
+                "fp=отсутствует",
+                "Добавьте &fp=chrome или нажмите «Автолечение подписки».",
+                "&fp=chrome"));
+        }
+
+        if (string.IsNullOrWhiteSpace(p.Tls.Sni) || IPAddress.TryParse(p.Tls.Sni, out _))
+        {
+            findings.Add(new VpnAuditFinding(
+                "trojan-no-sni",
+                AuditCategory.Security,
+                AuditSeverity.Critical,
+                "Для Trojan не задан доменный адрес SNI",
+                "Протокол Trojan требует настоящий домен с сертификатом, иначе связь легко блокируется.",
+                $"Текущий sni={p.Tls.Sni ?? "не указан"}.",
+                $"sni={p.Tls.Sni ?? "пусто"}",
+                "Укажите домен с действительным сертификатом в параметре sni."));
+        }
+        else
+        {
+            findings.Add(new VpnAuditFinding(
+                "trojan-tls-ok",
+                AuditCategory.TransportDpi,
+                AuditSeverity.Ok,
+                $"Протокол Trojan поверх TLS (домен: {p.Tls.Sni})",
+                "Базовая маскировка под HTTPS-сайт настроена.",
+                $"Хост: {p.ServerHost}:{p.ServerPort ?? 443}, транспорт: {p.Transport}.",
+                $"SNI={p.Tls.Sni}",
+                "Если провайдер начнёт блокировать домен — переключитесь на узел с VLESS Reality."));
+        }
+    }
+
+    private static void AuditVmess(NormalizedVpnProfile p, List<VpnAuditFinding> findings)
+    {
+        if (!string.Equals(p.Tls.Mode, "tls", StringComparison.OrdinalIgnoreCase))
+        {
+            findings.Add(new VpnAuditFinding(
+                "vmess-no-tls",
+                AuditCategory.Security,
+                AuditSeverity.Critical,
+                "Устаревший VMess без TLS-защиты — блокируется в РФ",
+                "Незащищённый поток VMess легко распознаётся оборудованием провайдера.",
+                $"Текущий режим: transport={p.Transport}, tls={p.Tls.Mode}.",
+                "tls=none",
+                "Переключитесь на локацию с VLESS + XHTTP / Reality."));
+        }
+        else
+        {
+            findings.Add(new VpnAuditFinding(
+                "vmess-rf-legacy",
+                AuditCategory.TransportDpi,
+                AuditSeverity.Warning,
+                $"VMess + {p.Transport} + TLS — устаревающий протокол для РФ",
+                "VMess работает медленнее и хуже защищён от современных блокировок, чем VLESS Reality.",
+                $"SNI={p.Tls.Sni ?? "не указан"}, fp={p.Tls.Fingerprint ?? "не задан"}.",
+                $"VMess/{p.Transport}/TLS",
+                "По возможности используйте узлы VLESS + Reality."));
+        }
+    }
+
+    private static void AuditShadowsocks(NormalizedVpnProfile p, List<VpnAuditFinding> findings)
+    {
+        var method = p.CipherMethod ?? string.Empty;
+        var isAead2022 = method.StartsWith("2022-blake3-", StringComparison.OrdinalIgnoreCase);
+
+        findings.Add(new VpnAuditFinding(
+            "ss-rf-dpi",
+            AuditCategory.TransportDpi,
+            isAead2022 ? AuditSeverity.Warning : AuditSeverity.Critical,
+            isAead2022
+                ? $"Shadowsocks 2022 ({method}) — может блокироваться на мобильных сетях"
+                : $"Классический Shadowsocks ({(string.IsNullOrWhiteSpace(method) ? "старый шифр" : method)}) блокируется ТСПУ",
+            isAead2022
+                ? "Даже обновлённый Shadowsocks-2022 часто режется операторами связи в РФ."
+                : "Обычный Shadowsocks без маскировки легко распознаётся и блокируется.",
+            $"Хост: {p.ServerHost ?? "—"}:{p.ServerPort?.ToString(CultureInfo.InvariantCulture) ?? "—"}, шифр: {(string.IsNullOrWhiteSpace(method) ? "не указан" : method)}.",
+            $"SS ({(string.IsNullOrWhiteSpace(method) ? "legacy" : method)})",
+            "Для надёжной работы в РФ выбирайте узлы VLESS + Reality (XHTTP или TCP Vision) либо AmneziaWG."));
     }
 }

@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace NetworkChecker.Core.VpnAudit;
@@ -16,14 +17,69 @@ public sealed record SubnetSniNeighbor(
     bool CertChainValid,
     long HandshakeMs,
     string? CertIssuer,
-    bool IsRealityReady);
+    bool IsRealityReady,
+    string SourceLabel = "Сосед подсети /24");
 
 /// <summary>
-/// Нативный сканер подсети /24 целевого VPS для подбора «родного» Reality SNI (dest/serverNames)
-/// среди соседних серверов того же дата-центра (TLS 1.3 + ALPN h2 + валидный сертификат).
+/// Нативный многопоточный охотник и сканер SNI для конфигураций и подписок:
+/// 1) Проверка всех доменов/SNI из текущей подписки или конфига на лучшую связку TLS 1.3 + ALPN h2 + минимальный пинг,
+/// 2) Перебор базы белых доменов РФ и глобальных CDN, не блокируемых ТСПУ,
+/// 3) Сканирование соседних IP в подсети /24 целевого VPS (для «родного» Reality SNI того же дата-центра).
 /// </summary>
 public static class SubnetSniScanner
 {
+    private static readonly char[] DomainSeparators = [',', ';', ' ', '\n', '\r'];
+
+    public static IReadOnlyList<string> CuratedRfWhiteSniDomains { get; } =
+    [
+        "www.microsoft.com",
+        "learn.microsoft.com",
+        "www.apple.com",
+        "www.amd.com",
+        "www.nvidia.com",
+        "cdn.jsdelivr.net",
+        "www.cloudflare.com",
+        "dl.google.com",
+        "st.ozone.ru",
+        "yastatic.net",
+        "www.wildberries.ru",
+        "vk.com",
+    ];
+
+    public static IReadOnlyList<string> ExtractSniDomainsFromConfig(string rawConfig)
+    {
+        if (string.IsNullOrWhiteSpace(rawConfig))
+        {
+            return [];
+        }
+
+        var profiles = VpnConfigParser.ParseSubscription(rawConfig);
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var p in profiles)
+        {
+            if (!string.IsNullOrWhiteSpace(p.Tls.Sni))
+            {
+                var sni = p.Tls.Sni.Trim().ToLowerInvariant();
+                if (sni.Contains('.', StringComparison.Ordinal) && !IPAddress.TryParse(sni, out _))
+                {
+                    set.Add(sni);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(p.ServerHost))
+            {
+                var host = p.ServerHost.Trim().ToLowerInvariant();
+                if (host.Contains('.', StringComparison.Ordinal) && !IPAddress.TryParse(host, out _))
+                {
+                    set.Add(host);
+                }
+            }
+        }
+
+        return set.ToList();
+    }
+
     public static IReadOnlyList<string> BuildSlash24Addresses(string targetIp, int maxCount = 64)
     {
         if (!IPAddress.TryParse(targetIp.Trim(), out var ip) ||
@@ -101,6 +157,206 @@ public static class SubnetSniScanner
             .ToList();
     }
 
+    /// <summary>
+    /// Комбинированный перебор SNI по 3 источникам:
+    /// 1) SNI и домены из текущей подписки/конфига,
+    /// 2) База белых доменов РФ и глобальных CDN + пользовательские домены через запятую,
+    /// 3) Соседи подсети /24 целевого VPS.
+    /// </summary>
+    public static async Task<IReadOnlyList<SubnetSniNeighbor>> HuntMultiSourceSniAsync(
+        string rawConfig,
+        string? targetVpsHost,
+        bool includeSubscriptionSnis = true,
+        bool includeRfWhitelist = true,
+        bool includeSlash24 = true,
+        string? customDomainsCsv = null,
+        int timeoutMs = 1900,
+        CancellationToken cancellationToken = default)
+    {
+        var bag = new ConcurrentBag<SubnetSniNeighbor>();
+        var domainCandidates = new List<(string Domain, string SourceLabel)>();
+        var seenDomains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (includeSubscriptionSnis)
+        {
+            foreach (var d in ExtractSniDomainsFromConfig(rawConfig))
+            {
+                if (seenDomains.Add(d))
+                {
+                    domainCandidates.Add((d, "Из вашей подписки"));
+                }
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(customDomainsCsv))
+        {
+            var parts = customDomainsCsv.Split(DomainSeparators, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var part in parts)
+            {
+                var clean = part.Trim().ToLowerInvariant();
+                if (clean.Contains('.', StringComparison.Ordinal) &&
+                    !IPAddress.TryParse(clean, out _) &&
+                    seenDomains.Add(clean))
+                {
+                    domainCandidates.Add((clean, "Свой домен"));
+                }
+            }
+        }
+
+        if (includeRfWhitelist)
+        {
+            foreach (var d in CuratedRfWhiteSniDomains)
+            {
+                if (seenDomains.Add(d))
+                {
+                    domainCandidates.Add((d, "Белый список РФ / CDN"));
+                }
+            }
+        }
+
+        using var gate = new SemaphoreSlim(12);
+        var domainTasks = domainCandidates.Select(async candidate =>
+        {
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                var probed = await ProbeDomainForRealitySniAsync(
+                        candidate.Domain,
+                        candidate.SourceLabel,
+                        timeoutMs,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                if (probed is not null)
+                {
+                    bag.Add(probed);
+                }
+            }
+            finally
+            {
+                gate.Release();
+            }
+        });
+
+        await Task.WhenAll(domainTasks).ConfigureAwait(false);
+
+        if (includeSlash24 && !string.IsNullOrWhiteSpace(targetVpsHost))
+        {
+            try
+            {
+                string? targetIpv4 = null;
+                var trimmedHost = targetVpsHost.Trim();
+                if (IPAddress.TryParse(trimmedHost, out var parsedIp) &&
+                    parsedIp.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    targetIpv4 = parsedIp.ToString();
+                }
+                else
+                {
+                    var addrs = await Dns.GetHostAddressesAsync(trimmedHost, cancellationToken).ConfigureAwait(false);
+                    targetIpv4 = addrs.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString();
+                }
+
+                if (!string.IsNullOrWhiteSpace(targetIpv4))
+                {
+                    var slash24 = await ScanSlash24Async(targetIpv4, maxHosts: 32, concurrency: 12, timeoutMs: timeoutMs, cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+                    foreach (var n in slash24)
+                    {
+                        bag.Add(n);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is SocketException or OperationCanceledException or ArgumentException)
+            {
+                // ignore DNS/subnet errors if domain candidates already succeeded
+            }
+        }
+
+        return bag
+            .GroupBy(x => x.Domain, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(x => x.IsRealityReady).ThenBy(x => x.HandshakeMs).First())
+            .OrderByDescending(x => x.IsRealityReady)
+            .ThenBy(x => x.HandshakeMs)
+            .ToList();
+    }
+
+    public static async Task<SubnetSniNeighbor?> ProbeDomainForRealitySniAsync(
+        string domain,
+        string sourceLabel = "Проверка домена",
+        int timeoutMs = 1900,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return null;
+        }
+
+        var cleanDomain = domain.Trim().ToLowerInvariant();
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(timeoutMs);
+
+            var addresses = await Dns.GetHostAddressesAsync(cleanDomain, cts.Token).ConfigureAwait(false);
+            var ip = addresses.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)
+                     ?? addresses.FirstOrDefault();
+            if (ip is null)
+            {
+                return null;
+            }
+
+            using var tcp = new TcpClient();
+            await tcp.ConnectAsync(ip, 443, cts.Token).ConfigureAwait(false);
+
+            var chainValid = false;
+            string? issuer = null;
+
+#pragma warning disable CA5359
+            using var ssl = new SslStream(tcp.GetStream(), false, (_, cert, _, errors) =>
+            {
+                chainValid = errors == SslPolicyErrors.None;
+                issuer = cert?.Issuer;
+                return true;
+            });
+#pragma warning restore CA5359
+
+            var authOpts = new SslClientAuthenticationOptions
+            {
+                TargetHost = cleanDomain,
+                EnabledSslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12,
+                ApplicationProtocols = [SslApplicationProtocol.Http2, SslApplicationProtocol.Http11],
+            };
+
+            await ssl.AuthenticateAsClientAsync(authOpts, cts.Token).ConfigureAwait(false);
+            sw.Stop();
+
+            var isTls13 = ssl.SslProtocol == SslProtocols.Tls13;
+            var alpn = ssl.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2
+                ? "h2"
+                : ssl.NegotiatedApplicationProtocol == SslApplicationProtocol.Http11
+                    ? "http/1.1"
+                    : "none";
+
+            var realityReady = isTls13 && alpn == "h2" && chainValid;
+
+            return new SubnetSniNeighbor(
+                ip.ToString(),
+                cleanDomain,
+                ssl.SslProtocol.ToString(),
+                alpn,
+                chainValid,
+                sw.ElapsedMilliseconds,
+                issuer,
+                realityReady,
+                sourceLabel);
+        }
+        catch (Exception ex) when (ex is SocketException or AuthenticationException or IOException or OperationCanceledException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
     public static async Task<SubnetSniNeighbor?> ProbeHostForRealitySniAsync(
         string ipAddress,
         int timeoutMs = 1800,
@@ -133,7 +389,7 @@ public static class SubnetSniScanner
                 discoveredDomain = ExtractCleanDomainFromCertificate(cert2);
             }
         }
-        catch
+        catch (Exception ex) when (ex is SocketException or AuthenticationException or IOException or OperationCanceledException or CryptographicException or ArgumentException)
         {
             return null;
         }
@@ -151,7 +407,7 @@ public static class SubnetSniScanner
                     discoveredDomain = entry.HostName.TrimEnd('.').ToLowerInvariant();
                 }
             }
-            catch
+            catch (Exception ex) when (ex is SocketException or OperationCanceledException or ArgumentException)
             {
                 // ignore PTR failure
             }
@@ -211,9 +467,10 @@ public static class SubnetSniScanner
                 chainValid,
                 sw.ElapsedMilliseconds,
                 issuer,
-                realityReady);
+                realityReady,
+                "Сосед подсети /24");
         }
-        catch
+        catch (Exception ex) when (ex is SocketException or AuthenticationException or IOException or OperationCanceledException or ArgumentException)
         {
             return null;
         }

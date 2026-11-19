@@ -5,6 +5,8 @@ public enum VpnProtocol
     Vless,
     AmneziaWg,
     Hysteria2,
+    Trojan,
+    Vmess,
     SingBoxJson,
     XrayJson,
     LegacyWireGuard,
@@ -76,6 +78,7 @@ public sealed record NormalizedVpnProfile
     public string? Obfs { get; init; }
     public bool HasObfsPassword { get; init; }
     public string? PortHopping { get; init; }
+    public string? CipherMethod { get; init; }
     public IReadOnlyList<string> DnsServers { get; init; } = [];
     public IReadOnlyList<string> AllowedIps { get; init; } = [];
     public bool RoutesAllIpv4 { get; init; }
@@ -86,6 +89,8 @@ public sealed record NormalizedVpnProfile
     public bool HasSniffing { get; init; }
     public bool HasDnsHijack { get; init; }
     public bool HasPrivateBypass { get; init; }
+    public bool HasRuSplitRules { get; init; }
+    public int BalancerOutboundCount { get; init; }
     public IReadOnlyList<string> RawSecrets { get; init; } = [];
     public IReadOnlyList<string> ParseWarnings { get; init; } = [];
 }
@@ -100,7 +105,22 @@ public sealed record VpnAuditFinding(
     string Evidence,
     string Remediation,
     string? PatchSnippet = null,
-    string? ProtocolSpec = null);
+    string? ProtocolSpec = null)
+{
+    public string SeverityLabel => Severity switch
+    {
+        AuditSeverity.Critical => "КРИТИЧНО",
+        AuditSeverity.Warning => "НУЖНО ВНИМАНИЕ",
+        _ => "ВСЁ ОТЛИЧНО",
+    };
+
+    public string SeverityColorHex => Severity switch
+    {
+        AuditSeverity.Critical => "#F87171",
+        AuditSeverity.Warning => "#FBBF24",
+        _ => "#4ADE80",
+    };
+}
 
 public sealed record VpnAuditReport(
     DateTimeOffset AnalyzedAt,

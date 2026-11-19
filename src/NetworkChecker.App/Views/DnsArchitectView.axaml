@@ -1,54 +1,124 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:NetworkChecker.App.ViewModels"
-             xmlns:core="using:NetworkChecker.Core.VpnAudit"
              x:Class="NetworkChecker.App.Views.DnsArchitectView"
              x:DataType="vm:DnsArchitectViewModel">
 
-  <Grid ColumnDefinitions="340,*" ColumnSpacing="16" Margin="20">
-    <!-- Левая колонка: настройки генератора и аудит -->
+  <Grid ColumnDefinitions="430,*" ColumnSpacing="16" Margin="20,14">
+    <!-- Левая колонка: настройки генератора, точечная врезка в подписку и аудит -->
     <Border Grid.Column="0" Classes="card">
       <ScrollViewer>
-        <StackPanel Spacing="14">
-          <TextBlock Text="Параметры ядра и защиты от утечек" Classes="h2" />
+        <StackPanel Spacing="12">
+          <TextBlock Text="1. Конструктор DNS (Ninja / Только блок dns)" Classes="h2" />
 
-          <StackPanel Spacing="6">
-            <TextBlock Text="Целевое ядро ВПН-клиента" Classes="muted" />
+          <StackPanel Spacing="5">
+            <TextBlock Text="Для какой программы создаём настройки DNS:" Classes="muted" />
             <ComboBox ItemsSource="{Binding CoreChoices}"
                       SelectedIndex="{Binding SelectedCoreIndex, Mode=TwoWay}"
                       HorizontalAlignment="Stretch" />
           </StackPanel>
 
-          <StackPanel Spacing="8">
-            <CheckBox Content="РФ Split-tunneling (.ru / .рф / госсервисы напрямую)"
+          <StackPanel Spacing="5">
+            <TextBlock Text="Приватный провайдер зашифрованного DNS (DoH):" Classes="muted" />
+            <ComboBox ItemsSource="{Binding ProviderChoices}"
+                      SelectedIndex="{Binding SelectedProviderIndex, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Что именно генерировать (объём блока):" Classes="muted" />
+            <ComboBox ItemsSource="{Binding ScopeChoices}"
+                      SelectedIndex="{Binding SelectedScopeIndex, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <StackPanel Spacing="6">
+            <CheckBox Content="Российские сайты (.ru / Госуслуги / 77.88.8.8) открывать напрямую"
                       IsChecked="{Binding RfSplitTunneling, Mode=TwoWay}" />
-            <CheckBox Content="Включить FakeIP (198.18.0.0/15, без задержек)"
-                      IsChecked="{Binding UseFakeIp, Mode=TwoWay}" />
-            <CheckBox Content="Только IPv4 (защита от утечек AAAA / IPv6)"
+            <CheckBox Content="Только IPv4 (queryStrategy: UseIPv4 — без утечек IPv6)"
                       IsChecked="{Binding Ipv4Only, Mode=TwoWay}" />
-            <CheckBox Content="Блокировка рекламы (geosite-ads)"
+            <CheckBox Content="Мгновенный отклик FakeIP (198.18.0.0/15)"
+                      IsChecked="{Binding UseFakeIp, Mode=TwoWay}" />
+            <CheckBox Content="Блокировать рекламу (geosite:category-ads-all)"
                       IsChecked="{Binding BlockAds, Mode=TwoWay}" />
           </StackPanel>
 
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Content="Копировать блок" Classes="primary" Command="{Binding CopyGeneratedCommand}" />
-            <Button Content="Сохранить файл" Command="{Binding SaveGeneratedCommand}" />
-          </StackPanel>
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="Скопировать блок DNS" Classes="primary" Command="{Binding CopyGeneratedCommand}" Margin="0,0,8,6" />
+            <Button Content="Эталон Ninja (Njalla + LibreDNS)" Command="{Binding LoadNinjaSampleCommand}" Margin="0,0,8,6" />
+            <Button Content="Сохранить в файл" Command="{Binding SaveGeneratedCommand}" Margin="0,0,0,6" />
+          </WrapPanel>
 
-          <TextBlock Text="{Binding StatusText}" FontSize="11.5" Foreground="#93C5FD" TextWrapping="Wrap" />
+          <Border Background="#13203B"
+                  BorderBrush="#2563EB"
+                  BorderThickness="1"
+                  CornerRadius="6"
+                  Padding="10,8">
+            <StackPanel Spacing="6">
+              <TextBlock Text="Точечная врезка этого DNS в подписку из Шага 1 (нижние блоки не трогаем):"
+                         FontSize="12"
+                         FontWeight="SemiBold"
+                         Foreground="#93C5FD"
+                         TextWrapping="Wrap" />
+              <WrapPanel Orientation="Horizontal">
+                <Button Content="Вшить только в выбранный узел и скопировать"
+                        Classes="primary"
+                        Command="{Binding InjectDnsIntoSelectedNodeOnlyCommand}"
+                        Margin="0,0,6,6"
+                        Padding="10,5" />
+                <Button Content="Вшить во всю подписку и скопировать"
+                        Command="{Binding InjectDnsIntoAllNodesCommand}"
+                        Margin="0,0,6,6"
+                        Padding="10,5" />
+                <Button Content="Вшить и создать локальную ссылку (127.0.0.1)"
+                        Command="{Binding InjectDnsAndHostLocalUrlCommand}"
+                        Margin="0,0,0,4"
+                        Padding="10,5" />
+              </WrapPanel>
+            </StackPanel>
+          </Border>
+
+          <TextBlock Text="{Binding StatusText}" FontSize="11.5" Foreground="#93C5FD" FontWeight="SemiBold" TextWrapping="Wrap" />
 
           <Border Height="1" Background="{StaticResource BorderBrush2}" />
 
           <StackPanel Spacing="6">
-            <TextBlock Text="Живой аудит блока DNS" Classes="h2" />
-            <TextBlock Text="{Binding AuditSummary}" FontSize="12" Foreground="{StaticResource CleanBrush}" TextWrapping="Wrap" />
+            <TextBlock Text="2. Разбор DNS-блока простыми словами" Classes="h2" />
+            <TextBlock Text="{Binding AuditSummary}" FontSize="12.5" FontWeight="SemiBold" Foreground="{Binding AuditSummaryBrush}" TextWrapping="Wrap" />
             <ItemsControl ItemsSource="{Binding AuditFindings}">
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="core:VpnAuditFinding">
-                  <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="0,8,0,8">
-                    <StackPanel Spacing="3">
-                      <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}" TextWrapping="Wrap" />
-                      <TextBlock Text="{Binding Remediation}" FontSize="11.5" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                <DataTemplate x:DataType="vm:AuditFindingDisplayItem">
+                  <Border Background="{StaticResource AppBackground}"
+                          BorderBrush="{StaticResource BorderBrush2}"
+                          BorderThickness="1"
+                          CornerRadius="6"
+                          Padding="10,8"
+                          Margin="0,0,0,6">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold" Foreground="{Binding SeverityBrush}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding SimpleSummary}" FontSize="12" Foreground="#D1DCF0" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Remediation}" FontSize="11.5" Foreground="#93C5FD" TextWrapping="Wrap" />
+
+                      <Button Content="{Binding SpoilerButtonText}"
+                              Command="{Binding ToggleExpandedCommand}"
+                              HorizontalAlignment="Left"
+                              Padding="6,2"
+                              FontSize="10.5"
+                              Foreground="{StaticResource TextMuted}"
+                              Background="Transparent"
+                              BorderThickness="0" />
+
+                      <Border IsVisible="{Binding IsExpanded}"
+                              Background="{StaticResource SurfaceBrush}"
+                              BorderBrush="{StaticResource BorderBrush2}"
+                              BorderThickness="1"
+                              CornerRadius="4"
+                              Padding="8,6">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding TechnicalDetail}" FontSize="11" Foreground="#B8C5D9" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding Evidence}" FontFamily="{StaticResource MonoFont}" FontSize="10.5" Foreground="#60A5FA" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
                     </StackPanel>
                   </Border>
                 </DataTemplate>
@@ -63,8 +133,8 @@
     <Border Grid.Column="1" Classes="card" Padding="14">
       <DockPanel LastChildFill="True">
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
-          <TextBlock Text="Сгенерированный блок DNS + Route (можно редактировать для аудита)" Classes="h2" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Content="Сбросить к эталону" Command="{Binding RegenerateCommand}" Padding="10,4" />
+          <TextBlock Text="Готовый блок настроек DNS (в режиме «Только блок dns» нижние секции не затрагиваются)" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <Button Grid.Column="1" Content="Сбросить к выбранному" Command="{Binding RegenerateCommand}" Padding="10,4" />
         </Grid>
 
         <TextBox Text="{Binding GeneratedConfig, Mode=TwoWay}"
