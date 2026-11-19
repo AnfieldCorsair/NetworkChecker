@@ -1,22 +1,27 @@
-# NetworkChecker
+# Контур ВПН — NetworkChecker V2 (.NET 10 / Avalonia 12)
 
-**Windows network diagnostics · Диагностика сети для Windows**  
-**v1.6.5** · .NET 10 · AGPL-3.0-only
+Готовое автономное Windows-приложение на базе оригинальной сборочной обвязки `AnfieldCorsair/NetworkChecker` (`Directory.Build.props`, `.editorconfig`, `build.ps1`, `TreatWarningsAsErrors=true`), но с полностью новым ядром V2 и всеми 5 экранами в главном окне.
 
-A Windows desktop app for exploring network configuration, connectivity and possible VPN/proxy indicators. The 0–100 score is a heuristic, **not a probability**.  
-Приложение для диагностики сети, соединения и возможных признаков VPN/прокси в Windows. Индекс 0–100 — **условная оценка, не вероятность**.
+## Быстрый старт (без ручной интеграции!)
 
-**[English documentation →](README.en.md)**　|　**[Документация на русском →](README.ru.md)**
+1. Распакуйте архив в **новую чистую папку** (например `D:\Projects\NetworkChecker-V2`).
+2. Откройте **`NetworkChecker.slnx`** в Visual Studio 2022 / Rider и нажмите **F5** — либо соберите готовый `.exe` из PowerShell:
 
-| Simple / Просто | Detailed / Подробно |
-|:--:|:--:|
-| ![Simple dashboard / простой режим](screenshots/02-dashboard-simple-result.png) | ![Detailed dashboard / подробный режим](screenshots/03-dashboard-pro-result.png) |
+```powershell
+# Сборка + прогон всех модульных тестов xUnit
+./build.ps1
 
-| Network / Сеть | Website perspective / Глазами сайта |
-|:--:|:--:|
-| ![Network overview / обзор сети](screenshots/05-network-overview.png) | ![Website perspective / глазами сайта](screenshots/10-site-view.png) |
+# Публикация одного файла artifacts/win-x64/NetworkChecker.exe
+./build.ps1 -Publish
 
-Screenshots show an earlier 1.6 interface; current layout and text may differ.  
-Скриншоты показывают предыдущий вариант интерфейса 1.6; актуальная компоновка и тексты могут отличаться.
+# Автономный .exe без требования установленного .NET 10 на ПК
+./build.ps1 -Publish -SelfContained
+```
 
-[Source code](https://github.com/AnfieldCorsair/NetworkChecker) · [Licence / Лицензия](LICENSE) · [Changelog / История изменений](CHANGELOG.md) · [HTML presentation / Презентация](presentation.html)
+## Что включено в главное окно (5 вкладок)
+
+1. **Аудит и подписки** — разбор `vless://` (XHTTP / TCP Vision / WS), `hy2://`, AmneziaWG (`.conf`), Sing-box / Xray JSON и Base64-подписок, загрузка подписки по URL, «жирный блок-патч» с экспортом, живая проба `DNS → TCP → TLS 1.3 + ALPN h2` и серийный TCP RTT-бенчмарк (Min / Avg / P95 / Jitter / потери).
+2. **DNS-архитектор** — генератор эталонного блока DNS под РФ (`Sing-box 1.12+`, `Xray-core v25+`, `Clash / Mihomo`) с защитой от DNS-петли, DoH через proxy и мгновенным аудитом своего DNS-блока.
+3. **Отпечатки ТСПУ** — локальное сканирование провайдера с вашего ПК: проверка «Белых списков» (Яндекс/ВК/Госуслуги/Ozon против глобальных узлов), ступенчатая отсечка потока 16 КБ (4 → 16 → 64 → 512 КБ), детект L7 SNI и TLS ECH.
+4. **Стек Windows и `/24` SNI** — нативный аудит сетевого стека ОС (Wintun/TUN, MTU, утечки DNS через SMHNR на физических адаптерах, глобальные маршруты IPv6, порты `10808/10809/2080/7890`) + многопоточный сканер соседей в подсети `/24` целевого VPS для подбора «родного» Reality SNI.
+5. **Техподдержка** — 2-шаговый сбор срезов «Без ВПН (РФ-провайдер)» и «С ВПН (туннель)» с замером скорости, авто-маскировкой домашнего IP/UUID, копированием текста для Telegram-бота и сохранением `.md`-отчёта.

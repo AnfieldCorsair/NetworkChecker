@@ -1,64 +1,42 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Styling;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using NetworkChecker.App.Startup;
 using NetworkChecker.App.ViewModels;
 using NetworkChecker.App.Views;
-using Serilog;
 
 namespace NetworkChecker.App;
 
 public partial class App : Application
 {
-    public static IHost? Host { get; private set; }
+    private IServiceProvider? _services;
 
-    public override void Initialize()
-    {
-        AvaloniaXamlLoader.Load(this);
-        Localization.Localizer.Configure("ru-RU");
-    }
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            Host ??= AppServices.Build([]);
-            var migrate = AppServices.MigrateAsync(Host);
-            migrate.GetAwaiter().GetResult();
+            var collection = new ServiceCollection();
+            collection.AddRefactoredVpnAudit();
+            _services = collection.BuildServiceProvider();
 
-            var window = new MainWindow
+            var mainWindow = new MainWindow
             {
-                DataContext = Host.Services.GetRequiredService<MainWindowViewModel>(),
+                DataContext = _services.GetRequiredService<MainWindowViewModel>(),
             };
-            desktop.MainWindow = window;
+
+            desktop.MainWindow = mainWindow;
             desktop.ShutdownRequested += (_, _) =>
             {
-                try
+                if (_services is IDisposable disposable)
                 {
-                    Host?.StopAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult();
-                    Log.CloseAndFlush();
+                    disposable.Dispose();
                 }
-                catch { }
             };
-
-            var ui = Host.Services.GetRequiredService<Core.Options.UiOptions>();
-            ApplyTheme(ui.Theme);
         }
 
         base.OnFrameworkInitializationCompleted();
-    }
-
-    public static void ApplyTheme(string theme)
-    {
-        if (Current is null) return;
-        Current.RequestedThemeVariant = theme switch
-        {
-            "Light" => ThemeVariant.Light,
-            "System" => ThemeVariant.Default,
-            _ => ThemeVariant.Dark,
-        };
     }
 }

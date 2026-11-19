@@ -1,7 +1,7 @@
 <#
-    Сборка и публикация NetworkChecker под Windows.
+    Сборка и публикация NetworkChecker V2 под Windows.
     usage:
-        ./build.ps1                    # Debug-сборка + тесты
+        ./build.ps1                    # Release-сборка + тесты
         ./build.ps1 -Publish           # framework-dependent publish в artifacts/win-x64
         ./build.ps1 -Publish -SelfContained
 #>

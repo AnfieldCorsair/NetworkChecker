@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels"
+             xmlns:core="using:NetworkChecker.Core.VpnAudit"
+             x:Class="NetworkChecker.App.Views.DnsArchitectView"
+             x:DataType="vm:DnsArchitectViewModel">
+
+  <Grid ColumnDefinitions="340,*" ColumnSpacing="16" Margin="20">
+    <!-- Левая колонка: настройки генератора и аудит -->
+    <Border Grid.Column="0" Classes="card">
+      <ScrollViewer>
+        <StackPanel Spacing="14">
+          <TextBlock Text="Параметры ядра и защиты от утечек" Classes="h2" />
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="Целевое ядро ВПН-клиента" Classes="muted" />
+            <ComboBox ItemsSource="{Binding CoreChoices}"
+                      SelectedIndex="{Binding SelectedCoreIndex, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <StackPanel Spacing="8">
+            <CheckBox Content="РФ Split-tunneling (.ru / .рф / госсервисы напрямую)"
+                      IsChecked="{Binding RfSplitTunneling, Mode=TwoWay}" />
+            <CheckBox Content="Включить FakeIP (198.18.0.0/15, без задержек)"
+                      IsChecked="{Binding UseFakeIp, Mode=TwoWay}" />
+            <CheckBox Content="Только IPv4 (защита от утечек AAAA / IPv6)"
+                      IsChecked="{Binding Ipv4Only, Mode=TwoWay}" />
+            <CheckBox Content="Блокировка рекламы (geosite-ads)"
+                      IsChecked="{Binding BlockAds, Mode=TwoWay}" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Копировать блок" Classes="primary" Command="{Binding CopyGeneratedCommand}" />
+            <Button Content="Сохранить файл" Command="{Binding SaveGeneratedCommand}" />
+          </StackPanel>
+
+          <TextBlock Text="{Binding StatusText}" FontSize="11.5" Foreground="#93C5FD" TextWrapping="Wrap" />
+
+          <Border Height="1" Background="{StaticResource BorderBrush2}" />
+
+          <StackPanel Spacing="6">
+            <TextBlock Text="Живой аудит блока DNS" Classes="h2" />
+            <TextBlock Text="{Binding AuditSummary}" FontSize="12" Foreground="{StaticResource CleanBrush}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding AuditFindings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="core:VpnAuditFinding">
+                  <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="0,8,0,8">
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource WarnBrush}" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Remediation}" FontSize="11.5" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+
+    <!-- Правая колонка: редактор сгенерированного DNS-блока -->
+    <Border Grid.Column="1" Classes="card" Padding="14">
+      <DockPanel LastChildFill="True">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+          <TextBlock Text="Сгенерированный блок DNS + Route (можно редактировать для аудита)" Classes="h2" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Сбросить к эталону" Command="{Binding RegenerateCommand}" Padding="10,4" />
+        </Grid>
+
+        <TextBox Text="{Binding GeneratedConfig, Mode=TwoWay}"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="{StaticResource MonoFont}"
+                 FontSize="12" />
+      </DockPanel>
+    </Border>
+  </Grid>
+</UserControl>

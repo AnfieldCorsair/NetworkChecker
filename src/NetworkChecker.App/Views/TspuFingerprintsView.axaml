@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels"
+             x:Class="NetworkChecker.App.Views.TspuFingerprintsView"
+             x:DataType="vm:TspuFingerprintsViewModel">
+
+  <Grid RowDefinitions="Auto,*" ColumnDefinitions="7*,5*" ColumnSpacing="16" RowSpacing="12" Margin="20">
+    <!-- Панель запуска -->
+    <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="card">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Локальный сканер паттернов DPI / ТСПУ" Classes="h2" />
+          <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#93C5FD" TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Button Content="Запустить анализ ТСПУ"
+                  Classes="primary"
+                  Command="{Binding RunScanCommand}"
+                  IsEnabled="{Binding !IsScanning}" />
+          <Button Content="Копировать сводку" Command="{Binding CopySummaryCommand}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Левая колонка: распознанные отпечатки -->
+    <Border Grid.Row="1" Grid.Column="0" Classes="card" Padding="14">
+      <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Text="Распознанные паттерны блокировок" Classes="h2" Margin="0,0,0,10" />
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Fingerprints}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:FingerprintDisplayItem">
+                <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="0,10,0,12">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                      <TextBlock Text="{Binding StatusLabel}" FontFamily="{StaticResource MonoFont}" FontSize="11" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="2" Text="{Binding ConfidenceText}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource TextMuted}" />
+                    </Grid>
+                    <TextBlock Text="{Binding Mechanism}" FontSize="12" Foreground="#B8C5D9" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding EvidenceText}" FontFamily="{StaticResource MonoFont}" FontSize="11" Foreground="{StaticResource TextSubtle}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Recommendation}" FontSize="11.5" Foreground="#93C5FD" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Правая колонка: матрица целей + ступенчатый тест 16 КБ -->
+    <Grid Grid.Row="1" Grid.Column="1" RowDefinitions="*,Auto" RowSpacing="12">
+      <Border Grid.Row="0" Classes="card" Padding="14">
+        <DockPanel LastChildFill="True">
+          <TextBlock DockPanel.Dock="Top" Text="Матрица доступности доменов" Classes="h2" Margin="0,0,0,10" />
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Targets}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TargetDisplayItem">
+                  <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="0,6,0,6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding Label}" FontSize="12.5" FontWeight="SemiBold" />
+                        <TextBlock FontSize="11" Foreground="{StaticResource TextMuted}">
+                          <Run Text="{Binding Host}" />
+                          <Run Text=" · " />
+                          <Run Text="{Binding GroupLabel}" />
+                        </TextBlock>
+                      </StackPanel>
+                      <TextBlock Grid.Column="1" Text="{Binding ResultText}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" VerticalAlignment="Center" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Row="1" Classes="card" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Ступенчатый тест отсечки ~16 КБ (Cloudflare)" Classes="h2" />
+          <ItemsControl ItemsSource="{Binding CutoffSteps}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CutoffDisplayItem">
+                <Grid ColumnDefinitions="100,*" Margin="0,2">
+                  <TextBlock Text="{Binding StepLabel}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" Foreground="{StaticResource TextMuted}" />
+                  <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontFamily="{StaticResource MonoFont}" FontSize="11.5" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

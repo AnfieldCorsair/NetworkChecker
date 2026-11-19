@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:NetworkChecker.App.ViewModels"
+             xmlns:core="using:NetworkChecker.Core.VpnAudit"
+             x:Class="NetworkChecker.App.Views.ConfigAuditView"
+             x:DataType="vm:ConfigAuditViewModel">
+
+  <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="5*,7*" ColumnSpacing="16" RowSpacing="12" Margin="20">
+
+    <!-- Верхняя сводка и кнопки живых проб -->
+    <Border Grid.Row="0" Grid.ColumnSpan="2" Classes="card">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+        <StackPanel Spacing="4">
+          <TextBlock Text="{Binding VerdictHeadline}" FontSize="17" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding ProtocolSummary}" Classes="muted" FontFamily="{StaticResource MonoFont}" />
+          <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#93C5FD" TextWrapping="Wrap" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+          <StackPanel>
+            <TextBlock Text="Критично" FontSize="11" Foreground="{StaticResource TextMuted}" />
+            <TextBlock Text="{Binding CriticalCount}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource DangerBrush}" />
+          </StackPanel>
+          <StackPanel>
+            <TextBlock Text="Замечания" FontSize="11" Foreground="{StaticResource TextMuted}" />
+            <TextBlock Text="{Binding WarningCount}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource WarnBrush}" />
+          </StackPanel>
+          <StackPanel>
+            <TextBlock Text="Норма" FontSize="11" Foreground="{StaticResource TextMuted}" />
+            <TextBlock Text="{Binding OkCount}" FontSize="20" FontWeight="Bold" Foreground="{StaticResource CleanBrush}" />
+          </StackPanel>
+          <Button Content="Проверить TLS"
+                  Classes="primary"
+                  Command="{Binding ProbeCurrentEndpointCommand}"
+                  IsEnabled="{Binding !IsBusy}" />
+          <Button Content="Замер RTT (6×)"
+                  Command="{Binding RunRttBenchmarkCommand}"
+                  IsEnabled="{Binding !IsBusy}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Панель загрузки подписки по URL и пресетов -->
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Classes="card" Padding="12">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <TextBox Grid.Column="0"
+                 Text="{Binding SubscriptionUrl, Mode=TwoWay}"
+                 Watermark="https://example.com/sub/... (ссылка на подписку для загрузки по HTTPS)" />
+        <Button Grid.Column="1"
+                Content="Загрузить подписку"
+                Command="{Binding FetchSubscriptionCommand}"
+                IsEnabled="{Binding !IsBusy}" />
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+          <Button Content="Блок-патч подписки" Classes="primary" Command="{Binding ApplyBulkPatchCommand}" />
+          <Button Content="Копировать Outbound JSON" Command="{Binding CopyOutboundJsonCommand}" />
+          <CheckBox Content="Маскировать ключи" IsChecked="{Binding MaskSecrets, Mode=TwoWay}" VerticalAlignment="Center" Margin="6,0,0,0" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Левая колонка: редактор конфига и выбор узла подписки -->
+    <Border Grid.Row="2" Grid.Column="0" Classes="card" Padding="14">
+      <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Конфигурация или Base64-подписка" Classes="h2" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Content="Копировать" Command="{Binding CopyConfigCommand}" Padding="10,4" />
+          </Grid>
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="VLESS XHTTP" Command="{Binding LoadPresetCommand}" CommandParameter="xhttp" Margin="0,0,6,4" Padding="8,4" />
+            <Button Content="VLESS с ошибками" Command="{Binding LoadPresetCommand}" CommandParameter="broken" Margin="0,0,6,4" Padding="8,4" />
+            <Button Content="AmneziaWG" Command="{Binding LoadPresetCommand}" CommandParameter="awg" Margin="0,0,6,4" Padding="8,4" />
+            <Button Content="Hysteria2" Command="{Binding LoadPresetCommand}" CommandParameter="hy2" Margin="0,0,0,4" Padding="8,4" />
+          </WrapPanel>
+        </StackPanel>
+
+        <!-- Если загружено >1 узла подписки -->
+        <ListBox DockPanel.Dock="Bottom"
+                 ItemsSource="{Binding SubscriptionNodes}"
+                 SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
+                 IsVisible="{Binding HasMultipleNodes}"
+                 MaxHeight="150"
+                 Margin="0,10,0,0"
+                 Background="{StaticResource AppBackground}"
+                 BorderBrush="{StaticResource BorderBrush2}"
+                 BorderThickness="1">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="core:SubscriptionNodeAudit">
+              <TextBlock FontFamily="{StaticResource MonoFont}" FontSize="11.5">
+                <Run Text="#" />
+                <Run Text="{Binding Index}" />
+                <Run Text=" · " />
+                <Run Text="{Binding Report.Profile.Name}" />
+                <Run Text=" (" />
+                <Run Text="{Binding Report.Profile.ProtocolLabel}" />
+                <Run Text=")" />
+              </TextBlock>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBox Text="{Binding RawConfig, Mode=TwoWay}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 FontFamily="{StaticResource MonoFont}"
+                 FontSize="12" />
+      </DockPanel>
+    </Border>
+
+    <!-- Правая колонка: список находок аудита -->
+    <Border Grid.Row="2" Grid.Column="1" Classes="card" Padding="14">
+      <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Text="Результаты детерминированного аудита" Classes="h2" Margin="0,0,0,10" />
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Findings}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="core:VpnAuditFinding">
+                <Border BorderBrush="{StaticResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="0,10,0,12" Margin="0,0,0,4">
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Severity}"
+                                 FontFamily="{StaticResource MonoFont}"
+                                 FontSize="11"
+                                 FontWeight="Bold"
+                                 Foreground="#93C5FD"
+                                 VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </Grid>
+                    <TextBlock Text="{Binding SimpleSummary}" FontSize="12" Foreground="#B8C5D9" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Evidence}" FontFamily="{StaticResource MonoFont}" FontSize="11" Foreground="{StaticResource TextSubtle}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Remediation}" FontSize="11.5" Foreground="#93C5FD" TextWrapping="Wrap" Margin="0,2,0,0" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+  </Grid>
+</UserControl>

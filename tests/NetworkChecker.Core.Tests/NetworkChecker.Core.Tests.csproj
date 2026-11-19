@@ -4,10 +4,11 @@
     <IsPackable>false</IsPackable>
     <RootNamespace>NetworkChecker.Core.Tests</RootNamespace>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\NetworkChecker.Core\NetworkChecker.Core.csproj" />
-    <ProjectReference Include="..\NetworkChecker.TestKit\NetworkChecker.TestKit.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
