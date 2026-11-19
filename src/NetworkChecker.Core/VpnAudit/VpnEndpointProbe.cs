@@ -113,7 +113,8 @@ public sealed class VpnEndpointProbe
             var authOptions = new SslClientAuthenticationOptions
             {
                 TargetHost = targetSni,
-                EnabledSslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12,
+                EnabledSslProtocols = SslProtocols.None,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 ApplicationProtocols =
                 [
                     SslApplicationProtocol.Http2,
@@ -124,7 +125,22 @@ public sealed class VpnEndpointProbe
             await ssl.AuthenticateAsClientAsync(authOptions, tlsCts.Token).ConfigureAwait(false);
             swTls.Stop();
 
-            var protocolName = ssl.SslProtocol == SslProtocols.Tls13 ? "TLSv1.3" : ssl.SslProtocol.ToString();
+            var isTls13 = ssl.SslProtocol == SslProtocols.Tls13;
+            if (!isTls13)
+            {
+                var rawTls = await SubnetSniScanner.ProbeRawTls13Async(
+                        targetIp,
+                        targetSni,
+                        (int)Math.Min(effectiveTimeout.TotalMilliseconds, 1800),
+                        ct)
+                    .ConfigureAwait(false);
+                if (rawTls is { IsTls13: true })
+                {
+                    isTls13 = true;
+                }
+            }
+
+            var protocolName = isTls13 ? "TLSv1.3" : ssl.SslProtocol.ToString();
             var alpn = ssl.NegotiatedApplicationProtocol.Protocol.Length > 0
                 ? System.Text.Encoding.ASCII.GetString(ssl.NegotiatedApplicationProtocol.Protocol.Span)
                 : null;
@@ -138,7 +154,7 @@ public sealed class VpnEndpointProbe
                 daysRemaining = (int)Math.Floor((cert2.NotAfter.ToUniversalTime() - DateTime.UtcNow).TotalDays);
             }
 
-            var realitySuitable = ssl.SslProtocol == SslProtocols.Tls13 &&
+            var realitySuitable = isTls13 &&
                                   string.Equals(alpn, "h2", StringComparison.OrdinalIgnoreCase);
 
             return new VpnEndpointProbeResult(

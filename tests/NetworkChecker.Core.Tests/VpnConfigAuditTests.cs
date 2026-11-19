@@ -1,5 +1,8 @@
+using System.Buffers.Binary;
 using System.Net;
+using System.Net.Security;
 using System.Text;
+using System.Text.Json;
 using NetworkChecker.Core.VpnAudit;
 using Xunit;
 
@@ -613,5 +616,331 @@ public sealed class VpnConfigAuditTests
         var report = VpnConfigAuditor.Audit(subUrl);
         Assert.Equal(0, report.CriticalCount);
         Assert.Contains(report.Findings, f => f.Id == "sub-url-detected" && f.Severity == AuditSeverity.Ok);
+    }
+
+    [Fact]
+    public void VpnConfigAuditor_JsonWithoutPrivateLanRule_DoesNotEmitRouterWarning()
+    {
+        const string jsonWithoutLanRule = """
+            {
+              "dns": {
+                "servers": ["https://1.1.1.1/dns-query"]
+              },
+              "outbounds": [
+                {
+                  "tag": "proxy",
+                  "protocol": "vless",
+                  "settings": {
+                    "vnext": [
+                      {
+                        "address": "203.0.113.42",
+                        "port": 443,
+                        "users": [{ "id": "11111111-2222-3333-4444-555555555555", "flow": "xtls-rprx-vision" }]
+                      }
+                    ]
+                  },
+                  "streamSettings": {
+                    "network": "tcp",
+                    "security": "reality",
+                    "realitySettings": {
+                      "serverName": "www.microsoft.com",
+                      "fingerprint": "chrome",
+                      "publicKey": "8xR4qT7wY1zB5nL0jH3dG6sA9eU2iO4pM8kF9vN2cAA"
+                    }
+                  }
+                }
+              ],
+              "routing": {
+                "rules": [
+                  { "type": "field", "domain": ["geosite:category-ru"], "outboundTag": "direct" }
+                ]
+              }
+            }
+            """;
+
+        var report = VpnConfigAuditor.Audit(jsonWithoutLanRule);
+
+        Assert.DoesNotContain(report.Findings, f => f.Id == "json-no-private-bypass");
+        Assert.Equal(0, report.CriticalCount);
+    }
+
+    [Fact]
+    public void DnsArchitect_DefaultIsClassicDoH_AndStrictJsonValidationCatchesTrailingComma()
+    {
+        var defaultOptions = new DnsArchitectOptions();
+        Assert.Equal(DnsProviderProfile.CloudflareGoogle, defaultOptions.ProviderProfile);
+
+        var classicJson = DnsConfigArchitect.GenerateOptimalBlock(defaultOptions);
+        Assert.True(DnsConfigArchitect.ValidateStrictJson(classicJson, out _));
+        Assert.Contains("https://1.1.1.1/dns-query", classicJson, StringComparison.Ordinal);
+        Assert.Contains("https://8.8.8.8/dns-query", classicJson, StringComparison.Ordinal);
+
+        var classicFindings = DnsConfigArchitect.AuditDnsBlock(DnsConfigArchitect.ClassicSampleJson);
+        Assert.DoesNotContain(classicFindings, f => f.Severity is AuditSeverity.Critical or AuditSeverity.Warning);
+        Assert.Contains(classicFindings, f => f.Id == "dns-valid-json-ok");
+        Assert.Contains(classicFindings, f => f.Id == "dns-doh-encrypted-ok");
+
+        const string brokenJsonWithTrailingComma = """
+            {
+              "dns": {
+                "servers": [
+                  "https://1.1.1.1/dns-query",
+                ]
+              }
+            }
+            """;
+
+        Assert.False(DnsConfigArchitect.ValidateStrictJson(brokenJsonWithTrailingComma, out var err));
+        Assert.Contains("Ошибка синтаксиса JSON", err, StringComparison.Ordinal);
+
+        var brokenFindings = DnsConfigArchitect.AuditDnsBlock(brokenJsonWithTrailingComma);
+        Assert.Contains(brokenFindings, f => f.Id == "dns-invalid-json" && f.Severity == AuditSeverity.Critical);
+    }
+
+    [Fact]
+    public void DnsArchitect_InjectsWithAutoDialectSingBoxAndTolerantInput_ProducesStrictValidJson()
+    {
+        // Sing-box конфиг с комментарием, висячей запятой и отсутствующей секцией "dns"
+        const string singBoxDirtyJson = """
+            {
+              // Комментарий пользователя
+              "outbounds": [
+                { "type": "vless", "tag": "proxy", "server": "203.0.113.10", "server_port": 443, },
+                { "type": "direct", "tag": "direct" },
+              ],
+              "route": {
+                "final": "proxy",
+              },
+            }
+            """;
+
+        var ok = DnsConfigArchitect.TryInjectDnsIntoJsonConfig(
+            singBoxDirtyJson,
+            new DnsArchitectOptions(DnsCoreTarget.XrayCore, ProviderProfile: DnsProviderProfile.CloudflareGoogle),
+            out var patched,
+            out var summary);
+
+        Assert.True(ok);
+        Assert.Contains("Sing-box", summary, StringComparison.Ordinal);
+        Assert.True(DnsConfigArchitect.ValidateStrictJson(patched, out _));
+
+        using var doc = JsonDocument.Parse(patched);
+        var dnsServers = doc.RootElement.GetProperty("dns").GetProperty("servers");
+        Assert.Equal("https", dnsServers[0].GetProperty("type").GetString());
+        Assert.Equal("1.1.1.1", dnsServers[0].GetProperty("server").GetString());
+        Assert.Equal("proxy", doc.RootElement.GetProperty("route").GetProperty("final").GetString());
+
+        // Base64-кодированный Xray JSON конфиг тоже должен декодироваться и пропатчиться в строгий JSON
+        const string xrayRaw = """
+            {
+              "remarks": "Base64-Xray",
+              "outbounds": [{ "tag": "proxy", "protocol": "vless" }]
+            }
+            """;
+        var b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(xrayRaw));
+        var okB64 = DnsConfigArchitect.TryInjectDnsIntoJsonConfig(
+            b64,
+            new DnsArchitectOptions(ProviderProfile: DnsProviderProfile.NinjaPrivacy),
+            out var patchedB64,
+            out _);
+
+        Assert.True(okB64);
+        Assert.True(DnsConfigArchitect.ValidateStrictJson(patchedB64, out _));
+        Assert.Contains("https://dns.njal.la/dns-query", patchedB64, StringComparison.Ordinal);
+        Assert.Contains("Base64-Xray", patchedB64, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SubnetSniScanner_RawTls13ClientHelloAndServerHelloParsing_HandlesTls13HrrAndTls12()
+    {
+        var ch = SubnetSniScanner.BuildTls13ClientHello("www.microsoft.com");
+        Assert.True(ch.Length > 100);
+        Assert.Equal(0x16, ch[0]); // Handshake record
+        Assert.Equal(0x01, ch[5]); // ClientHello
+        Assert.Contains("www.microsoft.com", Encoding.ASCII.GetString(ch), StringComparison.Ordinal);
+
+        // 1. Синтетический TLS 1.3 ServerHello с supported_versions = 0x0304
+        var tls13Sh = BuildSyntheticServerHello(
+            cipherSuite: 0x1301,
+            selectedVersion: 0x0304,
+            isHelloRetryRequest: false);
+        var parsed13 = SubnetSniScanner.ParseTls13ServerHello(tls13Sh);
+        Assert.True(parsed13.HandshakeReceived);
+        Assert.True(parsed13.IsTls13);
+        Assert.False(parsed13.IsHelloRetryRequest);
+        Assert.Equal((ushort)0x1301, parsed13.CipherSuite);
+
+        // 2. HelloRetryRequest (специальный ServerRandom из RFC 8446)
+        var hrrSh = BuildSyntheticServerHello(
+            cipherSuite: 0x1301,
+            selectedVersion: 0x0304,
+            isHelloRetryRequest: true);
+        var parsedHrr = SubnetSniScanner.ParseTls13ServerHello(hrrSh);
+        Assert.True(parsedHrr.HandshakeReceived);
+        Assert.True(parsedHrr.IsTls13);
+        Assert.True(parsedHrr.IsHelloRetryRequest);
+
+        // 3. TLS 1.2 ServerHello без TLS 1.3 supported_versions
+        var tls12Sh = BuildSyntheticServerHello(
+            cipherSuite: 0xC02F,
+            selectedVersion: null,
+            isHelloRetryRequest: false);
+        var parsed12 = SubnetSniScanner.ParseTls13ServerHello(tls12Sh);
+        Assert.True(parsed12.HandshakeReceived);
+        Assert.False(parsed12.IsTls13);
+
+        // 4. Проверка EvaluateCertificateTrust: None -> true, NameMismatch -> false
+        Assert.True(SubnetSniScanner.EvaluateCertificateTrust(null, SslPolicyErrors.None));
+        Assert.False(SubnetSniScanner.EvaluateCertificateTrust(null, SslPolicyErrors.RemoteCertificateNameMismatch));
+    }
+
+    [Fact]
+    public void SubscriptionService_PatchSni_PreservesCyrillicFragmentCustomHostAndHandlesBase64()
+    {
+        const string uriWithCyrillic =
+            "vless://11111111-2222-3333-4444-555555555555@203.0.113.10:443" +
+            "?encryption=none&security=reality&type=xhttp&mode=auto&host=custom.cdn.example&sni=old.example.com&fp=chrome#Москва-XHTTP ⚡";
+
+        var okUri = SubscriptionService.TryPatchSniInConfig(uriWithCyrillic, "www.apple.com", out var patchedUri, out _);
+        Assert.True(okUri);
+        Assert.EndsWith("#Москва-XHTTP ⚡", patchedUri, StringComparison.Ordinal);
+        Assert.Contains("sni=www.apple.com", patchedUri, StringComparison.Ordinal);
+        // Кастомный host != oldSni должен остаться нетронутым
+        Assert.Contains("host=custom.cdn.example", patchedUri, StringComparison.Ordinal);
+
+        // Base64-подписка с 2 узлами
+        var b64Sub = Convert.ToBase64String(Encoding.UTF8.GetBytes(uriWithCyrillic + "\n" +
+            "trojan://pass@203.0.113.20:443?sni=old2.example.com#Финляндия-Reserve"));
+        var okB64 = SubscriptionService.TryPatchSniInConfig(b64Sub, "learn.microsoft.com", out var patchedB64, out _);
+        Assert.True(okB64);
+        Assert.Contains("sni=learn.microsoft.com", patchedB64, StringComparison.Ordinal);
+        Assert.Contains("#Москва-XHTTP ⚡", patchedB64, StringComparison.Ordinal);
+        Assert.Contains("#Финляндия-Reserve", patchedB64, StringComparison.Ordinal);
+
+        // JSON с балансировщиком (2 прокси-узла + freedom) и кастомным xhttpSettings.host
+        const string multiOutboundJson = """
+            {
+              "outbounds": [
+                {
+                  "tag": "proxy-1",
+                  "protocol": "vless",
+                  "streamSettings": {
+                    "network": "xhttp",
+                    "security": "reality",
+                    "realitySettings": { "serverName": "old.example.com" },
+                    "xhttpSettings": { "host": "custom.backend.example", "path": "/api" }
+                  }
+                },
+                {
+                  "tag": "proxy-2",
+                  "protocol": "vless",
+                  "streamSettings": {
+                    "network": "tcp",
+                    "security": "reality",
+                    "realitySettings": { "serverName": "old.example.com" }
+                  }
+                },
+                { "tag": "direct", "protocol": "freedom" }
+              ]
+            }
+            """;
+
+        var okJson = SubscriptionService.TryPatchSniInConfig(multiOutboundJson, "www.nvidia.com", out var patchedJson, out _);
+        Assert.True(okJson);
+        Assert.True(DnsConfigArchitect.ValidateStrictJson(patchedJson, out _));
+        Assert.Contains("\"host\": \"custom.backend.example\"", patchedJson, StringComparison.Ordinal);
+        Assert.DoesNotContain("old.example.com", patchedJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SupportTicketBuilder_SupportsMultiSelectSymptomsAndOmitsSpecificNodeDetails()
+    {
+        var activeAudit = VpnConfigAuditor.Audit(
+            "vless://11111111-2222-3333-4444-555555555555@203.0.113.99:443?security=reality&type=xhttp&mode=auto&sni=secret-node-sni.example.com&fp=chrome&pbk=8xR4qT7wY1zB5nL0jH3dG6sA9eU2iO4pM8kF9vN2cAA#Specific-Node-99");
+        var rtt = new RttBenchmarkResult("203.0.113.99", 443, 3, 3, 40, 45, 50, 3.2, 0, [40, 45, 50], "OK");
+
+        var draft = new SupportTicketDraft(
+            Symptom: "Fallback",
+            ConnectionType: "Мобильный интернет (4G / LTE)",
+            ClientApp: "Happ (Windows / iOS / Android)",
+            UserComment: "Проблема на всех локациях",
+            MaskHomeIp: true,
+            ActiveReport: activeAudit,
+            RttBenchmark: rtt,
+            Symptoms:
+            [
+                "Сильно режет скорость (Download/Upload падает почти в ноль)",
+                "Соединение обрывается через 10–30 секунд (подозрение на 16 КБ ТСПУ)",
+            ]);
+
+        var telegram = SupportTicketBuilder.BuildTelegramMessage(draft);
+        var markdown = SupportTicketBuilder.BuildFullMarkdownReport(draft);
+
+        Assert.Contains("Проблемы с интернетом / ВПН:", telegram, StringComparison.Ordinal);
+        Assert.Contains("- Сильно режет скорость", telegram, StringComparison.Ordinal);
+        Assert.Contains("- Соединение обрывается через 10–30 секунд", telegram, StringComparison.Ordinal);
+
+        // Указание конкретного узла, SNI и TCP RTT не должно попадать в отчёт
+        Assert.DoesNotContain("203.0.113.99", telegram, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-node-sni.example.com", telegram, StringComparison.Ordinal);
+        Assert.DoesNotContain("Specific-Node-99", telegram, StringComparison.Ordinal);
+        Assert.DoesNotContain("TCP RTT", telegram, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("203.0.113.99", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-node-sni.example.com", markdown, StringComparison.Ordinal);
+        Assert.DoesNotContain("TCP RTT", markdown, StringComparison.Ordinal);
+    }
+
+    private static readonly byte[] TestHrrRandom =
+    [
+        0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11,
+        0xBE, 0x1D, 0x8C, 0x02, 0x1E, 0x65, 0xB8, 0x91,
+        0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB, 0x8C, 0x5E,
+        0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C,
+    ];
+
+    private static byte[] BuildSyntheticServerHello(ushort cipherSuite, ushort? selectedVersion, bool isHelloRetryRequest)
+    {
+        var body = new List<byte>
+        {
+            0x03,
+            0x03, // legacy_version
+        };
+
+        body.AddRange(isHelloRetryRequest ? TestHrrRandom : new byte[32]);
+
+        body.Add(0); // session_id_len = 0
+        Span<byte> cs = stackalloc byte[2];
+        BinaryPrimitives.WriteUInt16BigEndian(cs, cipherSuite);
+        body.Add(cs[0]);
+        body.Add(cs[1]);
+        body.Add(0); // compression = 0
+
+        if (selectedVersion.HasValue)
+        {
+            // extensions_len = 6 (type 2 + len 2 + val 2)
+            body.Add(0x00);
+            body.Add(0x06);
+            body.Add(0x00);
+            body.Add(0x2B); // supported_versions
+            body.Add(0x00);
+            body.Add(0x02);
+            Span<byte> ver = stackalloc byte[2];
+            BinaryPrimitives.WriteUInt16BigEndian(ver, selectedVersion.Value);
+            body.Add(ver[0]);
+            body.Add(ver[1]);
+        }
+
+        var hsLen = body.Count;
+        var recLen = 4 + hsLen;
+        var packet = new List<byte>
+        {
+            0x16, 0x03, 0x03,
+            (byte)(recLen >> 8), (byte)(recLen & 0xFF),
+            0x02, // ServerHello
+            (byte)((hsLen >> 16) & 0xFF), (byte)((hsLen >> 8) & 0xFF), (byte)(hsLen & 0xFF),
+        };
+        packet.AddRange(body);
+        return [.. packet];
     }
 }

@@ -263,7 +263,7 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
                 if (node is not null)
                 {
                     singleNodeText = node.ToJsonString(PrettyJson);
-                    nodeName = node["remarks"]?.GetValue<string>() ?? $"Узел #{idx + 1}";
+                    nodeName = node["remarks"]?.GetValue<string>() ?? string.Create(CultureInfo.InvariantCulture, $"Узел #{idx + 1}");
                     return true;
                 }
             }
@@ -278,8 +278,17 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
         return true;
     }
 
+    private static readonly JsonDocumentOptions TolerantJsonDoc = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
+    private static readonly string[] NonProxyOutboundTypes = ["freedom", "direct", "blackhole", "block", "dns"];
+
     /// <summary>
     /// Точечно заменяет SNI (serverName / sni) в одиночном конфиге, выбранном узле подписки или во всех узлах подписки.
+    /// Поддерживает JSON (Xray/Sing-box/Happ), списки URI (vless/trojan/hy2 с сохранением кириллицы/эмодзи в #fragment) и Base64-подписки.
     /// </summary>
     public static bool TryPatchSniInConfig(
         string rawConfigOrSubscription,
@@ -299,24 +308,41 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
         }
 
         var cleanSni = newSni.Trim().ToLowerInvariant();
-        var trimmed = rawConfigOrSubscription.Trim();
+        var workingText = rawConfigOrSubscription.Trim();
+
+        // Если подписка закодирована в Base64 — декодируем перед патчингом
+        if (!workingText.StartsWith('{') &&
+            !workingText.StartsWith('[') &&
+            !workingText.Contains("://", StringComparison.Ordinal) &&
+            TryDecodeBase64Payload(workingText, out var decodedPayload))
+        {
+            workingText = decodedPayload;
+        }
 
         // 1. Проверяем JSON (одиночный объект или массив [...])
-        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        if (workingText.StartsWith('{') || workingText.StartsWith('['))
         {
             try
             {
-                var root = JsonNode.Parse(trimmed);
+                var root = JsonNode.Parse(workingText, nodeOptions: null, TolerantJsonDoc);
                 if (root is JsonObject singleObj)
                 {
                     var changed = PatchSniInJsonObject(singleObj, cleanSni);
                     if (!changed)
                     {
-                        summaryMessage = "В данном JSON-профиле не найдены секции realitySettings / tlsSettings для замены SNI.";
+                        summaryMessage = "В данном JSON-профиле не найдены секции realitySettings / tlsSettings / tls для замены SNI.";
                         return false;
                     }
-                    patchedText = singleObj.ToJsonString(PrettyJson);
-                    summaryMessage = $"SNI точечно заменён на «{cleanSni}» в JSON-конфиге.";
+
+                    var candidate = singleObj.ToJsonString(PrettyJson);
+                    if (!DnsConfigArchitect.ValidateStrictJson(candidate, out var jsonError))
+                    {
+                        summaryMessage = $"Замена SNI отменена: {jsonError}";
+                        return false;
+                    }
+
+                    patchedText = candidate;
+                    summaryMessage = $"SNI точечно заменён на «{cleanSni}» в JSON-конфиге (JSON проверен).";
                     return true;
                 }
 
@@ -332,10 +358,22 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
                         if (arr[idx] is JsonObject selectedObj)
                         {
                             var clone = selectedObj.DeepClone().AsObject();
-                            PatchSniInJsonObject(clone, cleanSni);
-                            patchedText = clone.ToJsonString(PrettyJson);
-                            var remarks = clone["remarks"]?.GetValue<string>() ?? $"Узел #{idx + 1}";
-                            summaryMessage = $"Готов исправленный профиль «{remarks}» с новым SNI «{cleanSni}».";
+                            if (!PatchSniInJsonObject(clone, cleanSni))
+                            {
+                                summaryMessage = "В выбранном узле JSON-подписки не найдено полей serverName / server_name.";
+                                return false;
+                            }
+
+                            var candidate = clone.ToJsonString(PrettyJson);
+                            if (!DnsConfigArchitect.ValidateStrictJson(candidate, out var jsonError))
+                            {
+                                summaryMessage = $"Замена SNI отменена: {jsonError}";
+                                return false;
+                            }
+
+                            patchedText = candidate;
+                            var remarks = clone["remarks"]?.GetValue<string>() ?? string.Create(CultureInfo.InvariantCulture, $"Узел #{idx + 1}");
+                            summaryMessage = $"Готов исправленный профиль «{remarks}» с новым SNI «{cleanSni}» (JSON проверен).";
                             return true;
                         }
                     }
@@ -356,14 +394,21 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
 
                     if (updatedNodes == 0)
                     {
-                        summaryMessage = "В выбранных узлах JSON-подписки не найдено полей serverName.";
+                        summaryMessage = "В выбранных узлах JSON-подписки не найдено полей serverName / server_name.";
                         return false;
                     }
 
-                    patchedText = arr.ToJsonString(PrettyJson);
+                    var candidateArray = arr.ToJsonString(PrettyJson);
+                    if (!DnsConfigArchitect.ValidateStrictJson(candidateArray, out var arrJsonError))
+                    {
+                        summaryMessage = $"Замена SNI отменена: {arrJsonError}";
+                        return false;
+                    }
+
+                    patchedText = candidateArray;
                     summaryMessage = targetZeroIdx.HasValue
-                        ? $"SNI в локации #{targetZeroIdx.Value + 1} обновлён на «{cleanSni}»."
-                        : $"SNI обновлён на «{cleanSni}» во всех подходящих локациях подписки ({updatedNodes} шт.).";
+                        ? string.Create(CultureInfo.InvariantCulture, $"SNI в локации #{targetZeroIdx.Value + 1} обновлён на «{cleanSni}» (JSON проверен).")
+                        : string.Create(CultureInfo.InvariantCulture, $"SNI обновлён на «{cleanSni}» во всех подходящих локациях подписки ({updatedNodes} шт., JSON проверен).");
                     return true;
                 }
             }
@@ -374,7 +419,7 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
         }
 
         // 2. Список URI-ссылок (vless://, trojan://, hy2://)
-        var lines = rawConfigOrSubscription.Split(LineSeparators, StringSplitOptions.RemoveEmptyEntries);
+        var lines = workingText.Split(LineSeparators, StringSplitOptions.RemoveEmptyEntries);
         var updatedLines = new List<string>(lines.Length);
         var uriIndex = 0;
         var changedCount = 0;
@@ -392,12 +437,16 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
                 if (shouldPatch)
                 {
                     var query = ParseMutableQuery(uri.Query);
+                    var oldSni = query.GetValueOrDefault("sni");
                     query["sni"] = cleanSni;
-                    var builder = new UriBuilder(uri)
+                    if (query.TryGetValue("host", out var currHost) &&
+                        !string.IsNullOrWhiteSpace(oldSni) &&
+                        string.Equals(currHost, oldSni, StringComparison.OrdinalIgnoreCase))
                     {
-                        Query = string.Join('&', query.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}")),
-                    };
-                    current = builder.Uri.AbsoluteUri;
+                        query["host"] = cleanSni;
+                    }
+
+                    current = RebuildUriPreservingFragment(current, query);
                     changedCount++;
 
                     if (extractSingleNodeOnly)
@@ -415,12 +464,49 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
         if (changedCount > 0)
         {
             patchedText = string.Join('\n', updatedLines);
-            summaryMessage = $"SNI обновлён на «{cleanSni}» (затронуто ссылок: {changedCount}).";
+            summaryMessage = string.Create(CultureInfo.InvariantCulture, $"SNI обновлён на «{cleanSni}» (затронуто ссылок: {changedCount}).");
             return true;
         }
 
         summaryMessage = "Текущий формат не поддерживает замену SNI (поддерживаются JSON Xray/Sing-box, подписки Happ и ссылки vless/trojan/hy2).";
         return false;
+    }
+
+    private static bool TryDecodeBase64Payload(string input, out string decoded)
+    {
+        decoded = string.Empty;
+        try
+        {
+            var clean = input.Replace('-', '+').Replace('_', '/').Replace("\r", "", StringComparison.Ordinal).Replace("\n", "", StringComparison.Ordinal).Trim();
+            switch (clean.Length % 4)
+            {
+                case 2: clean += "=="; break;
+                case 3: clean += "="; break;
+            }
+            var bytes = Convert.FromBase64String(clean);
+            var text = Encoding.UTF8.GetString(bytes).Trim();
+            if (text.StartsWith('{') || text.StartsWith('[') || text.Contains("://", StringComparison.Ordinal))
+            {
+                decoded = text;
+                return true;
+            }
+        }
+        catch (FormatException)
+        {
+            // не Base64
+        }
+        return false;
+    }
+
+    private static string RebuildUriPreservingFragment(string rawUri, Dictionary<string, string> query)
+    {
+        var hashIdx = rawUri.IndexOf('#', StringComparison.Ordinal);
+        var fragment = hashIdx >= 0 ? rawUri[hashIdx..] : string.Empty;
+        var beforeHash = hashIdx >= 0 ? rawUri[..hashIdx] : rawUri;
+        var qIdx = beforeHash.IndexOf('?', StringComparison.Ordinal);
+        var basePart = qIdx >= 0 ? beforeHash[..qIdx] : beforeHash;
+        var queryStr = string.Join('&', query.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+        return string.IsNullOrEmpty(queryStr) ? $"{basePart}{fragment}" : $"{basePart}?{queryStr}{fragment}";
     }
 
     private static bool PatchSniInJsonObject(JsonObject obj, string newSni)
@@ -432,8 +518,16 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
             {
                 if (item is not JsonObject ob) continue;
 
+                var proto = ob["protocol"]?.GetValue<string>() ?? ob["type"]?.GetValue<string>() ?? string.Empty;
+                if (NonProxyOutboundTypes.Contains(proto, StringComparer.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 // Sing-box dialect: ob["tls"]["server_name"]
-                if (ob["tls"] is JsonObject sbTls && sbTls.ContainsKey("server_name"))
+                if (ob["tls"] is JsonObject sbTls &&
+                    (sbTls.ContainsKey("server_name") ||
+                     (sbTls["enabled"] is JsonValue enVal && enVal.TryGetValue<bool>(out var enabled) && enabled)))
                 {
                     sbTls["server_name"] = newSni;
                     changed = true;
@@ -462,6 +556,7 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
                         xhttp["host"] is JsonValue hostVal &&
                         hostVal.TryGetValue<string>(out var oldHost) &&
                         !string.IsNullOrWhiteSpace(oldHost) &&
+                        !string.IsNullOrWhiteSpace(oldSni) &&
                         string.Equals(oldHost, oldSni, StringComparison.OrdinalIgnoreCase))
                     {
                         xhttp["host"] = newSni;
@@ -650,17 +745,13 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
 
                 if (modified)
                 {
-                    var builder = new UriBuilder(uri)
-                    {
-                        Query = string.Join('&', queryPairs.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}")),
-                    };
-                    currentUri = builder.Uri.AbsoluteUri;
+                    currentUri = RebuildUriPreservingFragment(currentUri, queryPairs);
                 }
             }
 
             if (opt.DeduplicateNodes)
             {
-                var dedupKey = $"{p.Protocol}|{p.Name}|{p.ServerHost}|{p.ServerPort}|{p.Transport}|{p.Tls.Sni}|{p.Xhttp?.Path ?? p.WsPath}";
+                var dedupKey = string.Create(CultureInfo.InvariantCulture, $"{p.Protocol}|{p.Name}|{p.ServerHost}|{p.ServerPort}|{p.Transport}|{p.Tls.Sni}|{p.Xhttp?.Path ?? p.WsPath}");
                 if (!seen.Add(dedupKey))
                 {
                     removedDups++;

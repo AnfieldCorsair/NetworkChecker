@@ -30,23 +30,60 @@ public sealed record SupportTicketDraft(
     SupportNetworkSnapshot? WithVpn = null,
     VpnAuditReport? ActiveReport = null,
     RttBenchmarkResult? RttBenchmark = null,
-    WindowsNetworkStackReport? OsStack = null);
+    WindowsNetworkStackReport? OsStack = null,
+    IReadOnlyList<string>? Symptoms = null);
 
 /// <summary>
 /// Формирует готовый диагностический пакет для техподдержки ВПН-сервиса:
-/// 1) Компактное сообщение для Telegram-бота / чата поддержки (с авто-маскировкой ключей/UUID и срезом стека Windows).
+/// 1) Компактное сообщение для Telegram-бота / чата поддержки (с мультивыбором проблем, авто-маскировкой ключей/UUID и срезом стека Windows, без привязки к одному конкретному узлу).
 /// 2) Полный Markdown-файл с таблицей «Без ВПН (провайдер РФ)» vs «С ВПН».
 /// </summary>
 public static class SupportTicketBuilder
 {
+    public static IReadOnlyList<string> ResolveSymptoms(SupportTicketDraft draft)
+    {
+        ArgumentNullException.ThrowIfNull(draft);
+
+        if (draft.Symptoms is { Count: > 0 })
+        {
+            var cleaned = draft.Symptoms
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (cleaned.Count > 0)
+            {
+                return cleaned;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(draft.Symptom)
+            ? ["Не указана (см. замеры ниже)"]
+            : [draft.Symptom.Trim()];
+    }
+
     public static string BuildTelegramMessage(SupportTicketDraft draft)
     {
         ArgumentNullException.ThrowIfNull(draft);
 
+        var symptoms = ResolveSymptoms(draft);
         var sb = new StringBuilder();
         sb.AppendLine(CultureInfo.InvariantCulture, $"Здравствуйте! Прошу помочь с подключением ({DateTimeOffset.Now:dd.MM.yyyy HH:mm}).");
         sb.AppendLine();
-        sb.AppendLine(CultureInfo.InvariantCulture, $"• Проблема: {draft.Symptom}");
+
+        if (symptoms.Count == 1)
+        {
+            sb.AppendLine(CultureInfo.InvariantCulture, $"• Проблема: {symptoms[0]}");
+        }
+        else
+        {
+            sb.AppendLine("• Проблемы с интернетом / ВПН:");
+            foreach (var item in symptoms)
+            {
+                sb.AppendLine(CultureInfo.InvariantCulture, $"  - {item}");
+            }
+        }
+
         sb.AppendLine(CultureInfo.InvariantCulture, $"• Тип сети: {draft.ConnectionType}");
         sb.AppendLine(CultureInfo.InvariantCulture, $"• Клиент: {draft.ClientApp}");
 
@@ -93,27 +130,6 @@ public static class SupportTicketBuilder
             sb.AppendLine(CultureInfo.InvariantCulture, $"• {FormatOsStackLine(os)}");
         }
 
-        if (draft.ActiveReport is { Profile.Protocol: not VpnProtocol.Unknown } rep)
-        {
-            var p = rep.Profile;
-            var portText = p.ServerPort?.ToString(CultureInfo.InvariantCulture) ?? "—";
-            sb.AppendLine();
-            sb.AppendLine("3) Параметры профиля (ключи скрыты):");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"• Узел: {p.Name} · {p.ProtocolLabel} ({p.Transport}) · {p.ServerHost ?? "—"}:{portText}");
-            if (!string.IsNullOrWhiteSpace(p.Tls.Sni))
-            {
-                sb.AppendLine(CultureInfo.InvariantCulture, $"• Маскировка: {p.Tls.Mode.ToUpperInvariant()} · SNI={p.Tls.Sni} · fp={p.Tls.Fingerprint ?? "—"}");
-            }
-        }
-
-        if (draft.RttBenchmark is { } rtt)
-        {
-            var avgText = rtt.AvgMs?.ToString(CultureInfo.InvariantCulture) ?? "—";
-            var p95Text = rtt.P95Ms?.ToString(CultureInfo.InvariantCulture) ?? "—";
-            var jitterText = rtt.JitterMs?.ToString(CultureInfo.InvariantCulture) ?? "—";
-            sb.AppendLine(CultureInfo.InvariantCulture, $"• TCP RTT ({rtt.Host}:{rtt.Port}): avg {avgText} мс / p95 {p95Text} мс / jitter {jitterText} мс / потери {rtt.LossPct}%");
-        }
-
         if (!string.IsNullOrWhiteSpace(draft.UserComment))
         {
             sb.AppendLine();
@@ -127,6 +143,7 @@ public static class SupportTicketBuilder
     {
         ArgumentNullException.ThrowIfNull(draft);
 
+        var symptoms = ResolveSymptoms(draft);
         var downWithout = draft.WithoutVpn?.Speed?.DownloadMbps is { } d1
             ? string.Create(CultureInfo.InvariantCulture, $"{d1:F1} Мбит/с")
             : "—";
@@ -144,7 +161,7 @@ public static class SupportTicketBuilder
         sb.AppendLine("# Диагностический пакет для техподдержки ВПН (NetworkChecker V2)");
         sb.AppendLine();
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Дата сбора:** {DateTimeOffset.UtcNow:O}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Симптом:** {draft.Symptom}");
+        sb.AppendLine(CultureInfo.InvariantCulture, $"- **Проблемы:** {string.Join("; ", symptoms)}");
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Тип сети:** {draft.ConnectionType}");
         sb.AppendLine(CultureInfo.InvariantCulture, $"- **Клиент:** {draft.ClientApp}");
         sb.AppendLine();
@@ -167,6 +184,14 @@ public static class SupportTicketBuilder
         {
             sb.AppendLine();
             sb.AppendLine(CultureInfo.InvariantCulture, $"**Утечка WebRTC:** {EvaluateWebRtcSummary(draft.WithoutVpn, draft.WithVpn)}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(draft.UserComment))
+        {
+            sb.AppendLine();
+            sb.AppendLine("## Комментарий пользователя");
+            sb.AppendLine();
+            sb.AppendLine(VpnConfigAuditor.MaskSensitiveText(draft.UserComment.Trim()));
         }
 
         return sb.ToString().TrimEnd();

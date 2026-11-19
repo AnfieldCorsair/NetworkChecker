@@ -4,12 +4,27 @@
              x:Class="NetworkChecker.App.Views.DnsArchitectView"
              x:DataType="vm:DnsArchitectViewModel">
 
-  <Grid ColumnDefinitions="430,*" ColumnSpacing="16" Margin="20,14">
+  <Grid ColumnDefinitions="440,*" ColumnSpacing="16" Margin="20,14">
     <!-- Левая колонка: настройки генератора, точечная врезка в подписку и аудит -->
     <Border Grid.Column="0" Classes="card">
       <ScrollViewer>
         <StackPanel Spacing="12">
-          <TextBlock Text="1. Конструктор DNS (Ninja / Только блок dns)" Classes="h2" />
+          <TextBlock Text="1. Конструктор DNS (Классика DoH + Приватный)" Classes="h2" />
+
+          <StackPanel Spacing="5">
+            <TextBlock Text="Быстрый выбор базового варианта (оба можно донастроить):" Classes="muted" />
+            <WrapPanel Orientation="Horizontal">
+              <Button Content="Классика DoH (Cloudflare + Google)"
+                      Classes="primary"
+                      Command="{Binding LoadClassicSampleCommand}"
+                      Margin="0,0,6,6"
+                      Padding="10,5" />
+              <Button Content="Приватный Ninja (Njalla + LibreDNS)"
+                      Command="{Binding LoadNinjaSampleCommand}"
+                      Margin="0,0,0,6"
+                      Padding="10,5" />
+            </WrapPanel>
+          </StackPanel>
 
           <StackPanel Spacing="5">
             <TextBlock Text="Для какой программы создаём настройки DNS:" Classes="muted" />
@@ -19,7 +34,7 @@
           </StackPanel>
 
           <StackPanel Spacing="5">
-            <TextBlock Text="Приватный провайдер зашифрованного DNS (DoH):" Classes="muted" />
+            <TextBlock Text="Провайдер зашифрованного DNS (DoH):" Classes="muted" />
             <ComboBox ItemsSource="{Binding ProviderChoices}"
                       SelectedIndex="{Binding SelectedProviderIndex, Mode=TwoWay}"
                       HorizontalAlignment="Stretch" />
@@ -45,7 +60,6 @@
 
           <WrapPanel Orientation="Horizontal">
             <Button Content="Скопировать блок DNS" Classes="primary" Command="{Binding CopyGeneratedCommand}" Margin="0,0,8,6" />
-            <Button Content="Эталон Ninja (Njalla + LibreDNS)" Command="{Binding LoadNinjaSampleCommand}" Margin="0,0,8,6" />
             <Button Content="Сохранить в файл" Command="{Binding SaveGeneratedCommand}" Margin="0,0,0,6" />
           </WrapPanel>
 
@@ -55,7 +69,7 @@
                   CornerRadius="6"
                   Padding="10,8">
             <StackPanel Spacing="6">
-              <TextBlock Text="Точечная врезка этого DNS в подписку из Шага 1 (нижние блоки не трогаем):"
+              <TextBlock Text="Авто-врезка DNS в подписку / конфиг из Шага 1 (формат и запятые JSON проверяются автоматически):"
                          FontSize="12"
                          FontWeight="SemiBold"
                          Foreground="#93C5FD"
@@ -129,13 +143,21 @@
       </ScrollViewer>
     </Border>
 
-    <!-- Правая колонка: редактор сгенерированного DNS-блока -->
+    <!-- Правая колонка: редактор сгенерированного DNS-блока + индикатор валидности JSON -->
     <Border Grid.Column="1" Classes="card" Padding="14">
       <DockPanel LastChildFill="True">
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
-          <TextBlock Text="Готовый блок настроек DNS (в режиме «Только блок dns» нижние секции не затрагиваются)" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
-          <Button Grid.Column="1" Content="Сбросить к выбранному" Command="{Binding RegenerateCommand}" Padding="10,4" />
-        </Grid>
+        <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,10">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Готовый блок настроек DNS (в режиме «Только блок dns» нижние секции не затрагиваются)" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Content="Сбросить к выбранному" Command="{Binding RegenerateCommand}" Padding="10,4" />
+          </Grid>
+          <TextBlock Text="{Binding JsonValidationStatus}"
+                     FontFamily="{StaticResource MonoFont}"
+                     FontSize="11.5"
+                     FontWeight="SemiBold"
+                     Foreground="{Binding JsonValidationBrush}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
 
         <TextBox Text="{Binding GeneratedConfig, Mode=TwoWay}"
                  AcceptsReturn="True"

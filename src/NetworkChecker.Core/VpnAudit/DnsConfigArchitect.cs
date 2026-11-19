@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -20,9 +21,9 @@ public enum DnsOutputScope
 
 public enum DnsProviderProfile
 {
-    NinjaPrivacy,     // Njalla (dns.njal.la) + LibreDNS (doh.libredns.gr)
-    MullvadQuad9,     // Mullvad (dns.mullvad.net) + Quad9 (dns.quad9.net)
-    CloudflareGoogle, // Cloudflare (1.1.1.1) + Google (8.8.8.8)
+    CloudflareGoogle, // Классика DoH: Cloudflare (1.1.1.1) + Google (8.8.8.8)
+    NinjaPrivacy,     // Приватный No-Log: Njalla (dns.njal.la) + LibreDNS (doh.libredns.gr)
+    MullvadQuad9,     // Приватный No-Log: Mullvad (dns.mullvad.net) + Quad9 (dns.quad9.net)
     ComssAdGuard,     // Comss.one + AdGuard DNS
 }
 
@@ -32,15 +33,15 @@ public sealed record DnsArchitectOptions(
     bool UseFakeIp = false,
     bool Ipv4Only = false,
     bool BlockAds = false,
-    DnsProviderProfile ProviderProfile = DnsProviderProfile.NinjaPrivacy,
+    DnsProviderProfile ProviderProfile = DnsProviderProfile.CloudflareGoogle,
     DnsOutputScope OutputScope = DnsOutputScope.DnsBlockOnly);
 
 /// <summary>
-/// Конструктор, хирургический патчер и аудитор блока DNS:
-/// - Поддержка приватных («Ninja» / No-Log) DoH-провайдеров: Njalla (dns.njal.la), LibreDNS (doh.libredns.gr), Mullvad, Quad9;
-/// - Режим «Только блок DNS (без нижних секций)» и режим «Полный блок DNS + Routing»;
-/// - Точечная врезка блока "dns" в одиночный JSON-конфиг или во все узлы JSON-массива подписки [...] без изменения outbounds/routing/remarks;
-/// - Умный аудит роли "localhost" и гео-правил 77.88.8.8 (geosite:category-ru, geosite:category-gov-ru).
+/// Конструктор, авто-патчер и аудитор блока DNS:
+/// - Два базовых ориентира: Классика DoH (Cloudflare 1.1.1.1 + Google 8.8.8.8) по умолчанию и Приватный Ninja (Njalla + LibreDNS) для ценителей приватности;
+/// - Режим «Только блок dns (нижние секции не трогаем)» и «Полный блок dns + routing»;
+/// - Автоопределение диалекта каждого узла (Sing-box vs Xray/Happ) и обязательная строгая проверка JSON (запятые и скобки) после врезки;
+/// - Умный аудит роли "localhost", гео-правил 77.88.8.8 (geosite:category-ru, geosite:category-gov-ru) и синтаксиса JSON.
 /// </summary>
 public static class DnsConfigArchitect
 {
@@ -48,6 +49,18 @@ public static class DnsConfigArchitect
     {
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    private static readonly JsonDocumentOptions TolerantInputJson = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
+    private static readonly JsonDocumentOptions StrictValidationJson = new()
+    {
+        AllowTrailingCommas = false,
+        CommentHandling = JsonCommentHandling.Disallow,
     };
 
     private static readonly string[] SingBoxRuDomainSuffixes = [".ru", ".su", ".xn--p1ai"];
@@ -62,10 +75,31 @@ public static class DnsConfigArchitect
     private static readonly string[] XrayInboundBootstrap = ["dns-bootstrap"];
     private static readonly string[] XrayGeoIpPrivate = ["geoip:private", "geoip:ru"];
 
+    public const string ClassicSampleJson = """
+        {
+          "dns": {
+            "queryStrategy": "UseIPv4",
+            "servers": [
+              {
+                "address": "77.88.8.8",
+                "domains": [
+                  "geosite:category-ru",
+                  "geosite:category-gov-ru"
+                ],
+                "skipFallback": true
+              },
+              "https://1.1.1.1/dns-query",
+              "https://8.8.8.8/dns-query",
+              "localhost"
+            ]
+          }
+        }
+        """;
+
     public const string NinjaSampleJson = """
         {
           "dns": {
-            "queryStrategy": "UseIP",
+            "queryStrategy": "UseIPv4",
             "servers": [
               {
                 "address": "77.88.8.8",
@@ -91,7 +125,7 @@ public static class DnsConfigArchitect
                 "https://dns.njal.la/dns-query",
                 "https://doh.libredns.gr/dns-query",
                 "dns.njal.la",
-                "Ninja Privacy (Njalla + LibreDNS)"),
+                "Приватный Ninja (Njalla + LibreDNS)"),
             DnsProviderProfile.MullvadQuad9 => (
                 "https://dns.mullvad.net/dns-query",
                 "https://dns.quad9.net/dns-query",
@@ -106,8 +140,33 @@ public static class DnsConfigArchitect
                 "https://1.1.1.1/dns-query",
                 "https://8.8.8.8/dns-query",
                 "1.1.1.1",
-                "Классический Cloudflare + Google"),
+                "Классика DoH (Cloudflare + Google)"),
         };
+
+    /// <summary>
+    /// Строго проверяет синтаксис JSON (без висячих запятых и комментариев),
+    /// гарантируя, что конфиг без ошибок прочитается в Happ, v2rayN, Xray-core и Sing-box.
+    /// </summary>
+    public static bool ValidateStrictJson(string json, out string message)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            message = "Пустой JSON.";
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json, StrictValidationJson);
+            message = "JSON проверен: запятые и скобки валидны.";
+            return doc.RootElement.ValueKind is JsonValueKind.Object or JsonValueKind.Array;
+        }
+        catch (JsonException ex)
+        {
+            message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса JSON (строка {ex.LineNumber + 1}, позиция {ex.BytePositionInLine + 1}): {ex.Message}");
+            return false;
+        }
+    }
 
     public static string GenerateOptimalBlock(DnsArchitectOptions? options = null)
     {
@@ -123,8 +182,8 @@ public static class DnsConfigArchitect
 
     /// <summary>
     /// Точечно заменяет только свойство "dns" внутри JSON-конфига или JSON-массива подписки [...],
-    /// вообще не трогая outbounds, inbounds, routing, burstObservatory и remarks.
-    /// Если передан targetNodeIndex для JSON-массива и extractSingleNode = true — возвращает только этот один исправленный узел.
+    /// автоматически подбирая формат (Sing-box vs Xray) под каждый узел и строго проверяя итоговый JSON на запятые/скобки.
+    /// Все остальные секции (outbounds, inbounds, routing, burstObservatory, remarks) остаются нетронутыми.
     /// </summary>
     public static bool TryInjectDnsIntoJsonConfig(
         string rawConfigOrSubscription,
@@ -143,26 +202,8 @@ public static class DnsConfigArchitect
             return false;
         }
 
-        var opt = (options ?? new DnsArchitectOptions()) with { OutputScope = DnsOutputScope.DnsBlockOnly };
-        var dnsWrapperJson = GenerateOptimalBlock(opt);
-
-        JsonNode? dnsBlockNode;
-        try
-        {
-            var parsedWrapper = JsonNode.Parse(dnsWrapperJson);
-            dnsBlockNode = parsedWrapper?["dns"]?.DeepClone();
-        }
-        catch (JsonException ex)
-        {
-            summaryMessage = $"Не удалось подготовить JSON-узел DNS: {ex.Message}";
-            return false;
-        }
-
-        if (dnsBlockNode is null)
-        {
-            summaryMessage = "Сгенерированный блок не содержит секции \"dns\".";
-            return false;
-        }
+        var baseOpt = (options ?? new DnsArchitectOptions()) with { OutputScope = DnsOutputScope.DnsBlockOnly };
+        var (_, _, _, providerLabel) = GetProviderEndpoints(baseOpt.ProviderProfile);
 
         // Проверяем, не Base64 ли это
         var trimmed = rawConfigOrSubscription.Trim();
@@ -176,13 +217,24 @@ public static class DnsConfigArchitect
 
         try
         {
-            var root = JsonNode.Parse(trimmed);
+            var root = JsonNode.Parse(trimmed, nodeOptions: null, TolerantInputJson);
             if (root is JsonObject singleObj)
             {
-                singleObj["dns"] = dnsBlockNode.DeepClone();
-                patchedJson = singleObj.ToJsonString(PrettyJson);
-                var (_, _, _, providerLabel) = GetProviderEndpoints(opt.ProviderProfile);
-                summaryMessage = $"Блок \"dns\" ({providerLabel}) точечно обновлён. Все остальные секции ниже (outbounds, routing, inbounds) оставлены без изменений.";
+                if (!ApplyDialectMatchedDns(singleObj, baseOpt, out var dialectName, out var prepError))
+                {
+                    summaryMessage = prepError;
+                    return false;
+                }
+
+                var candidate = singleObj.ToJsonString(PrettyJson);
+                if (!ValidateStrictJson(candidate, out var validationError))
+                {
+                    summaryMessage = $"Интеграция остановлена: {validationError}";
+                    return false;
+                }
+
+                patchedJson = candidate;
+                summaryMessage = $"Блок \"dns\" ({providerLabel}, формат {dialectName}) точечно обновлён и прошёл строгую проверку JSON (запятые и скобки в порядке).";
                 return true;
             }
 
@@ -198,10 +250,22 @@ public static class DnsConfigArchitect
                     if (arr[idx] is JsonObject selectedObj)
                     {
                         var clone = selectedObj.DeepClone().AsObject();
-                        clone["dns"] = dnsBlockNode.DeepClone();
-                        patchedJson = clone.ToJsonString(PrettyJson);
-                        var remarks = clone["remarks"]?.GetValue<string>() ?? $"Узел #{idx + 1}";
-                        summaryMessage = $"Готов исправленный конфиг для локации «{remarks}» с новым блоком DNS (нижние секции не тронуты).";
+                        if (!ApplyDialectMatchedDns(clone, baseOpt, out var dialectName, out var prepError))
+                        {
+                            summaryMessage = prepError;
+                            return false;
+                        }
+
+                        var candidate = clone.ToJsonString(PrettyJson);
+                        if (!ValidateStrictJson(candidate, out var validationError))
+                        {
+                            summaryMessage = $"Интеграция остановлена: {validationError}";
+                            return false;
+                        }
+
+                        patchedJson = candidate;
+                        var remarks = clone["remarks"]?.GetValue<string>() ?? string.Create(CultureInfo.InvariantCulture, $"Узел #{idx + 1}");
+                        summaryMessage = $"Готов конфиг «{remarks}» с блоком DNS ({providerLabel}, {dialectName}) — JSON строго проверен.";
                         return true;
                     }
                 }
@@ -216,26 +280,93 @@ public static class DnsConfigArchitect
 
                     if (arr[i] is JsonObject itemObj)
                     {
-                        itemObj["dns"] = dnsBlockNode.DeepClone();
+                        if (!ApplyDialectMatchedDns(itemObj, baseOpt, out _, out var prepError))
+                        {
+                            summaryMessage = prepError;
+                            return false;
+                        }
                         updatedCount++;
                     }
                 }
 
-                patchedJson = arr.ToJsonString(PrettyJson);
-                var (_, _, _, providerLabel) = GetProviderEndpoints(opt.ProviderProfile);
+                if (updatedCount == 0)
+                {
+                    summaryMessage = "В JSON-массиве подписки не найдено объектов профилей для обновления DNS.";
+                    return false;
+                }
+
+                var candidateArray = arr.ToJsonString(PrettyJson);
+                if (!ValidateStrictJson(candidateArray, out var arrValidationError))
+                {
+                    summaryMessage = $"Интеграция остановлена: {arrValidationError}";
+                    return false;
+                }
+
+                patchedJson = candidateArray;
                 summaryMessage = targetZeroIdx.HasValue
-                    ? $"Блок \"dns\" ({providerLabel}) точечно обновлён в выбранном узле #{targetZeroIdx.Value + 1} подписки."
-                    : $"Блок \"dns\" ({providerLabel}) точечно вшит во все {updatedCount} локаций подписки (секция outbounds и маршруты ниже не тронуты).";
+                    ? string.Create(CultureInfo.InvariantCulture, $"Блок \"dns\" ({providerLabel}) точечно обновлён в узле #{targetZeroIdx.Value + 1} — JSON проверен.")
+                    : string.Create(CultureInfo.InvariantCulture, $"Блок \"dns\" ({providerLabel}) точечно вшит во все {updatedCount} локаций подписки (формат подобран автоматически, JSON проверен).");
                 return true;
             }
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            // Не JSON — например vless:// ссылка
+            summaryMessage = $"Не удалось разобрать входной JSON: {ex.Message}";
+            return false;
         }
 
-        summaryMessage = "Точечная врезка блока \"dns\" работает для JSON-конфигов и JSON-подписок (Happ / Xray / Sing-box). Для одиночной ссылки vless:// сначала откройте её JSON-профиль или используйте готовый блок DNS слева.";
+        summaryMessage = "Точечная врезка блока \"dns\" работает для JSON-конфигов и JSON-подписок (Happ / Xray / Sing-box). Для одиночной ссылки vless:// используйте готовый блок DNS слева.";
         return false;
+    }
+
+    private static bool ApplyDialectMatchedDns(
+        JsonObject targetObj,
+        DnsArchitectOptions baseOpt,
+        out string dialectLabel,
+        out string errorMessage)
+    {
+        var isSingBox = IsSingBoxJsonObject(targetObj);
+        var effectiveCore = isSingBox ? DnsCoreTarget.SingBox112 : DnsCoreTarget.XrayCore;
+        dialectLabel = isSingBox ? "Sing-box" : "Xray/Happ";
+
+        var dnsWrapperJson = GenerateOptimalBlock(baseOpt with { Core = effectiveCore, OutputScope = DnsOutputScope.DnsBlockOnly });
+        try
+        {
+            var parsedWrapper = JsonNode.Parse(dnsWrapperJson);
+            var dnsNode = parsedWrapper?["dns"]?.DeepClone();
+            if (dnsNode is null)
+            {
+                errorMessage = "Сгенерированный блок не содержит секции \"dns\".";
+                return false;
+            }
+
+            targetObj["dns"] = dnsNode;
+            errorMessage = string.Empty;
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            errorMessage = $"Не удалось подготовить JSON-узел DNS: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static bool IsSingBoxJsonObject(JsonObject obj)
+    {
+        if (obj["outbounds"] is JsonArray outbounds)
+        {
+            foreach (var item in outbounds)
+            {
+                if (item is JsonObject ob &&
+                    ob.ContainsKey("type") &&
+                    !ob.ContainsKey("protocol"))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return obj.ContainsKey("route") && !obj.ContainsKey("routing");
     }
 
     private static bool TryDecodeBase64Json(string input, out string decodedJson)
@@ -268,7 +399,37 @@ public static class DnsConfigArchitect
     {
         var findings = new List<VpnAuditFinding>();
         if (string.IsNullOrWhiteSpace(rawDns)) return findings;
-        var lower = rawDns.ToLowerInvariant();
+        var trimmed = rawDns.Trim();
+        var lower = trimmed.ToLowerInvariant();
+
+        // 0. Проверка валидности JSON (запятые / скобки), если это JSON-блок
+        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        {
+            if (!ValidateStrictJson(trimmed, out var jsonErr))
+            {
+                findings.Add(new VpnAuditFinding(
+                    "dns-invalid-json",
+                    AuditCategory.Routing,
+                    AuditSeverity.Critical,
+                    "Нарушен синтаксис JSON (лишняя или пропущенная запятая / скобка)",
+                    "Клиенты Happ, v2rayN, Xray и Sing-box не смогут прочитать конфигурацию с ошибкой JSON.",
+                    jsonErr,
+                    "Невалидный JSON",
+                    "Нажмите «Сбросить к выбранному» или проверьте запятые в конце строк и закрывающие скобки."));
+            }
+            else
+            {
+                findings.Add(new VpnAuditFinding(
+                    "dns-valid-json-ok",
+                    AuditCategory.Routing,
+                    AuditSeverity.Ok,
+                    "Синтаксис JSON проверен: запятые и скобки в порядке",
+                    "Блок корректно читается стандартным JSON-парсером без ошибок.",
+                    "Строгая проверка JsonDocument (без висячих запятых) пройдена.",
+                    "JSON валиден",
+                    "Можно безопасно вшивать в подписку или конфиг."));
+            }
+        }
 
         var isDnsOnlySnippet = !lower.Contains("\"outbounds\"", StringComparison.Ordinal) &&
                                !lower.Contains("\"inbounds\"", StringComparison.Ordinal) &&
@@ -276,7 +437,7 @@ public static class DnsConfigArchitect
                                !lower.Contains("\"route\"", StringComparison.Ordinal) &&
                                !lower.Contains("tun:", StringComparison.Ordinal);
 
-        // 1. Проверка приватных ("Ninja" / No-Log) DoH-резолверов
+        // 1. Проверка классических и приватных DoH-резолверов
         var ninjaHits = new List<string>();
         if (lower.Contains("dns.njal.la", StringComparison.Ordinal)) ninjaHits.Add("Njalla (dns.njal.la)");
         if (lower.Contains("doh.libredns.gr", StringComparison.Ordinal)) ninjaHits.Add("LibreDNS (doh.libredns.gr)");
@@ -285,17 +446,23 @@ public static class DnsConfigArchitect
         if (lower.Contains("dns.comss.one", StringComparison.Ordinal)) ninjaHits.Add("Comss.one DoH");
         if (lower.Contains("dns.adguard-dns.com", StringComparison.Ordinal)) ninjaHits.Add("AdGuard DoH");
 
+        var classicHits = new List<string>();
+        if (lower.Contains("https://1.1.1.1", StringComparison.Ordinal) || lower.Contains("cloudflare-dns.com", StringComparison.Ordinal) || (lower.Contains("\"type\": \"https\"", StringComparison.Ordinal) && lower.Contains("\"1.1.1.1\"", StringComparison.Ordinal)))
+            classicHits.Add("Cloudflare DoH (1.1.1.1)");
+        if (lower.Contains("https://8.8.8.8", StringComparison.Ordinal) || lower.Contains("dns.google", StringComparison.Ordinal) || (lower.Contains("\"type\": \"https\"", StringComparison.Ordinal) && lower.Contains("\"8.8.8.8\"", StringComparison.Ordinal)))
+            classicHits.Add("Google DoH (8.8.8.8)");
+
         if (ninjaHits.Count > 0)
         {
             findings.Add(new VpnAuditFinding(
                 "dns-ninja-privacy-ok",
                 AuditCategory.Security,
                 AuditSeverity.Ok,
-                $"Подключены приватные No-Log DNS-серверы ({string.Join(" + ", ninjaHits)})",
-                "Запросы к зарубежным сайтам идут через независимые зашифрованные DoH-резолверы без логирования и цензуры.",
-                $"Обнаружены приватные DoH-эндпоинты: {string.Join(", ", ninjaHits)}. Они реже попадают под точечные блокировки по IP, чем стандартные 1.1.1.1 и 8.8.8.8.",
+                $"Подключён приватный No-Log DNS ({string.Join(" + ", ninjaHits)})",
+                "Хороший базовый вариант для ценителей приватности: запросы идут по зашифрованному DoH без логов. При желании всегда можно подстроить под скорость вашего провайдера.",
+                $"Обнаружены приватные DoH-эндпоинты: {string.Join(", ", ninjaHits)}.",
                 string.Join(", ", ninjaHits),
-                "Отличный выбор для приватности и обхода DNS-фильтрации."));
+                "Подходит как приватный вариант. Если нужна максимальная скорость отклика — можно также сравнить с классикой DoH (Cloudflare + Google)."));
         }
 
         // 2. Проверка зашифрованного транспорта DoH/DoT в целом
@@ -304,7 +471,19 @@ public static class DnsConfigArchitect
                            lower.Contains("\"type\": \"https\"", StringComparison.Ordinal) ||
                            lower.Contains("tls://", StringComparison.Ordinal);
 
-        if (hasEncrypted && ninjaHits.Count == 0)
+        if (classicHits.Count > 0 && ninjaHits.Count == 0)
+        {
+            findings.Add(new VpnAuditFinding(
+                "dns-doh-encrypted-ok",
+                AuditCategory.Leaks,
+                AuditSeverity.Ok,
+                $"Подключена классика DoH ({string.Join(" + ", classicHits)})",
+                "Надёжный и быстрый базовый вариант с шифрованием DoH — провайдер не сможет подменить ответы DNS по порту 53.",
+                $"Обнаружены классические DoH-резолверы: {string.Join(", ", classicHits)}.",
+                string.Join(", ", classicHits),
+                "Хорошая рабочая база. Для ценителей повышенной приватности рядом доступен вариант «Приватный Ninja (Njalla + LibreDNS)»."));
+        }
+        else if (hasEncrypted && ninjaHits.Count == 0)
         {
             findings.Add(new VpnAuditFinding(
                 "dns-doh-encrypted-ok",
@@ -314,7 +493,7 @@ public static class DnsConfigArchitect
                 "Провайдер не сможет перехватить или подменить ответы DNS по обычному порту 53.",
                 "Найдены серверы с протоколом https:// или tls://.",
                 "DoH / DoT активен",
-                "Для ещё большей приватности можно переключиться на пресет «Ninja Privacy (Njalla + LibreDNS)»."));
+                "Базовая защита DNS активна; при желании можно выбрать классику DoH или приватный пресет."));
         }
         else if (!hasEncrypted)
         {
@@ -326,7 +505,7 @@ public static class DnsConfigArchitect
                 "Обычные UDP DNS-запросы (порт 53) легко перехватываются и подменяются оборудованием ТСПУ.",
                 "В списке servers отсутствуют https:// или tls:// резолверы.",
                 "Только открытый UDP DNS",
-                "Добавьте https://dns.njal.la/dns-query, https://doh.libredns.gr/dns-query или https://1.1.1.1/dns-query."));
+                "Добавьте классический DoH (https://1.1.1.1/dns-query и https://8.8.8.8/dns-query) или приватный вариант (Njalla / LibreDNS)."));
         }
 
         // 3. Проверка российского сплит-правила 77.88.8.8 (geosite:category-ru / geosite:category-gov-ru)
@@ -349,8 +528,8 @@ public static class DnsConfigArchitect
                 $"Привязка к доменам: geosite:category-ru / geosite:category-gov-ru, skipFallback={(hasSkipFallback ? "true (изолирован от общих запросов)" : "не указан")}.",
                 "77.88.8.8 -> geosite:category-ru",
                 hasSkipFallback
-                    ? "Идеальная настройка раздельного DNS для РФ."
-                    : "Рекомендуется добавить \"skipFallback\": true в блок 77.88.8.8, чтобы он никогда не опрашивался для зарубежных сайтов."));
+                    ? "Раздельный DNS для РФ настроен аккуратно."
+                    : "Рекомендуется добавить \"skipFallback\": true в блок 77.88.8.8, чтобы он не опрашивался для зарубежных сайтов."));
         }
 
         // 4. Разбор роли "localhost" в массиве servers Xray
@@ -362,11 +541,11 @@ public static class DnsConfigArchitect
                     "dns-localhost-explained",
                     AuditCategory.Routing,
                     AuditSeverity.Ok,
-                    "Объяснение записи \"localhost\" в конце списка DNS: системный bootstrap-резолвер",
-                    "Зачем здесь нужен \"localhost\": так как приватные DNS заданы доменными именами (dns.njal.la, doh.libredns.gr), клиенту Xray на старте нужно сначала узнать IP-адрес самих этих DNS-серверов через системный DNS Windows.",
-                    "В Xray-core запись \"localhost\" в конце массива servers служит резервным/стартовым резолвером ОС. Пока вышестоящие DoH-серверы (Njalla / LibreDNS) отвечают, обычные запросы до \"localhost\" не доходят. Для полной изоляции можно добавить \"disableFallbackIfMatch\": true.",
+                    "Запись \"localhost\" в конце списка DNS: системный bootstrap / резерв",
+                    "Зачем нужен \"localhost\": когда DoH-серверы заданы доменными именами (например dns.njal.la, doh.libredns.gr), Xray нужен стартовый резолвер ОС, чтобы узнать их IP.",
+                    "В Xray-core запись \"localhost\" в конце массива servers служит стартовым и резервным резолвером. Пока вышестоящие DoH-серверы отвечают, обычные запросы до \"localhost\" не доходят.",
                     "\"localhost\" (после DoH-серверов)",
-                    "Это штатный приём для доменных DoH (Njalla / LibreDNS). Оставляйте \"localhost\" последним в списке servers."));
+                    "Оставляйте \"localhost\" последним элементом списка servers."));
             }
             else
             {
@@ -378,7 +557,7 @@ public static class DnsConfigArchitect
                     "Все запросы уходят на DNS вашего интернет-провайдера.",
                     "Запись \"localhost\" обращается к системному резолверу ОС.",
                     "\"localhost\"",
-                    "Добавьте перед \"localhost\" защищённые DoH-серверы (например Njalla и LibreDNS)."));
+                    "Добавьте перед \"localhost\" защищённые DoH-серверы (Cloudflare/Google или Njalla/LibreDNS)."));
             }
         }
 
@@ -391,17 +570,16 @@ public static class DnsConfigArchitect
                 AuditCategory.Leaks,
                 AuditSeverity.Ok,
                 isIpv4Only
-                    ? "Стратегия queryStrategy: UseIPv4 (жёсткая защита от утечек IPv6)"
+                    ? "Стратегия queryStrategy: UseIPv4 (защита от утечек IPv6)"
                     : "Стратегия queryStrategy: UseIP (поддержка IPv4 + IPv6)",
                 isIpv4Only
-                    ? "Запрашиваются только IPv4-адреса (A-записи), что полностью исключает утечки через IPv6 провайдера."
+                    ? "Запрашиваются только IPv4-адреса (A-записи), что снижает риск утечек через IPv6 провайдера."
                     : "Разрешены и IPv4, и IPv6 адреса. Если у вашего провайдера есть IPv6, а ВПН-сервер работает только по IPv4, лучше сменить UseIP на UseIPv4.",
                 isIpv4Only ? "queryStrategy = UseIPv4" : "queryStrategy = UseIP",
                 isIpv4Only ? "\"queryStrategy\": \"UseIPv4\"" : "\"queryStrategy\": \"UseIP\"",
                 "При зависании сайтов на мобильных сетях переключите на UseIPv4."));
         }
 
-        // Если пользователь проверяет только изолированный блок "dns": { ... }, подтверждаем что он готов к точечной вставке
         if (isDnsOnlySnippet)
         {
             findings.Add(new VpnAuditFinding(
@@ -409,10 +587,10 @@ public static class DnsConfigArchitect
                 AuditCategory.Routing,
                 AuditSeverity.Ok,
                 "Изолированный блок \"dns\" (без затрагивания нижних секций конфига)",
-                "Этот фрагмент содержит только настройки DNS и готов к точечной вставке в существующий конфиг или подписку.",
-                "Секции outbounds, inbounds и routing не включены в этот фрагмент, поэтому при врезке ваши серверы и правила маршрутизации ниже останутся нетронутыми.",
+                "Этот фрагмент содержит только настройки DNS и готов к автоматической врезке в конфиг или подписку.",
+                "Секции outbounds, inbounds и routing не включены в этот фрагмент, поэтому ваши серверы и маршруты ниже останутся нетронутыми.",
                 "Режим: Только блок DNS",
-                "Нажмите «Вшить этот DNS в конфиг / подписку на Шаге 1», чтобы обновить только секцию dns."));
+                "Нажмите «Вшить в выбранный узел» или «Вшить во всю подписку» — формат и запятые проверятся автоматически."));
             return findings;
         }
 
@@ -461,7 +639,6 @@ public static class DnsConfigArchitect
             });
         }
 
-        // В режиме "Только блок DNS" используем лаконичный формат строк DoH (как в Happ / Xray конфигах с Njalla и LibreDNS)
         if (opt.OutputScope == DnsOutputScope.DnsBlockOnly)
         {
             servers.Add(primaryDoh);
@@ -479,7 +656,6 @@ public static class DnsConfigArchitect
             return JsonSerializer.Serialize(dnsOnlyDoc, PrettyJson);
         }
 
-        // Полный блок DNS + Routing с тегами
         servers.Add(new { address = primaryDoh, tag = "dns-remote" });
         servers.Add(new { address = secondaryDoh, tag = "dns-remote-backup" });
         servers.Add("localhost");

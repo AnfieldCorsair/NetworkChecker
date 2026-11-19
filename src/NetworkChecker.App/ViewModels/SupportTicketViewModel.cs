@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -6,13 +7,32 @@ using NetworkChecker.Core.VpnAudit;
 
 namespace NetworkChecker.App.ViewModels;
 
+public sealed partial class SelectableSymptomItem : ObservableObject
+{
+    private readonly Action? _onChanged;
+
+    public SelectableSymptomItem(string label, bool isSelected, Action onChanged)
+    {
+        Label = label;
+        IsSelected = isSelected;
+        _onChanged = onChanged;
+    }
+
+    public string Label { get; }
+
+    [ObservableProperty]
+    public partial bool IsSelected { get; set; }
+
+    partial void OnIsSelectedChanged(bool value) => _onChanged?.Invoke();
+}
+
 /// <summary>
-/// Вкладка 5: 2-шаговый генератор запроса в техподдержку ВПН («Без ВПН — РФ-провайдер» vs «С ВПН — туннель»).
+/// Вкладка 5: 2-шаговый генератор запроса в техподдержку ВПН («Без ВПН — РФ-провайдер» vs «С ВПН — туннель»)
+/// с мультивыбором проблем и без привязки к одному конкретному серверу.
 /// </summary>
 public sealed partial class SupportTicketViewModel : ViewModelBase
 {
     private readonly HttpClient _http;
-    private readonly ConfigAuditViewModel _configAudit;
     private readonly IDesktopUiService _ui;
 
     private SupportNetworkSnapshot? _withoutVpn;
@@ -20,12 +40,21 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
 
     public SupportTicketViewModel(
         HttpClient http,
-        ConfigAuditViewModel configAudit,
         IDesktopUiService ui)
     {
         _http = http;
-        _configAudit = configAudit;
         _ui = ui;
+
+        SymptomItems =
+        [
+            new SelectableSymptomItem("Сильно режет скорость (Download/Upload падает почти в ноль)", true, RebuildPreview),
+            new SelectableSymptomItem("Туннель подключается, но сайты/приложения не открываются", false, RebuildPreview),
+            new SelectableSymptomItem("Соединение обрывается через 10–30 секунд (подозрение на 16 КБ ТСПУ)", false, RebuildPreview),
+            new SelectableSymptomItem("Вообще не подключается (таймаут рукопожатия / сброс TCP)", false, RebuildPreview),
+            new SelectableSymptomItem("Работают только российские сайты (режим белых списков)", false, RebuildPreview),
+            new SelectableSymptomItem("Не открываются отдельные сайты или мессенджеры (проблема DNS / маршрута)", false, RebuildPreview),
+        ];
+
         RebuildPreview();
     }
 
@@ -33,16 +62,9 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     public override string Subtitle => "Готовый отчёт без паролей";
     public override string Description => "Собирает понятный технический отчёт для отправки в поддержку вашего ВПН-сервиса (при этом все ваши личные ключи и пароли автоматически скрываются).";
     public override string SimpleGuideText =>
-        "Если ВПН плохо работает: 1) Выключите ВПН и нажмите «Снять замер БЕЗ ВПН». 2) Включите ВПН и нажмите «Снять замер С ВПН». 3) Нажмите «Скопировать готовый текст» и отправьте его в Telegram-бот или чат поддержки вашего ВПН.";
+        "Если ВПН плохо работает: 1) Выключите ВПН и нажмите «Снять срез». 2) Включите ВПН и нажмите второй «Снять срез». 3) Отметьте все подходящие проблемы галочками и нажмите «Копировать текст» для отправки в чат поддержки.";
 
-    public IReadOnlyList<string> SymptomChoices { get; } =
-    [
-        "Сильно режет скорость (Download/Upload падает почти в ноль)",
-        "Туннель подключается, но сайты/приложения не открываются",
-        "Соединение обрывается через 10–30 секунд (подозрение на 16 КБ ТСПУ)",
-        "Вообще не подключается (таймаут рукопожатия / сброс TCP)",
-        "Работают только российские сайты (режим белых списков)",
-    ];
+    public ObservableCollection<SelectableSymptomItem> SymptomItems { get; }
 
     public IReadOnlyList<string> ConnectionChoices { get; } =
     [
@@ -61,9 +83,6 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     ];
 
     [ObservableProperty]
-    public partial string SelectedSymptom { get; set; } = "Сильно режет скорость (Download/Upload падает почти в ноль)";
-
-    [ObservableProperty]
     public partial string SelectedConnection { get; set; } = "Домашний проводной интернет / Wi-Fi";
 
     [ObservableProperty]
@@ -79,18 +98,17 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
-    public partial string WithoutVpnSummary { get; set; } = "Замер ещё не сделан — отключите ВПН и нажмите «Снять замер БЕЗ ВПН».";
+    public partial string WithoutVpnSummary { get; set; } = "Замер ещё не сделан — отключите ВПН и нажмите «Снять срез».";
 
     [ObservableProperty]
-    public partial string WithVpnSummary { get; set; } = "Замер ещё не сделан — включите ВПН и нажмите «Снять замер С ВПН».";
+    public partial string WithVpnSummary { get; set; } = "Замер ещё не сделан — включите ВПН и нажмите «Снять срез».";
 
     [ObservableProperty]
     public partial string TelegramPreview { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Все секретные ключи, пароли и ваш домашний IP автоматически скрыты звездочками — отчёт полностью безопасно отправлять в чат.";
+    public partial string StatusText { get; set; } = "Все секретные ключи, пароли и ваш домашний IP автоматически скрыты звёздочками — отчёт безопасно отправлять в чат.";
 
-    partial void OnSelectedSymptomChanged(string value) => RebuildPreview();
     partial void OnSelectedConnectionChanged(string value) => RebuildPreview();
     partial void OnSelectedClientChanged(string value) => RebuildPreview();
     partial void OnUserCommentChanged(string value) => RebuildPreview();
@@ -114,7 +132,7 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
             _withoutVpn = await SupportNetworkProbe.CaptureAsync(_http, "without_vpn", runSpeedTest: true, ct).ConfigureAwait(true);
             WithoutVpnSummary = FormatSnapshotSummary(_withoutVpn, MaskHomeIp);
             RebuildPreview();
-            StatusText = "Шаг 1 готов! Теперь включите ваш ВПН и нажмите кнопку «Шаг 2: Снять замер С ВПН».";
+            StatusText = "Шаг 1 готов! Теперь включите ваш ВПН и нажмите «Снять срез» на Шаге 2.";
         }
         finally
         {
@@ -141,10 +159,10 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void RefreshFromAudit()
+    private void RefreshOsStack()
     {
         RebuildPreview();
-        StatusText = "Данные о вашей подписке и проверке сервера обновлены из Шага 1.";
+        StatusText = "Состояние сетевого стека Windows (TUN / DNS / IPv6) обновлено в отчёте.";
     }
 
     [RelayCommand]
@@ -163,17 +181,26 @@ public sealed partial class SupportTicketViewModel : ViewModelBase
         StatusText = path is not null ? $"Полный отчёт сохранён в файл: {path}" : "Сохранение отменено.";
     }
 
-    private SupportTicketDraft BuildDraft() => new(
-        SelectedSymptom,
-        SelectedConnection,
-        SelectedClient,
-        UserComment,
-        MaskHomeIp,
-        _withoutVpn,
-        _withVpn,
-        _configAudit.CurrentReport,
-        _configAudit.LastRttResult,
-        WindowsNetworkStackAuditor.AuditLiveOsStack());
+    private SupportTicketDraft BuildDraft()
+    {
+        var selected = SymptomItems
+            .Where(item => item.IsSelected)
+            .Select(item => item.Label)
+            .ToList();
+
+        return new SupportTicketDraft(
+            Symptom: selected.FirstOrDefault() ?? "Не указана (см. замеры ниже)",
+            ConnectionType: SelectedConnection,
+            ClientApp: SelectedClient,
+            UserComment: UserComment,
+            MaskHomeIp: MaskHomeIp,
+            WithoutVpn: _withoutVpn,
+            WithVpn: _withVpn,
+            ActiveReport: null,
+            RttBenchmark: null,
+            OsStack: WindowsNetworkStackAuditor.AuditLiveOsStack(),
+            Symptoms: selected);
+    }
 
     private void RebuildPreview()
     {

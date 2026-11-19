@@ -9,9 +9,9 @@ using NetworkChecker.Core.VpnAudit;
 namespace NetworkChecker.App.ViewModels;
 
 /// <summary>
-/// Вкладка 2: Генератор, диалектный аудитор и точечный инжектор оптимального DNS-блока под РФ
-/// (Sing-box 1.12+, Xray-core v25+ / Happ, Clash/Mihomo) с поддержкой Ninja Privacy (Njalla + LibreDNS)
-/// и режимом генерации «Только блок dns (нижнее не трогаем)».
+/// Вкладка 2: Генератор, диалектный аудитор и точечный инжектор блока DNS под РФ
+/// (Классика DoH Cloudflare + Google по умолчанию и Приватный Ninja: Njalla + LibreDNS)
+/// с автоподбором формата (Sing-box / Xray) и строгой проверкой JSON (запятые и скобки).
 /// </summary>
 public sealed partial class DnsArchitectViewModel : ViewModelBase
 {
@@ -27,17 +27,17 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
         _configAudit = configAudit;
         _ui = ui;
         SelectedCoreIndex = 1; // Xray / Happ по умолчанию для быстрой работы с подписками
-        SelectedProviderIndex = 0; // Ninja Privacy (Njalla + LibreDNS)
+        SelectedProviderIndex = 0; // Классика DoH: Cloudflare (1.1.1.1) + Google (8.8.8.8)
         SelectedScopeIndex = 0; // Только блок "dns" (без дальнейших правок ниже)
         UseFakeIp = false;
         Regenerate();
     }
 
     public override string Title => "Настройка DNS";
-    public override string Subtitle => "Ninja DNS · Только блок dns · Врезка";
-    public override string Description => "Генератор защищённого DNS (включая приватные Njalla и LibreDNS), режим «Только блок dns без нижних секций» и точечная врезка в вашу подписку или выбранный узел.";
+    public override string Subtitle => "Классика DoH · Приватный · Врезка";
+    public override string Description => "Генератор и аудитор блока DNS: классический DoH (Cloudflare + Google) по умолчанию и приватный вариант (Njalla + LibreDNS), с автоподбором формата и проверкой JSON при врезке.";
     public override string SimpleGuideText =>
-        "Выберите «Только блок dns (нижнее не трогаем)» и провайдера «Ninja Privacy (Njalla + LibreDNS)». Вы можете скопировать сам блок [dns], либо одним кликом вшить его в вашу подписку из Шага 1 и забрать готовый узел в буфер или по локальной ссылке.";
+        "По умолчанию выбрана надёжная классика DoH (Cloudflare 1.1.1.1 + Google 8.8.8.8). Рядом доступна кнопка приватного варианта (Njalla + LibreDNS). При врезке в подписку программа сама подбирает формат и проверяет целостность JSON (запятые и скобки).";
 
     public IReadOnlyList<string> CoreChoices { get; } =
     [
@@ -48,15 +48,15 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
 
     public IReadOnlyList<string> ProviderChoices { get; } =
     [
-        "Ninja Privacy: Njalla (dns.njal.la) + LibreDNS (doh.libredns.gr)",
+        "Классика DoH: Cloudflare (1.1.1.1) + Google (8.8.8.8)",
+        "Приватный Ninja: Njalla (dns.njal.la) + LibreDNS (doh.libredns.gr)",
         "Приватный No-Log: Mullvad DoH + Quad9 DoH",
-        "Классический: Cloudflare (1.1.1.1) + Google (8.8.8.8)",
         "РФ и антиреклама: Comss.one DoH + AdGuard DoH",
     ];
 
     public IReadOnlyList<string> ScopeChoices { get; } =
     [
-        "Только блок \"dns\" (в фигурных/квадратных скобках, нижнее не трогаем)",
+        "Только блок \"dns\" (нижние секции конфига не трогаем)",
         "Полный блок \"dns\" + \"routing\" (вместе с правилами маршрутов)",
     ];
 
@@ -85,13 +85,19 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
     public partial string GeneratedConfig { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string AuditSummary { get; set; } = "Готовый блок DNS полностью защищён от подмены и утечек.";
+    public partial string JsonValidationStatus { get; set; } = "JSON проверен: запятые и скобки валидны.";
+
+    [ObservableProperty]
+    public partial IBrush JsonValidationBrush { get; set; } = CleanBrush;
+
+    [ObservableProperty]
+    public partial string AuditSummary { get; set; } = "Готовый блок DNS защищён от подмены и утечек.";
 
     [ObservableProperty]
     public partial IBrush AuditSummaryBrush { get; set; } = CleanBrush;
 
     [ObservableProperty]
-    public partial string StatusText { get; set; } = "Выберите режим («Только блок dns» или «Полный»), провайдера (например Ninja: Njalla + LibreDNS) и скопируйте либо вшейте в подписку.";
+    public partial string StatusText { get; set; } = "Выберите базовый вариант (Классика DoH или Приватный Ninja) и вшейте в подписку — целостность JSON проверяется автоматически.";
 
     public ObservableCollection<AuditFindingDisplayItem> AuditFindings { get; } = [];
 
@@ -127,10 +133,10 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
 
         var provider = SelectedProviderIndex switch
         {
-            1 => DnsProviderProfile.MullvadQuad9,
-            2 => DnsProviderProfile.CloudflareGoogle,
+            1 => DnsProviderProfile.NinjaPrivacy,
+            2 => DnsProviderProfile.MullvadQuad9,
             3 => DnsProviderProfile.ComssAdGuard,
-            _ => DnsProviderProfile.NinjaPrivacy,
+            _ => DnsProviderProfile.CloudflareGoogle,
         };
 
         var scope = SelectedScopeIndex == 0
@@ -155,22 +161,38 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void LoadNinjaSample()
+    private void LoadClassicSample()
     {
         SelectedCoreIndex = 1;
         SelectedProviderIndex = 0;
         SelectedScopeIndex = 0;
+        GeneratedConfig = DnsConfigArchitect.ClassicSampleJson;
+        StatusText = "Выбрана классика DoH: Cloudflare (1.1.1.1) + Google (8.8.8.8) + 77.88.8.8 для РФ. Надёжный базовый вариант.";
+    }
+
+    [RelayCommand]
+    private void LoadNinjaSample()
+    {
+        SelectedCoreIndex = 1;
+        SelectedProviderIndex = 1;
+        SelectedScopeIndex = 0;
         GeneratedConfig = DnsConfigArchitect.NinjaSampleJson;
-        StatusText = "Загружен эталонный блок Ninja DNS (77.88.8.8 для category-ru + Njalla + LibreDNS + резервный localhost).";
+        StatusText = "Выбран приватный вариант Ninja: Njalla + LibreDNS + 77.88.8.8 для РФ + bootstrap localhost (для ценителей приватности, не догма).";
     }
 
     [RelayCommand]
     private async Task CopyGeneratedAsync()
     {
+        if (SelectedCoreIndex != 2 && !DnsConfigArchitect.ValidateStrictJson(GeneratedConfig, out var err))
+        {
+            StatusText = $"Копирование предупреждено: {err}";
+            return;
+        }
+
         var ok = await _ui.CopyTextAsync(GeneratedConfig).ConfigureAwait(true);
         StatusText = ok
             ? (SelectedScopeIndex == 0
-                ? "Только блок \"dns\" (без нижних секций) скопирован в буфер обмена."
+                ? "Только блок \"dns\" скопирован в буфер обмена (JSON валиден)."
                 : "Полный блок DNS + маршрутизации скопирован в буфер обмена.")
             : "Буфер обмена недоступен.";
     }
@@ -217,7 +239,7 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
 
         var copied = await _ui.CopyTextAsync(patchedSingleNodeJson).ConfigureAwait(true);
         StatusText = copied
-            ? $"{summaryMessage} Готовый одиночный конфиг узла #{selectedIdx} скопирован в буфер обмена (можно сразу вставить в Happ или v2rayN)."
+            ? string.Create(CultureInfo.InvariantCulture, $"{summaryMessage} Готовый одиночный конфиг узла #{selectedIdx} скопирован в буфер обмена (можно сразу вставить в Happ или v2rayN).")
             : summaryMessage;
     }
 
@@ -240,12 +262,12 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
         _configAudit.UpdateRawConfigFromPatcher(patchedJson, summaryMessage);
         var title = !string.IsNullOrWhiteSpace(_configAudit.SubscriptionTitle)
             ? _configAudit.SubscriptionTitle
-            : "KonturVPN-NinjaDNS";
+            : "KonturVPN-DNS";
         var url = SubscriptionService.StartOrUpdateLocalSubscriptionServer(patchedJson, title);
         _configAudit.HostedSubscriptionUrl = url;
         var copied = await _ui.CopyTextAsync(url).ConfigureAwait(true);
         StatusText = copied
-            ? $"Блок DNS вшит во все узлы подписки! Локальная ссылка скопирована в буфер: {url} (добавьте её в Happ / v2rayN)."
+            ? $"Блок DNS вшит во все узлы подписки (JSON проверен)! Локальная ссылка скопирована в буфер: {url}"
             : $"Локальная ссылка с новым DNS запущена: {url}";
     }
 
@@ -254,7 +276,7 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
     {
         var isYaml = SelectedCoreIndex == 2;
         var ext = isYaml ? ".yaml" : ".json";
-        var name = isYaml ? "dns-clash-mihomo.yaml" : (SelectedCoreIndex == 1 ? "dns-xray-ninja.json" : "dns-singbox-112.json");
+        var name = isYaml ? "dns-clash-mihomo.yaml" : (SelectedCoreIndex == 1 ? "dns-xray.json" : "dns-singbox-112.json");
         var desc = isYaml ? "YAML-конфиг" : "JSON-конфиг";
         var path = await _ui.SaveTextFileAsync(name, GeneratedConfig, ext, desc).ConfigureAwait(true);
         StatusText = path is not null ? $"Файл сохранён: {path}" : "Сохранение отменено.";
@@ -262,6 +284,19 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
 
     private void RunAudit(string raw)
     {
+        var trimmed = raw.Trim();
+        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        {
+            var valid = DnsConfigArchitect.ValidateStrictJson(trimmed, out var msg);
+            JsonValidationStatus = msg;
+            JsonValidationBrush = valid ? CleanBrush : DangerBrush;
+        }
+        else
+        {
+            JsonValidationStatus = "Формат YAML (Clash / Mihomo).";
+            JsonValidationBrush = CleanBrush;
+        }
+
         AuditFindings.Clear();
         var findings = DnsConfigArchitect.AuditDnsBlock(raw);
         foreach (var f in findings)
@@ -286,7 +321,7 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
         var actionableCount = findings.Count(x => x.Severity is AuditSeverity.Critical or AuditSeverity.Warning);
         if (actionableCount == 0)
         {
-            AuditSummary = "Всё отлично: зашифрованный DNS (DoH) через туннель и прямой доступ к сайтам РФ настроены правильно.";
+            AuditSummary = "Блок DNS валиден: зашифрованный DoH и раздельные правила для РФ настроены корректно.";
             AuditSummaryBrush = CleanBrush;
         }
         else

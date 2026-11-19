@@ -67,7 +67,11 @@
 
         <!-- Панель быстрой замены DNS и выгрузки исправленной подписки в Happ / v2rayN -->
         <WrapPanel Orientation="Horizontal">
-          <Button Content="Вшить Ninja DNS (Njalla + LibreDNS)"
+          <Button Content="Вшить DNS: Классика (Cloudflare + Google)"
+                  Command="{Binding QuickInjectClassicDnsCommand}"
+                  Margin="0,0,8,4"
+                  Padding="10,5" />
+          <Button Content="Вшить приватный DNS (Njalla + LibreDNS)"
                   Command="{Binding QuickInjectNinjaDnsCommand}"
                   Margin="0,0,8,4"
                   Padding="10,5" />

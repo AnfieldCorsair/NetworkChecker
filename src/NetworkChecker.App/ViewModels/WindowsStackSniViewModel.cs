@@ -22,6 +22,7 @@ public sealed record PortDisplayItem(
 public sealed class SniNeighborDisplayItem
 {
     private static readonly IBrush CleanBrush = new SolidColorBrush(Color.Parse("#4ADE80"));
+    private static readonly IBrush WarnBrush = new SolidColorBrush(Color.Parse("#FBBF24"));
     private static readonly IBrush MutedBrush = new SolidColorBrush(Color.Parse("#9BAAC2"));
 
     public SniNeighborDisplayItem(
@@ -36,8 +37,12 @@ public sealed class SniNeighborDisplayItem
         Meta = string.Create(
             CultureInfo.InvariantCulture,
             $"{item.SourceLabel} · {item.TlsProtocol} · ALPN {item.Alpn} · {(item.CertChainValid ? "Сертификат ОК" : "Ошибка серт.")} · {item.HandshakeMs} мс");
-        Verdict = item.IsRealityReady ? "ИДЕАЛЕН ДЛЯ REALITY (TLS 1.3 + h2)" : "НЕ ПОДХОДИТ ДЛЯ REALITY";
-        VerdictBrush = item.IsRealityReady ? CleanBrush : MutedBrush;
+        Verdict = !string.IsNullOrWhiteSpace(item.VerdictReason)
+            ? item.VerdictReason
+            : (item.IsRealityReady ? "ПОДХОДИТ ДЛЯ REALITY (TLS 1.3 + h2)" : "НЕ ПОДХОДИТ ДЛЯ REALITY");
+        VerdictBrush = item.IsRealityReady
+            ? CleanBrush
+            : (Verdict.StartsWith("ЧАСТИЧНО", StringComparison.OrdinalIgnoreCase) ? WarnBrush : MutedBrush);
         CopyCommand = new AsyncRelayCommand(() => onCopy(item.Domain));
         ApplyToSelectedNodeCommand = new AsyncRelayCommand(() => onApplyToConfig(item.Domain, true));
         ApplyToAllNodesCommand = new AsyncRelayCommand(() => onApplyToConfig(item.Domain, false));
@@ -293,7 +298,7 @@ public sealed partial class WindowsStackSniViewModel : ViewModelBase
         var copied = await _ui.CopyTextAsync(patchedText).ConfigureAwait(true);
         SubnetStatus = copied
             ? (singleNodeOnly
-                ? $"{summaryMessage} Готовый конфиг узла #{targetIdx} с новым SNI «{domain}» скопирован в буфер обмена (для вставки в Happ / v2rayN)!"
+                ? string.Create(CultureInfo.InvariantCulture, $"{summaryMessage} Готовый конфиг узла #{targetIdx} с новым SNI «{domain}» скопирован в буфер обмена (для вставки в Happ / v2rayN)!")
                 : $"{summaryMessage} Вся обновлённая подписка с новым SNI «{domain}» скопирована в буфер обмена!")
             : summaryMessage;
     }

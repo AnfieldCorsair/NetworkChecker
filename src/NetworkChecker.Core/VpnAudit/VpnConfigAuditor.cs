@@ -681,19 +681,6 @@ public static partial class VpnConfigAuditor
                 "Добавьте правило перехвата протокола dns на вкладке «2. Настройка DNS»."));
         }
 
-        if (!p.HasPrivateBypass)
-        {
-            findings.Add(new VpnAuditFinding(
-                "json-no-private-bypass",
-                AuditCategory.Routing,
-                AuditSeverity.Warning,
-                "Не найдено правило для домашней локальной сети (geoip:private)",
-                "При включённом ВПН может не открываться страница настроек домашнего роутера (192.168.1.1) или сетевой принтер.",
-                "Исключение приватных подсетей (geoip:private / ip_is_private) не обнаружено.",
-                "ip_is_private не найден",
-                "Добавьте правило пропуска приватных IP напрямую (direct)."));
-        }
-
         if (p.Tls.Mode == "reality" && !string.IsNullOrWhiteSpace(p.ServerHost))
         {
             if (string.IsNullOrWhiteSpace(p.Tls.Sni) || IPAddress.TryParse(p.Tls.Sni, out _))

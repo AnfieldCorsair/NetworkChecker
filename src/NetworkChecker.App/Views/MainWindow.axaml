@@ -4,10 +4,10 @@
         x:Class="NetworkChecker.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Контур ВПН — NetworkChecker V2"
-        Width="1360"
-        Height="880"
-        MinWidth="1024"
-        MinHeight="680"
+        Width="1200"
+        Height="740"
+        MinWidth="920"
+        MinHeight="600"
         WindowStartupLocation="CenterScreen">
 
   <Grid RowDefinitions="Auto,Auto,*">

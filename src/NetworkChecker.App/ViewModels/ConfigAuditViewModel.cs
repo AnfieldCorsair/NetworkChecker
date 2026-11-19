@@ -672,7 +672,12 @@ public sealed partial class ConfigAuditViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task QuickInjectNinjaDnsAsync()
+    private Task QuickInjectClassicDnsAsync() => QuickInjectDnsByProfileAsync(DnsProviderProfile.CloudflareGoogle);
+
+    [RelayCommand]
+    private Task QuickInjectNinjaDnsAsync() => QuickInjectDnsByProfileAsync(DnsProviderProfile.NinjaPrivacy);
+
+    private async Task QuickInjectDnsByProfileAsync(DnsProviderProfile providerProfile)
     {
         var opt = new DnsArchitectOptions(
             DnsCoreTarget.XrayCore,
@@ -680,7 +685,7 @@ public sealed partial class ConfigAuditViewModel : ViewModelBase
             UseFakeIp: false,
             Ipv4Only: true,
             BlockAds: false,
-            ProviderProfile: DnsProviderProfile.NinjaPrivacy,
+            ProviderProfile: providerProfile,
             OutputScope: DnsOutputScope.DnsBlockOnly);
 
         if (!DnsConfigArchitect.TryInjectDnsIntoJsonConfig(RawConfig, opt, out var patchedJson, out var summaryMessage))
