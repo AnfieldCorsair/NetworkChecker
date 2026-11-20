@@ -1,4 +1,5 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Net.Sockets;
 using System.Text;
 using Avalonia.Media;
@@ -353,25 +354,25 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
         if (LastActiveReport is not null)
         {
-            sb.AppendLine($"Канал проверки: {LastActiveReport.GoogleVerdict.RoutingChannelUsed}");
-            sb.AppendLine($"Внешний IP: {LastActiveReport.ConsensusIp ?? "—"}");
-            sb.AppendLine($"Физическое гео (консенсус): {LastActiveReport.ConsensusCountryCode ?? "—"} ({LastActiveReport.ConsensusCountryName ?? "—"})");
-            sb.AppendLine($"Провайдер / ASN: {LastActiveReport.ConsensusAsn ?? "—"} · {LastActiveReport.ConsensusIsp ?? "—"}");
-            sb.AppendLine($"Hosting / ДЦ (Majority Vote): {(LastActiveReport.MajorityHosting ? "ДА" : "НЕТ")} ({LastActiveReport.HostingPositiveCount}/{LastActiveReport.HostingKnownCount})");
-            sb.AppendLine($"Proxy / VPN / Tor (Any Vote): {(LastActiveReport.AnyProxyOrVpn ? "ДА" : "НЕТ")} ({LastActiveReport.ProxyPositiveCount}/{LastActiveReport.ProxyKnownCount})");
-            sb.AppendLine($"Совпадение IP (HTTP vs CDN): {(LastActiveReport.IpConsistencyOk ? "Совпадает" : "Расхождение IP!")}");
-            sb.AppendLine($"Вердикт Google / YouTube: {LastActiveReport.GoogleVerdict.VerdictTitle}");
-            sb.AppendLine($"YouTube GL: {LastActiveReport.GoogleVerdict.YouTubeCountryCode ?? "—"} · Google GL: {LastActiveReport.GoogleVerdict.GoogleSearchRegion ?? "—"}");
-            sb.AppendLine($"Пояснение: {LastActiveReport.GoogleVerdict.VerdictSummary}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Канал проверки: {LastActiveReport.GoogleVerdict.RoutingChannelUsed}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Внешний IP: {LastActiveReport.ConsensusIp ?? "—"}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Физическое гео (консенсус): {LastActiveReport.ConsensusCountryCode ?? "—"} ({LastActiveReport.ConsensusCountryName ?? "—"})");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Провайдер / ASN: {LastActiveReport.ConsensusAsn ?? "—"} · {LastActiveReport.ConsensusIsp ?? "—"}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Hosting / ДЦ (Majority Vote): {(LastActiveReport.MajorityHosting ? "ДА" : "НЕТ")} ({LastActiveReport.HostingPositiveCount}/{LastActiveReport.HostingKnownCount})");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Proxy / VPN / Tor (Any Vote): {(LastActiveReport.AnyProxyOrVpn ? "ДА" : "НЕТ")} ({LastActiveReport.ProxyPositiveCount}/{LastActiveReport.ProxyKnownCount})");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Совпадение IP (HTTP vs CDN): {(LastActiveReport.IpConsistencyOk ? "Совпадает" : "Расхождение IP!")}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Вердикт Google / YouTube: {LastActiveReport.GoogleVerdict.VerdictTitle}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"YouTube GL: {LastActiveReport.GoogleVerdict.YouTubeCountryCode ?? "—"} · Google GL: {LastActiveReport.GoogleVerdict.GoogleSearchRegion ?? "—"}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Пояснение: {LastActiveReport.GoogleVerdict.VerdictSummary}");
         }
 
         if (SubscriptionIpItems.Count > 0)
         {
             sb.AppendLine();
-            sb.AppendLine($"--- ВСЕ IP ИЗ ПОДПИСКИ ({SubscriptionIpItems.Count} узлов) ---");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"--- ВСЕ IP ИЗ ПОДПИСКИ ({SubscriptionIpItems.Count} узлов) ---");
             foreach (var item in SubscriptionIpItems)
             {
-                sb.AppendLine($"• {item.DisplayName} [{item.ProtocolAndPort}] — {item.HostAndResolvedIp} | {item.CountryDisplay} | {item.AsnOrgDisplay} | {item.GoogleRuBleedBadge}");
+                sb.AppendLine(CultureInfo.InvariantCulture, $"• {item.DisplayName} [{item.ProtocolAndPort}] — {item.HostAndResolvedIp} | {item.CountryDisplay} | {item.AsnOrgDisplay} | {item.GoogleRuBleedBadge}");
             }
         }
 
