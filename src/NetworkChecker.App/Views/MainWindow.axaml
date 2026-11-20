@@ -43,11 +43,11 @@
           </StackPanel>
         </Grid>
 
-        <!-- Ряд кнопок-вкладок верхней навигации (5 разделов) -->
+        <!-- Ряд кнопок-вкладок верхней навигации (6 разделов) -->
         <ItemsControl ItemsSource="{Binding NavItems}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="5" />
+              <UniformGrid Columns="6" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
+    <rect width="1200" height="700" fill="#0B1120" rx="10" />
+    <!-- Top Bar -->
+    <rect x="0" y="0" width="1200" height="122" fill="#0D1526" />
+    <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="34" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="19" font-weight="bold">Контур ВПН</text>
+    <rect x="148" y="16" width="350" height="24" rx="4" fill="#131F36" stroke="#253859" />
+    <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.1 · Подписки Happ / VLESS / AWG / HY2</text>
+    <rect x="920" y="14" width="258" height="28" rx="5" fill="#2563EB" />
+    <text x="936" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Режим: Простой (понятно каждому)</text>
+    
+      <rect x="20" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="32" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 1</text>
+      <text x="32" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка ВПН и подписки</text>
+      <text x="32" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Ссылки · Happ · VLESS · AWG</text>
+    
+      <rect x="214" y="54" width="186" height="58" rx="6" fill="#17253F" stroke="#3B82F6" stroke-width="1.8" />
+      <text x="226" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 2</text>
+      <text x="226" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Защита DNS</text>
+      <text x="226" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Классика DoH и Приватный Ninja</text>
+    
+      <rect x="408" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="420" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 3</text>
+      <text x="420" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка блокировок</text>
+      <text x="420" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">ТСПУ · 16 КБ · UDP · Белые списки</text>
+    
+      <rect x="602" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="614" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 4</text>
+      <text x="614" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Сеть Windows и SNI</text>
+      <text x="614" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">TUN · Утечки · Reality TLS 1.3</text>
+    
+      <rect x="796" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="808" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 5</text>
+      <text x="808" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Репутация IP и Google RU</text>
+      <text x="808" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Метка RU у Google и все IP подписки</text>
+    
+      <rect x="990" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="1002" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 6</text>
+      <text x="1002" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Заявка в техподдержку</text>
+      <text x="1002" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Готовый отчёт без паролей</text>
+    
+    <!-- Guide Strip -->
+    <rect x="0" y="123" width="1200" height="52" fill="#11192B" />
+    <line x1="0" y1="175" x2="1200" y2="175" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="145" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="14" font-weight="bold">Защита DNS <tspan fill="#93C5FD" font-weight="normal">· Что здесь проверяется и что нажимать:</tspan></text>
+    <text x="22" y="164" fill="#C5D2E6" font-family="Segoe UI, Inter, sans-serif" font-size="12">Выберите профиль DNS («Классика DoH: Cloudflare + Google» или «Приватный Ninja: Njalla + LibreDNS») и вошейте его в подписку без поломки JSON.</text>
+    <!-- Body -->
+    
+    <!-- Left Column: DNS Presets & Live Spoofing Check -->
+    <rect x="22" y="192" width="520" height="486" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="38" y="218" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ВЫБОР ЭТАЛОННОГО ПРОФИЛЯ DNS ДЛЯ РФ</text>
+
+    <rect x="38" y="232" width="238" height="72" rx="6" fill="#17253F" stroke="#3B82F6" stroke-width="1.8" />
+    <text x="50" y="254" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">✓ 1. Классика DoH (по умолч.)</text>
+    <text x="50" y="274" fill="#93C5FD" font-family="Consolas, monospace" font-size="11">Cloudflare 1.1.1.1 + Google 8.8.8.8</text>
+    <text x="50" y="292" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11">+ Яндекс 77.88.8.8 только для .RU</text>
+
+    <rect x="288" y="232" width="238" height="72" rx="6" fill="#0B1120" stroke="#22304A" />
+    <text x="300" y="254" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">2. Приватный Ninja (Zero-Log)</text>
+    <text x="300" y="274" fill="#93C5FD" font-family="Consolas, monospace" font-size="11">Njalla + LibreDNS + Quad9 + Mullvad</text>
+    <text x="300" y="292" fill="#8B9BB4" font-family="Segoe UI, sans-serif" font-size="11">Для ценителей максимальной приватности</text>
+
+    <rect x="38" y="318" width="488" height="156" rx="6" fill="#0B1120" stroke="#22304A" />
+    <text x="52" y="342" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ЖИВАЯ СВЕРКА: СИСТЕМНЫЙ DNS ПРОВАЙДЕРА VS ЗАШИФРОВАННЫЙ DOH</text>
+    <text x="52" y="368" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">• youtube.com      — Системный: 142.250.185.174 | DoH: 142.250.185.174 (Чисто)</text>
+    <text x="52" y="392" fill="#F87171" font-family="Consolas, monospace" font-size="12">• instagram.com    — Системный: 195.82.146.214  | DoH: 157.240.247.174 (ПОДМЕНА!)</text>
+    <text x="52" y="416" fill="#F87171" font-family="Consolas, monospace" font-size="12">• discord.com      — Системный: NXDOMAIN        | DoH: 162.159.135.232 (ПОДМЕНА!)</text>
+    <text x="52" y="440" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">• gosuslugi.ru     — Яндекс 77.88.8.8 напрямую (без задержек и капчи)</text>
+
+    <rect x="38" y="490" width="488" height="170" rx="6" fill="#0B1120" stroke="#16A34A" />
+    <text x="52" y="514" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">✓ Автоматическая валидация JSON перед сохранением</text>
+    <text x="52" y="536" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Программа сама разбирает синтаксическое дерево вашего конфига или подписки Happ,</text>
+    <text x="52" y="556" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">вставляет секцию dns и routing без лишних или пропущенных запятых и проверяет</text>
+    <text x="52" y="576" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">результат строгим парсером JsonDocument.Parse().</text>
+    <rect x="52" y="602" width="460" height="40" rx="6" fill="#2563EB" />
+    <text x="92" y="627" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">Вшить выбранный DNS во все узлы подписки на вкладке 1</text>
+
+    <!-- Right Column: Generated JSON Preview -->
+    <rect x="558" y="192" width="620" height="486" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="576" y="218" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ГОТОВЫЙ БЛОК DNS (XRAY / HAPP JSON · КЛАССИКА DOH CLOUDFLARE + GOOGLE)</text>
+    <rect x="576" y="232" width="584" height="428" rx="6" fill="#070B14" stroke="#1E2C45" />
+    <text x="592" y="260" fill="#93C5FD" font-family="Consolas, monospace" font-size="12">{</text>
+    <text x="592" y="282" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">  "dns": {</text>
+    <text x="592" y="304" fill="#E2E8F0" font-family="Consolas, monospace" font-size="12">    "servers": [</text>
+    <text x="592" y="326" fill="#FCD34D" font-family="Consolas, monospace" font-size="12">      {</text>
+    <text x="592" y="348" fill="#FCD34D" font-family="Consolas, monospace" font-size="12">        "address": "77.88.8.8",</text>
+    <text x="592" y="370" fill="#FCD34D" font-family="Consolas, monospace" font-size="12">        "port": 53,</text>
+    <text x="592" y="392" fill="#FCD34D" font-family="Consolas, monospace" font-size="12">        "domains": ["geosite:category-ru", "domain:ru", "domain:рф"],</text>
+    <text x="592" y="414" fill="#FCD34D" font-family="Consolas, monospace" font-size="12">        "skipFallback": true</text>
+    <text x="592" y="436" fill="#FCD34D" font-family="Consolas, monospace" font-size="12">      },</text>
+    <text x="592" y="458" fill="#60A5FA" font-family="Consolas, monospace" font-size="12">      { "address": "https://1.1.1.1/dns-query", "skipFallback": false },</text>
+    <text x="592" y="480" fill="#60A5FA" font-family="Consolas, monospace" font-size="12">      { "address": "https://dns.google/dns-query", "skipFallback": false },</text>
+    <text x="592" y="502" fill="#60A5FA" font-family="Consolas, monospace" font-size="12">      { "address": "https://1.0.0.1/dns-query", "skipFallback": true }</text>
+    <text x="592" y="524" fill="#E2E8F0" font-family="Consolas, monospace" font-size="12">    ],</text>
+    <text x="592" y="546" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">    "queryStrategy": "UseIPv4"</text>
+    <text x="592" y="568" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">  }</text>
+    <text x="592" y="590" fill="#93C5FD" font-family="Consolas, monospace" font-size="12">}</text>
+    
+  </svg>

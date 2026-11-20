@@ -158,6 +158,13 @@ public static class WindowsNetworkStackAuditor
                 mtu));
         }
 
+        var portStatuses = ProbeLocalProxyPorts();
+
+        return EvaluateSnapshots(adapters, portStatuses);
+    }
+
+    public static IReadOnlyList<LocalProxyPortStatus> ProbeLocalProxyPorts()
+    {
         var activeListeners = Array.Empty<IPEndPoint>();
         try
         {
@@ -168,7 +175,7 @@ public static class WindowsNetworkStackAuditor
             // ignore permission issues
         }
 
-        var portStatuses = KnownProxyPorts
+        return KnownProxyPorts
             .Select(kp =>
             {
                 var match = activeListeners.FirstOrDefault(ep => ep.Port == kp.Port);
@@ -179,8 +186,6 @@ public static class WindowsNetworkStackAuditor
                     match?.Address.ToString() ?? "—");
             })
             .ToList();
-
-        return EvaluateSnapshots(adapters, portStatuses);
     }
 
     public static WindowsNetworkStackReport EvaluateSnapshots(

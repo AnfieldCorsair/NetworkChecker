@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
+    <rect width="1200" height="700" fill="#0B1120" rx="10" />
+    <!-- Top Bar -->
+    <rect x="0" y="0" width="1200" height="122" fill="#0D1526" />
+    <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="34" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="19" font-weight="bold">Контур ВПН</text>
+    <rect x="148" y="16" width="350" height="24" rx="4" fill="#131F36" stroke="#253859" />
+    <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.1 · Подписки Happ / VLESS / AWG / HY2</text>
+    <rect x="920" y="14" width="258" height="28" rx="5" fill="#2563EB" />
+    <text x="936" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Режим: Простой (понятно каждому)</text>
+    
+      <rect x="20" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="32" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 1</text>
+      <text x="32" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка ВПН и подписки</text>
+      <text x="32" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Ссылки · Happ · VLESS · AWG</text>
+    
+      <rect x="214" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="226" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 2</text>
+      <text x="226" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Защита DNS</text>
+      <text x="226" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Классика DoH и Приватный Ninja</text>
+    
+      <rect x="408" y="54" width="186" height="58" rx="6" fill="#17253F" stroke="#3B82F6" stroke-width="1.8" />
+      <text x="420" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 3</text>
+      <text x="420" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка блокировок</text>
+      <text x="420" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">ТСПУ · 16 КБ · UDP · Белые списки</text>
+    
+      <rect x="602" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="614" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 4</text>
+      <text x="614" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Сеть Windows и SNI</text>
+      <text x="614" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">TUN · Утечки · Reality TLS 1.3</text>
+    
+      <rect x="796" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="808" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 5</text>
+      <text x="808" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Репутация IP и Google RU</text>
+      <text x="808" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Метка RU у Google и все IP подписки</text>
+    
+      <rect x="990" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="1002" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 6</text>
+      <text x="1002" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Заявка в техподдержку</text>
+      <text x="1002" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Готовый отчёт без паролей</text>
+    
+    <!-- Guide Strip -->
+    <rect x="0" y="123" width="1200" height="52" fill="#11192B" />
+    <line x1="0" y1="175" x2="1200" y2="175" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="145" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="14" font-weight="bold">Проверка блокировок <tspan fill="#93C5FD" font-weight="normal">· Что здесь проверяется и что нажимать:</tspan></text>
+    <text x="22" y="164" fill="#C5D2E6" font-family="Segoe UI, Inter, sans-serif" font-size="12">Нажмите «Запустить сканирование ТСПУ» — программа проверит отсечку 16 КБ, подмену сертификатов, блокировку UDP/STUN и режим «Белых списков».</text>
+    <!-- Body -->
+    
+    <rect x="22" y="192" width="1156" height="64" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="40" y="220" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold">Активный сканер сигнатур ТСПУ и ограничений вашего провайдера</text>
+    <text x="40" y="240" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="12">Проверяет 4 ключевых вектора фильтрации трафика на домашнем и мобильном интернете РФ</text>
+    <rect x="920" y="206" width="240" height="36" rx="6" fill="#2563EB" />
+    <text x="945" y="229" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">Запустить сканирование ТСПУ</text>
+
+    <!-- 4 Diagnostic Cards -->
+    <rect x="22" y="272" width="568" height="190" rx="8" fill="#11192B" stroke="#F59E0B" stroke-width="1.5" />
+    <text x="42" y="300" fill="#FCD34D" font-family="Consolas, monospace" font-size="11" font-weight="bold">1. ДЕТЕКТОР ОТСЕЧКИ 16 КБ (TCP CAP / ЗАРУБЕЖНЫЕ ОБЛАКА)</text>
+    <text x="42" y="326" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold">Обнаружено замедление после 16 КБ на облачных IP (Cloudflare / Hetzner)</text>
+    <text x="42" y="352" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Первые 14–16 КБ проходят свободно (рукопожатие TLS успевает завершиться), после чего</text>
+    <text x="42" y="372" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">ТСПУ дропает пакеты на незамаскированных потоках.</text>
+    <text x="42" y="402" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">Рекомендация: Используйте VLESS + Reality + XHTTP (SplitHTTP) с xPaddingBytes и XMUX.</text>
+
+    <rect x="610" y="272" width="568" height="190" rx="8" fill="#11192B" stroke="#10B981" stroke-width="1.5" />
+    <text x="630" y="300" fill="#6EE7B7" font-family="Consolas, monospace" font-size="11" font-weight="bold">2. ПРОВЕРКА ПОДМЕНЫ TLS-СЕРТИФИКАТОВ (MITM / DPI INJECTION)</text>
+    <text x="630" y="326" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold">Подмены корневых сертификатов не обнаружено (4/4 подлинных)</text>
+    <text x="630" y="352" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Цепочки сертификатов Cloudflare, Google, Microsoft и Apple подписаны официальными УЦ.</text>
+    <text x="630" y="372" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Провайдер не перехватывает TLS-сессии самоподписанными сертификатами.</text>
+    <text x="630" y="402" fill="#4ADE80" font-family="Consolas, monospace" font-size="11.5">Статус: Безопасно · TLS 1.3 ECDHE + AEAD работает штатно.</text>
+
+    <rect x="22" y="480" width="568" height="190" rx="8" fill="#11192B" stroke="#10B981" stroke-width="1.5" />
+    <text x="42" y="508" fill="#6EE7B7" font-family="Consolas, monospace" font-size="11" font-weight="bold">3. ГОЛОСОВЫЕ ЗВОНКИ И ИГРЫ (UDP / STUN RFC 5389 / QUIC)</text>
+    <text x="42" y="534" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold">UDP и STUN-серверы доступны (3/3 ответили по RFC 5389 Binding)</text>
+    <text x="42" y="560" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Проверены stun.l.google.com:19302, stun.cloudflare.com:3478 и stun1.l.google.com.</text>
+    <text x="42" y="580" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Протоколы Hysteria2 (QUIC) и AmneziaWG (UDP с мусорными пакетами Jc/Jmin/Jmax) будут работать.</text>
+    <text x="42" y="610" fill="#4ADE80" font-family="Consolas, monospace" font-size="11.5">Симптом: Звонки в Telegram / Discord через TUN-адаптер проходят без потерь.</text>
+
+    <rect x="610" y="480" width="568" height="190" rx="8" fill="#11192B" stroke="#10B981" stroke-width="1.5" />
+    <text x="630" y="508" fill="#6EE7B7" font-family="Consolas, monospace" font-size="11" font-weight="bold">4. ДЕТЕКТОР РЕЖИМА «БЕЛЫХ СПИСКОВ» (МОБИЛЬНЫЕ СЕТИ РФ)</text>
+    <text x="630" y="534" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold">Режим «Белых списков» НЕ активен (внешний интернет открыт)</text>
+    <text x="630" y="560" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Доступны как российские ресурсы (Яндекс, Госуслуги, ВК), так и зарубежные узлы</text>
+    <text x="630" y="580" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Cloudflare, Google и Microsoft по TCP/TLS на порту 443.</text>
+    <text x="630" y="610" fill="#4ADE80" font-family="Consolas, monospace" font-size="11.5">Статус: Обычный режим сети · Любые зарубежные локации ВПН доступны для подключения.</text>
+    
+  </svg>

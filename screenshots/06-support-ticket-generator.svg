@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
+    <rect width="1200" height="700" fill="#0B1120" rx="10" />
+    <!-- Top Bar -->
+    <rect x="0" y="0" width="1200" height="122" fill="#0D1526" />
+    <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="34" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="19" font-weight="bold">Контур ВПН</text>
+    <rect x="148" y="16" width="350" height="24" rx="4" fill="#131F36" stroke="#253859" />
+    <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.1 · Подписки Happ / VLESS / AWG / HY2</text>
+    <rect x="920" y="14" width="258" height="28" rx="5" fill="#2563EB" />
+    <text x="936" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Режим: Простой (понятно каждому)</text>
+    
+      <rect x="20" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="32" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 1</text>
+      <text x="32" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка ВПН и подписки</text>
+      <text x="32" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Ссылки · Happ · VLESS · AWG</text>
+    
+      <rect x="214" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="226" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 2</text>
+      <text x="226" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Защита DNS</text>
+      <text x="226" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Классика DoH и Приватный Ninja</text>
+    
+      <rect x="408" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="420" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 3</text>
+      <text x="420" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка блокировок</text>
+      <text x="420" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">ТСПУ · 16 КБ · UDP · Белые списки</text>
+    
+      <rect x="602" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="614" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 4</text>
+      <text x="614" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Сеть Windows и SNI</text>
+      <text x="614" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">TUN · Утечки · Reality TLS 1.3</text>
+    
+      <rect x="796" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="808" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 5</text>
+      <text x="808" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Репутация IP и Google RU</text>
+      <text x="808" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Метка RU у Google и все IP подписки</text>
+    
+      <rect x="990" y="54" width="186" height="58" rx="6" fill="#17253F" stroke="#3B82F6" stroke-width="1.8" />
+      <text x="1002" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 6</text>
+      <text x="1002" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Заявка в техподдержку</text>
+      <text x="1002" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Готовый отчёт без паролей</text>
+    
+    <!-- Guide Strip -->
+    <rect x="0" y="123" width="1200" height="52" fill="#11192B" />
+    <line x1="0" y1="175" x2="1200" y2="175" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="145" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="14" font-weight="bold">Заявка в техподдержку <tspan fill="#93C5FD" font-weight="normal">· Что здесь проверяется и что нажимать:</tspan></text>
+    <text x="22" y="164" fill="#C5D2E6" font-family="Segoe UI, Inter, sans-serif" font-size="12">1) Снимите срез без ВПН. 2) Снимите срез с ВПН. 3) Отметьте все наблюдаемые проблемы галочками и скопируйте готовый отчёт без паролей и без привязки к 1 узлу.</text>
+    <!-- Body -->
+    
+    <!-- Left Column: 2-Step Capture & Multi-select Symptoms -->
+    <rect x="22" y="192" width="540" height="486" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="38" y="218" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">2-ШАГОВЫЙ СРАВНИТЕЛЬНЫЙ ЗАМЕР («БЕЗ ВПН» VS «С ВПН»)</text>
+
+    <rect x="38" y="232" width="508" height="64" rx="6" fill="#0B1120" stroke="#10B981" />
+    <text x="52" y="254" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">Шаг 1. Линия провайдера РФ (Без ВПН)</text>
+    <text x="52" y="276" fill="#4ADE80" font-family="Consolas, monospace" font-size="11.5">IP: 178.140.xxx.xxx · Провайдер: ПАО Ростелеком AS12389 · ↓ 285.4 Мбит/с / ↑ 210.1 Мбит/с</text>
+
+    <rect x="38" y="306" width="508" height="64" rx="6" fill="#0B1120" stroke="#3B82F6" />
+    <text x="52" y="328" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">Шаг 2. Через активный ВПН-туннель</text>
+    <text x="52" y="350" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">IP: 95.216.14.88 (FI) · Провайдер: Hetzner AS24940 · ↓ 12.4 Мбит/с / ↑ 48.0 Мбит/с</text>
+
+    <text x="38" y="396" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ОТМЕТЬТЕ НАБЛЮДАЕМЫЕ ПРОБЛЕМЫ (МОЖНО ВЫБРАТЬ НЕСКОЛЬКО):</text>
+    <rect x="38" y="408" width="508" height="196" rx="6" fill="#0B1120" stroke="#22304A" />
+    <text x="54" y="434" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="600">☑ Сильно режет скорость (Download/Upload падает почти в ноль)</text>
+    <text x="54" y="462" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="600">☑ Соединение обрывается через 10–30 секунд (подозрение на 16 КБ ТСПУ)</text>
+    <text x="54" y="490" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="12.5">☐ Туннель подключается, но сайты/приложения не открываются</text>
+    <text x="54" y="518" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="12.5">☐ Вообще не подключается (таймаут рукопожатия / сброс TCP)</text>
+    <text x="54" y="546" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="12.5">☐ Работают только российские сайты (режим белых списков)</text>
+    <text x="54" y="574" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="600">☑ Не открываются отдельные сайты или мессенджеры (проблема DNS / маршрута)</text>
+
+    <rect x="38" y="620" width="248" height="40" rx="6" fill="#2563EB" />
+    <text x="64" y="645" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">Скопировать текст для чата</text>
+    <rect x="298" y="620" width="248" height="40" rx="6" fill="#162238" stroke="#3B82F6" />
+    <text x="326" y="645" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">Сохранить полный .md отчёт</text>
+
+    <!-- Right Column: Ready Telegram Ticket Preview -->
+    <rect x="578" y="192" width="600" height="486" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="596" y="218" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ГОТОВОЕ СООБЩЕНИЕ ДЛЯ ТЕХПОДДЕРЖКИ (БЕЗ СЕКРЕТОВ И БЕЗ ПРИВЯЗКИ К 1 УЗЛУ)</text>
+    <rect x="596" y="232" width="564" height="428" rx="6" fill="#070B14" stroke="#1E2C45" />
+    <text x="614" y="262" fill="#FFFFFF" font-family="Consolas, monospace" font-size="12" font-weight="bold">🛠 Диагностика Контур ВПН (NetworkChecker V2)</text>
+    <text x="614" y="286" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">Клиент: Happ (Windows / iOS / Android)</text>
+    <text x="614" y="308" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">Тип сети: Домашний проводной интернет / Wi-Fi</text>
+    <text x="614" y="336" fill="#FCD34D" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">Проблемы с интернетом / ВПН:</text>
+    <text x="614" y="358" fill="#E2E8F0" font-family="Consolas, monospace" font-size="11">- Сильно режет скорость (Download/Upload падает почти в ноль)</text>
+    <text x="614" y="378" fill="#E2E8F0" font-family="Consolas, monospace" font-size="11">- Соединение обрывается через 10–30 секунд (подозрение на 16 КБ ТСПУ)</text>
+    <text x="614" y="398" fill="#E2E8F0" font-family="Consolas, monospace" font-size="11">- Не открываются отдельные сайты или мессенджеры (проблема DNS)</text>
+    <text x="614" y="428" fill="#4ADE80" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">1) Без ВПН (провайдер РФ):</text>
+    <text x="614" y="450" fill="#C5D2E6" font-family="Consolas, monospace" font-size="11">   IP: 178.140.xxx.xxx · ПАО Ростелеком (AS12389)</text>
+    <text x="614" y="470" fill="#C5D2E6" font-family="Consolas, monospace" font-size="11">   Скорость линии: ↓ 285.4 Мбит/с / ↑ 210.1 Мбит/с</text>
+    <text x="614" y="500" fill="#60A5FA" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">2) С включённым ВПН:</text>
+    <text x="614" y="522" fill="#C5D2E6" font-family="Consolas, monospace" font-size="11">   Выход: FI · Hetzner Online GmbH (AS24940)</text>
+    <text x="614" y="542" fill="#C5D2E6" font-family="Consolas, monospace" font-size="11">   Скорость туннеля: ↓ 12.4 Мбит/с / ↑ 48.0 Мбит/с</text>
+    <text x="614" y="572" fill="#9BAAC2" font-family="Consolas, monospace" font-size="11">3) Сетевой стек Windows: TUN активен (MTU 1400) · Утечек IPv6/DNS нет</text>
+    <text x="614" y="596" fill="#4ADE80" font-family="Consolas, monospace" font-size="11">🔒 Все ключи, UUID, pbk и домашний IP автоматически скрыты.</text>
+    
+  </svg>

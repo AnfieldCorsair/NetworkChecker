@@ -13,6 +13,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         DnsArchitectViewModel dnsArchitect,
         TspuFingerprintsViewModel tspuFingerprints,
         WindowsStackSniViewModel windowsStackSni,
+        IpReputationViewModel ipReputation,
         SupportTicketViewModel supportTicket)
     {
         _pages =
@@ -21,6 +22,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             dnsArchitect,
             tspuFingerprints,
             windowsStackSni,
+            ipReputation,
             supportTicket,
         ];
 

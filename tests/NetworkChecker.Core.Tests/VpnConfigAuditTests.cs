@@ -857,7 +857,20 @@ public sealed class VpnConfigAuditTests
     {
         var activeAudit = VpnConfigAuditor.Audit(
             "vless://11111111-2222-3333-4444-555555555555@203.0.113.99:443?security=reality&type=xhttp&mode=auto&sni=secret-node-sni.example.com&fp=chrome&pbk=8xR4qT7wY1zB5nL0jH3dG6sA9eU2iO4pM8kF9vN2cAA#Specific-Node-99");
-        var rtt = new RttBenchmarkResult("203.0.113.99", 443, 3, 3, 40, 45, 50, 3.2, 0, [40, 45, 50], "OK");
+        var rtt = new RttBenchmarkResult(
+            "203.0.113.99",
+            443,
+            "203.0.113.99",
+            12,
+            3,
+            3,
+            0,
+            40,
+            45,
+            50,
+            50,
+            3,
+            [new RttSample(1, true, 40), new RttSample(2, true, 45), new RttSample(3, true, 50)]);
 
         var draft = new SupportTicketDraft(
             Symptom: "Fallback",
@@ -889,6 +902,129 @@ public sealed class VpnConfigAuditTests
         Assert.DoesNotContain("203.0.113.99", markdown, StringComparison.Ordinal);
         Assert.DoesNotContain("secret-node-sni.example.com", markdown, StringComparison.Ordinal);
         Assert.DoesNotContain("TCP RTT", markdown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void IpReputationProbe_ExtractsAllEndpointsFromHappJsonArrayAndBalancerAndUris()
+    {
+        const string happArray = """
+            [
+              {
+                "remarks": "⚡ Автовыбор",
+                "outbounds": [
+                  {
+                    "tag": "proxy-nl",
+                    "protocol": "vless",
+                    "settings": { "vnext": [{ "address": "nl-edge.example.com", "port": 443 }] }
+                  },
+                  {
+                    "tag": "proxy-de",
+                    "protocol": "vless",
+                    "settings": { "vnext": [{ "address": "185.220.101.7", "port": 8443 }] }
+                  },
+                  { "tag": "direct", "protocol": "freedom" }
+                ]
+              },
+              {
+                "remarks": "🌍 Hysteria2",
+                "outbounds": [
+                  {
+                    "tag": "hy2-fi",
+                    "protocol": "hysteria",
+                    "settings": { "address": "203.0.113.55", "port": 443 }
+                  }
+                ]
+              }
+            ]
+            """;
+
+        var endpoints = IpReputationProbe.ExtractAllEndpointsFromConfig(happArray);
+        Assert.Equal(3, endpoints.Count);
+        Assert.Equal("nl-edge.example.com", endpoints[0].RawHost);
+        Assert.Equal("185.220.101.7", endpoints[1].RawHost);
+        Assert.Equal(8443, endpoints[1].Port);
+        Assert.Equal("203.0.113.55", endpoints[2].RawHost);
+
+        const string uriList = """
+            vless://11111111-2222-3333-4444-555555555555@198.51.100.11:443?security=reality&type=xhttp#NL-1
+            hy2://secret@198.51.100.22:443?sni=hy2.example.com#FI-2
+            """;
+        var uriEndpoints = IpReputationProbe.ExtractAllEndpointsFromConfig(uriList);
+        Assert.Equal(2, uriEndpoints.Count);
+        Assert.Equal("198.51.100.11", uriEndpoints[0].RawHost);
+        Assert.Equal("198.51.100.22", uriEndpoints[1].RawHost);
+    }
+
+    [Fact]
+    public void IpReputationProbe_ParsesYouTubeGlAndGoogleCaptchaAndDetectsRuGeoPoisoning()
+    {
+        const string ytPayload = """
+            )]}'
+            {"responseContext":{"serviceTrackingParams":[]},"INNERTUBE_CONTEXT_GL":"RU","INNERTUBE_CONTEXT_HL":"en"}
+            """;
+        var ytGl = IpReputationProbe.ParseYouTubeGlCode(ytPayload);
+        Assert.Equal("RU", ytGl);
+
+        var (searchGl, hasCaptcha) = IpReputationProbe.ParseGoogleSearchRegionAndCaptcha(
+            "https://www.google.com/sorry/index?continue=https://www.google.com/",
+            429,
+            "<html><body>g-recaptcha{\"gl\":\"RU\"}</body></html>");
+        Assert.True(hasCaptcha);
+        Assert.Equal("RU", searchGl);
+
+        // Зарубежный IP (NL), но YouTube выдал GL=RU -> КРИТИЧНО: прокажённая метка RU
+        var poisoned = IpReputationProbe.EvaluateGoogleGeoVerdict(
+            physicalCountryCode: "NL",
+            youtubeGl: "RU",
+            googleRegion: "RU",
+            hasCaptcha: false,
+            routingChannelUsed: "Активный TUN",
+            probeExecuted: true);
+        Assert.True(poisoned.IsRuGeoPoisoned);
+        Assert.Contains("прокажённая метка RU", poisoned.VerdictTitle, StringComparison.OrdinalIgnoreCase);
+
+        // Зарубежный IP (DE) и YouTube GL=DE -> Чисто
+        var clean = IpReputationProbe.EvaluateGoogleGeoVerdict(
+            physicalCountryCode: "DE",
+            youtubeGl: "DE",
+            googleRegion: "DE",
+            hasCaptcha: false,
+            routingChannelUsed: "Активный TUN",
+            probeExecuted: true);
+        Assert.False(clean.IsRuGeoPoisoned);
+        Assert.False(clean.HasGoogleCaptchaBlock);
+        Assert.Equal("DE", clean.DetectedGlCode);
+    }
+
+    [Fact]
+    public void IpReputationProbe_Builds4ProviderConsensusWithMajorityHostingAndAnyProxy()
+    {
+        var samples = new List<GeoProviderSample>
+        {
+            new("ipwho.is", true, "185.220.101.7", "NL", "Netherlands", "Amsterdam", "AS210644", "AEZA GROUP", IsHosting: true, IsProxyOrVpn: false, ElapsedMs: 42),
+            new("ip-api.com", true, "185.220.101.7", "NL", "Netherlands", "Amsterdam", "AS210644", "AEZA GROUP", IsHosting: true, IsProxyOrVpn: true, ElapsedMs: 51),
+            new("ipinfo.io", true, "185.220.101.7", "NL", "Netherlands", "Amsterdam", "AS210644", "AEZA GROUP", IsHosting: false, IsProxyOrVpn: false, ElapsedMs: 39),
+            new("Cloudflare Trace", true, "185.220.101.7", "NL", "NL", "Edge AMS", null, "Cloudflare Edge (AMS)", IsHosting: null, IsProxyOrVpn: null, ElapsedMs: 18),
+        };
+
+        var googleVerdict = IpReputationProbe.EvaluateGoogleGeoVerdict("NL", "RU", "RU", false, "TUN", true);
+        var consensus = IpReputationProbe.BuildConsensus("185.220.101.7", samples, googleVerdict, "AMS");
+
+        Assert.Equal("185.220.101.7", consensus.ConsensusIp);
+        Assert.Equal("NL", consensus.ConsensusCountryCode);
+        Assert.True(consensus.MajorityHosting); // 2 из 3 (>= 50%)
+        Assert.Equal(2, consensus.HostingPositiveCount);
+        Assert.Equal(3, consensus.HostingKnownCount);
+        Assert.True(consensus.AnyProxyOrVpn); // 1 из 3 (Any Vote)
+        Assert.True(consensus.IpConsistencyOk);
+
+        var (highRuBleed, high16Kb, _, _) = IpReputationProbe.ClassifySubnetRisks("NL", "AS210644", "AEZA GROUP", true, true);
+        Assert.True(highRuBleed);
+        Assert.False(high16Kb);
+
+        var (hetznerRuBleed, hetzner16Kb, _, _) = IpReputationProbe.ClassifySubnetRisks("DE", "AS24940", "Hetzner Online GmbH", true, false);
+        Assert.False(hetznerRuBleed);
+        Assert.True(hetzner16Kb);
     }
 
     private static readonly byte[] TestHrrRandom =

@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
+    <rect width="1200" height="700" fill="#0B1120" rx="10" />
+    <!-- Top Bar -->
+    <rect x="0" y="0" width="1200" height="122" fill="#0D1526" />
+    <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="34" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="19" font-weight="bold">Контур ВПН</text>
+    <rect x="148" y="16" width="350" height="24" rx="4" fill="#131F36" stroke="#253859" />
+    <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.1 · Подписки Happ / VLESS / AWG / HY2</text>
+    <rect x="920" y="14" width="258" height="28" rx="5" fill="#2563EB" />
+    <text x="936" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Режим: Простой (понятно каждому)</text>
+    
+      <rect x="20" y="54" width="186" height="58" rx="6" fill="#17253F" stroke="#3B82F6" stroke-width="1.8" />
+      <text x="32" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 1</text>
+      <text x="32" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка ВПН и подписки</text>
+      <text x="32" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Ссылки · Happ · VLESS · AWG</text>
+    
+      <rect x="214" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="226" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 2</text>
+      <text x="226" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Защита DNS</text>
+      <text x="226" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Классика DoH и Приватный Ninja</text>
+    
+      <rect x="408" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="420" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 3</text>
+      <text x="420" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Проверка блокировок</text>
+      <text x="420" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">ТСПУ · 16 КБ · UDP · Белые списки</text>
+    
+      <rect x="602" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="614" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 4</text>
+      <text x="614" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Сеть Windows и SNI</text>
+      <text x="614" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">TUN · Утечки · Reality TLS 1.3</text>
+    
+      <rect x="796" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="808" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 5</text>
+      <text x="808" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Репутация IP и Google RU</text>
+      <text x="808" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Метка RU у Google и все IP подписки</text>
+    
+      <rect x="990" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
+      <text x="1002" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 6</text>
+      <text x="1002" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Заявка в техподдержку</text>
+      <text x="1002" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">Готовый отчёт без паролей</text>
+    
+    <!-- Guide Strip -->
+    <rect x="0" y="123" width="1200" height="52" fill="#11192B" />
+    <line x1="0" y1="175" x2="1200" y2="175" stroke="#22304A" stroke-width="1" />
+    <text x="22" y="145" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="14" font-weight="bold">Проверка ВПН и подписки <tspan fill="#93C5FD" font-weight="normal">· Что здесь проверяется и что нажимать:</tspan></text>
+    <text x="22" y="164" fill="#C5D2E6" font-family="Segoe UI, Inter, sans-serif" font-size="12">Вставьте ссылку на подписку (Happ / Xray JSON / Base64) или ключ vless://. Программа проверит все локации и аккуратно вошьёт чистый DNS и SNI.</text>
+    <!-- Body -->
+    
+    <!-- Left Column: Subscription & Nodes -->
+    <rect x="22" y="192" width="470" height="486" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="38" y="218" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ВХОДНАЯ ПОДПИСКА ИЛИ КОНФИГ (АВТОРАСПОЗНАВАНИЕ)</text>
+    <rect x="38" y="228" width="318" height="32" rx="5" fill="#0B1120" stroke="#2E446B" />
+    <text x="48" y="248" fill="#E2E8F0" font-family="Consolas, monospace" font-size="12">https://sub.example.com/api/v1/client/subscribe?token=***</text>
+    <rect x="364" y="228" width="112" height="32" rx="5" fill="#2563EB" />
+    <text x="380" y="248" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600">Загрузить (4)</text>
+
+    <!-- Subscription Card -->
+    <rect x="38" y="270" width="438" height="62" rx="6" fill="#162238" stroke="#2563EB" />
+    <text x="50" y="290" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">Подписка Happ JSON · 4 локации (балансировщик leastPing)</text>
+    <text x="50" y="308" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">Трафик: 42.8 ГБ / 1024 ГБ · Активна до: 2027-01-01</text>
+    <text x="50" y="324" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="11">✓ Целостность JSON проверена · Готово к точечной вставке DNS и SNI</text>
+
+    <!-- Nodes List -->
+    <rect x="38" y="344" width="438" height="48" rx="6" fill="#17253F" stroke="#3B82F6" />
+    <text x="50" y="365" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">1. ⚡ Автовыбор — VLESS Reality XHTTP (2 сервера)</text>
+    <text x="50" y="382" fill="#4ADE80" font-family="Consolas, monospace" font-size="11">ЗАЩИЩЁН (РФ) · edge-eu.example.com:443 · Пинг: 38 мс</text>
+
+    <rect x="38" y="400" width="438" height="48" rx="6" fill="#0B1120" stroke="#22304A" />
+    <text x="50" y="421" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">2. 📶 Мобильный интернет · VLESS TCP Vision</text>
+    <text x="50" y="438" fill="#4ADE80" font-family="Consolas, monospace" font-size="11">ЗАЩИЩЁН (РФ) · 198.51.100.42:443 · Пинг: 44 мс</text>
+
+    <rect x="38" y="456" width="438" height="48" rx="6" fill="#0B1120" stroke="#22304A" />
+    <text x="50" y="477" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">3. 🌍 Запасной протокол · Hysteria2 QUIC</text>
+    <text x="50" y="494" fill="#FBBF24" font-family="Consolas, monospace" font-size="11">ЕСТЬ ЗАМЕЧАНИЯ · 203.0.113.10:443 · Пинг: 51 мс</text>
+
+    <!-- Buttons -->
+    <rect x="38" y="518" width="214" height="34" rx="5" fill="#2563EB" />
+    <text x="54" y="539" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600">Проверить все узлы (пинг)</text>
+    <rect x="262" y="518" width="214" height="34" rx="5" fill="#16A34A" />
+    <text x="278" y="539" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="600">Вшить чистый DNS во все</text>
+
+    <rect x="38" y="562" width="438" height="102" rx="6" fill="#0B1120" stroke="#22304A" />
+    <text x="50" y="582" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ВЫГРУЗКА ОБНОВЛЁННОЙ ПОДПИСКИ В HAPP / V2RAYN / HIDDIFY</text>
+    <text x="50" y="602" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11.5">• Локальная ссылка подписки: http://127.0.0.1:17890/sub/kontur-patched.json</text>
+    <rect x="50" y="616" width="195" height="32" rx="5" fill="#162238" stroke="#3B82F6" />
+    <text x="64" y="636" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="11.5">Скопировать всю подписку</text>
+    <rect x="256" y="616" width="206" height="32" rx="5" fill="#162238" stroke="#3B82F6" />
+    <text x="270" y="636" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="11.5">Поднять локальную ссылку</text>
+
+    <!-- Right Column: Audit Findings -->
+    <rect x="508" y="192" width="670" height="486" rx="8" fill="#11192B" stroke="#22304A" />
+    <text x="526" y="220" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="16" font-weight="bold">Вердикт по профилю: Отличная защита от ТСПУ и блокировок 16 КБ</text>
+    <text x="526" y="240" fill="#9BAAC2" font-family="Consolas, monospace" font-size="12">Протокол: VLESS + XHTTP + Reality (uTLS: chrome, SNI: www.microsoft.com)</text>
+
+    <rect x="526" y="258" width="634" height="118" rx="6" fill="#0B1120" stroke="#16A34A" />
+    <text x="542" y="280" fill="#4ADE80" font-family="Consolas, monospace" font-size="11" font-weight="bold">[ВСЁ ОТЛИЧНО] ТРАНСПОРТ И ЗАЩИТА ОТ 16 КБ ТСПУ</text>
+    <text x="542" y="300" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold">Используется транспорт XHTTP (SplitHTTP) с маскировкой длины пакетов</text>
+    <text x="542" y="320" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Трафик разбивается на HTTP-запросы со случайным xPaddingBytes (100-1000) и мультиплексированием XMUX.</text>
+    <text x="542" y="340" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Счётчик 16 КБ на оборудовании ТСПУ не срабатывает даже в зарубежных дата-центрах Hetzner / OVH.</text>
+    <text x="542" y="362" fill="#60A5FA" font-family="Segoe UI, sans-serif" font-size="11.5">▼ Показать технические подробности (параметры протокола и конфига)</text>
+
+    <rect x="526" y="390" width="634" height="118" rx="6" fill="#0B1120" stroke="#16A34A" />
+    <text x="542" y="412" fill="#4ADE80" font-family="Consolas, monospace" font-size="11" font-weight="bold">[ВСЁ ОТЛИЧНО] МАРШРУТИЗАЦИЯ И ОБХОД БАНКОВ РФ</text>
+    <text x="542" y="432" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold">Настроено разделение трафика (Split-DNS и прямой выход для сайтов .RU)</text>
+    <text x="542" y="452" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Госуслуги, российские банки и маркетплейсы открываются напрямую через 77.88.8.8 (Яндекс.DNS),</text>
+    <text x="542" y="472" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">а все зарубежные сайты — через зашифрованный DoH внутри ВПН-туннеля.</text>
+    <text x="542" y="494" fill="#60A5FA" font-family="Segoe UI, sans-serif" font-size="11.5">▼ Показать технические подробности (параметры протокола и конфига)</text>
+
+    <rect x="526" y="522" width="634" height="138" rx="6" fill="#0B1120" stroke="#16A34A" />
+    <text x="542" y="544" fill="#4ADE80" font-family="Consolas, monospace" font-size="11" font-weight="bold">[ВСЁ ОТЛИЧНО] КРИПТОГРАФИЯ TLS 1.3 REALITY</text>
+    <text x="542" y="564" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold">Отпечаток браузера uTLS Chrome и корректный ключ X25519 (pbk)</text>
+    <text x="542" y="584" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Рукопожатие TLS 1.3 неотличимо от обычного браузера Chrome при обращении к домену SNI.</text>
+    <text x="542" y="604" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="12">Все личные ключи и идентификаторы скрыты в режиме защиты приватности.</text>
+    
+  </svg>

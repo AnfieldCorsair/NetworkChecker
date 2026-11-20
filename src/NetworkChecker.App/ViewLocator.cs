@@ -16,6 +16,7 @@ public sealed class ViewLocator : IDataTemplate
         DnsArchitectViewModel => new DnsArchitectView(),
         TspuFingerprintsViewModel => new TspuFingerprintsView(),
         WindowsStackSniViewModel => new WindowsStackSniView(),
+        IpReputationViewModel => new IpReputationView(),
         SupportTicketViewModel => new SupportTicketView(),
         _ => param is null ? null : new TextBlock { Text = $"Экран не найден: {param.GetType().Name}" },
     };
