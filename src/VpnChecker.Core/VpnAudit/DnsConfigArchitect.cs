@@ -165,7 +165,9 @@ public static class DnsConfigArchitect
         }
         catch (JsonException ex)
         {
-            message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса JSON (строка {ex.LineNumber + 1}, позиция {ex.BytePositionInLine + 1}): {ex.Message}");
+            var lineNum = (ex.LineNumber ?? 0L) + 1L;
+            var posNum = (ex.BytePositionInLine ?? 0L) + 1L;
+            message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса JSON (строка {lineNum}, позиция {posNum}): {ex.Message}");
             return false;
         }
     }
@@ -213,8 +215,9 @@ public static class DnsConfigArchitect
             }
             catch (JsonException ex)
             {
-                var lineNum = Math.Max(1, ex.LineNumber);
-                message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса фрагмента JSON (строка {lineNum}, позиция {ex.BytePositionInLine + 1}): {ex.Message}");
+                var lineNum = Math.Max(1L, ex.LineNumber ?? 1L);
+                var posNum = (ex.BytePositionInLine ?? 0L) + 1L;
+                message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса фрагмента JSON (строка {lineNum}, позиция {posNum}): {ex.Message}");
                 return false;
             }
         }
