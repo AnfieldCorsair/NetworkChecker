@@ -24,20 +24,29 @@ public abstract partial class ViewModelBase : ObservableObject
 
 public sealed partial class NavItem : ObservableObject
 {
-    public NavItem(int stepNumber, ViewModelBase page, Action<ViewModelBase> onSelect)
+    public NavItem(int stepNumber, ViewModelBase page, bool isBasicTab, Action<ViewModelBase> onSelect)
     {
         StepNumber = stepNumber;
         Page = page;
+        IsBasicTab = isBasicTab;
         SelectCommand = new RelayCommand(() => onSelect(page));
     }
 
-    public int StepNumber { get; }
     public ViewModelBase Page { get; }
+    public bool IsBasicTab { get; }
     public string StepBadge => $"ШАГ {StepNumber}";
     public string Title => Page.Title;
     public string Subtitle => Page.Subtitle;
     public IRelayCommand SelectCommand { get; }
 
     [ObservableProperty]
+    public partial int StepNumber { get; set; }
+
+    [ObservableProperty]
     public partial bool IsSelected { get; set; }
+
+    partial void OnStepNumberChanged(int value)
+    {
+        OnPropertyChanged(nameof(StepBadge));
+    }
 }

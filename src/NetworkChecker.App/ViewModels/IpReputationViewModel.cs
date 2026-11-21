@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Net.Sockets;
 using System.Text;
@@ -9,6 +9,12 @@ using NetworkChecker.App.Startup;
 using NetworkChecker.Core.VpnAudit;
 
 namespace NetworkChecker.App.ViewModels;
+
+public sealed record GoogleSignalDisplayItem(
+    string SignalName,
+    string StatusText,
+    string Detail,
+    IBrush StatusBrush);
 
 public sealed record GeoProviderDisplayItem(
     string ProviderName,
@@ -149,13 +155,15 @@ public sealed partial class IpReputationViewModel : ViewModelBase
     [ObservableProperty]
     public partial string CopyFeedback { get; set; } = string.Empty;
 
+    public ObservableCollection<GoogleSignalDisplayItem> GoogleSignalItems { get; } = [];
+
     public ObservableCollection<GeoProviderDisplayItem> ProviderItems { get; } = [];
 
     public ObservableCollection<SubscriptionIpDisplayItem> SubscriptionIpItems { get; } = [];
 
     public IpReputationConsensusReport? LastActiveReport { get; private set; }
 
-    public bool IsManualTargetVisible => SelectedRoutingModeIndex == 2;
+    public bool IsManualTargetVisible => ShowTechnicalDetails && SelectedRoutingModeIndex == 2;
 
     partial void OnSelectedRoutingModeIndexChanged(int value)
     {
@@ -167,6 +175,16 @@ public sealed partial class IpReputationViewModel : ViewModelBase
             {
                 ManualTargetInput = host;
             }
+        }
+    }
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(ShowTechnicalDetails))
+        {
+            OnPropertyChanged(nameof(IsManualTargetVisible));
         }
     }
 
@@ -363,6 +381,13 @@ public sealed partial class IpReputationViewModel : ViewModelBase
             sb.AppendLine(CultureInfo.InvariantCulture, $"Совпадение IP (HTTP vs CDN): {(LastActiveReport.IpConsistencyOk ? "Совпадает" : "Расхождение IP!")}");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Вердикт Google / YouTube: {LastActiveReport.GoogleVerdict.VerdictTitle}");
             sb.AppendLine(CultureInfo.InvariantCulture, $"YouTube GL: {LastActiveReport.GoogleVerdict.YouTubeCountryCode ?? "—"} · Google GL: {LastActiveReport.GoogleVerdict.GoogleSearchRegion ?? "—"}");
+            if (LastActiveReport.GoogleVerdict.SignalChecks is { Count: > 0 } signals)
+            {
+                foreach (var sig in signals)
+                {
+                    sb.AppendLine(CultureInfo.InvariantCulture, $"  - {sig.SignalName}: {sig.StatusText} ({sig.Detail})");
+                }
+            }
             sb.AppendLine(CultureInfo.InvariantCulture, $"Пояснение: {LastActiveReport.GoogleVerdict.VerdictSummary}");
         }
 
@@ -412,14 +437,40 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         GoogleVerdictTitle = report.GoogleVerdict.VerdictTitle;
         GoogleVerdictSummary = report.GoogleVerdict.VerdictSummary;
         GoogleVerdictEvidence = report.GoogleVerdict.TechnicalEvidence;
-        DetectedGlBadge = $"YouTube GL: {report.GoogleVerdict.YouTubeCountryCode ?? "—"} · Google GL: {report.GoogleVerdict.GoogleSearchRegion ?? "—"} · Капча 429: {(report.GoogleVerdict.HasGoogleCaptchaBlock ? "ДА" : "НЕТ")}";
+        var ytPremShort = report.GoogleVerdict.YouTubePremiumAvailable switch
+        {
+            true => "Да",
+            false => "Нет",
+            _ => "—",
+        };
+        var geminiShort = report.GoogleVerdict.GeminiAccessible switch
+        {
+            true => "Да",
+            false => "Нет",
+            _ => "—",
+        };
+        DetectedGlBadge = $"YT GL: {report.GoogleVerdict.YouTubeCountryCode ?? "—"} · Premium: {ytPremShort} · Gemini: {geminiShort} · Search: {report.GoogleVerdict.GoogleSearchRegion ?? "—"}";
+
+        GoogleSignalItems.Clear();
+        if (report.GoogleVerdict.SignalChecks is { Count: > 0 } signals)
+        {
+            foreach (var sig in signals)
+            {
+                var brush = sig.IsAlert
+                    ? SolidColorBrush.Parse("#F87171")
+                    : (sig.IsPass ? SolidColorBrush.Parse("#34D399") : SolidColorBrush.Parse("#94A3B8"));
+                GoogleSignalItems.Add(new GoogleSignalDisplayItem(sig.SignalName, sig.StatusText, sig.Detail, brush));
+            }
+        }
 
         if (report.GoogleVerdict.IsRuGeoPoisoned)
         {
             GoogleVerdictBorderBrush = SolidColorBrush.Parse("#EF4444");
             GoogleVerdictTitleBrush = SolidColorBrush.Parse("#FCA5A5");
         }
-        else if (report.GoogleVerdict.HasGoogleCaptchaBlock)
+        else if (report.GoogleVerdict.HasGoogleCaptchaBlock ||
+                 report.GoogleVerdict.YouTubePremiumAvailable == false ||
+                 report.GoogleVerdict.GeminiAccessible == false)
         {
             GoogleVerdictBorderBrush = SolidColorBrush.Parse("#F59E0B");
             GoogleVerdictTitleBrush = SolidColorBrush.Parse("#FCD34D");
@@ -478,8 +529,14 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
     private void LoadInitialPlaceholders()
     {
-        ProviderItems.Clear();
+        GoogleSignalItems.Clear();
         var muted = SolidColorBrush.Parse("#6B7894");
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("1. YouTube INNERTUBE_CONTEXT_GL", "Ожидание", "Проверка реального кода страны YouTube с обходом EU-согласия", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("2. Доступность YouTube Premium", "Ожидание", "Проверка «недоступна в вашей стране» (признак метки RU)", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("3. Доступ к Google Gemini / AI", "Ожидание", "Проверка гео-блокировки /unsupported и HTTP 403 для РФ", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("4. Google Search (регион и /sorry/)", "Ожидание", "Проверка футера страны в Google Search и капчи reCAPTCHA 429", muted));
+
+        ProviderItems.Clear();
         ProviderItems.Add(new GeoProviderDisplayItem("ipwho.is", "—", "Ожидание запуска", "Проверка ASN, ISP, флагов Hosting / Proxy / Tor", "Hosting: —", muted, "Proxy/VPN: —", muted, "Готов"));
         ProviderItems.Add(new GeoProviderDisplayItem("ip-api.com", "—", "Ожидание запуска", "Проверка географии, провайдера и флагов hosting/proxy", "Hosting: —", muted, "Proxy/VPN: —", muted, "Готов"));
         ProviderItems.Add(new GeoProviderDisplayItem("ipinfo.io", "—", "Ожидание запуска", "Проверка организации, ASN и принадлежности к облаку", "Hosting: —", muted, "Proxy/VPN: —", muted, "Готов"));

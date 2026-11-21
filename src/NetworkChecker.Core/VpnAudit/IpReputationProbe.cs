@@ -31,6 +31,13 @@ public sealed record GeoProviderSample(
     long ElapsedMs,
     string? Error = null);
 
+public sealed record GoogleSignalCheck(
+    string SignalName,
+    string StatusText,
+    string Detail,
+    bool IsAlert,
+    bool IsPass);
+
 public sealed record GoogleGeoVerdict(
     bool ProbeExecuted,
     bool ProbeSucceeded,
@@ -43,7 +50,11 @@ public sealed record GoogleGeoVerdict(
     string RoutingChannelUsed,
     string VerdictTitle,
     string VerdictSummary,
-    string TechnicalEvidence);
+    string TechnicalEvidence,
+    bool? YouTubePremiumAvailable = null,
+    bool? GeminiAccessible = null,
+    string? GoogleFooterCountry = null,
+    IReadOnlyList<GoogleSignalCheck>? SignalChecks = null);
 
 public sealed record IpReputationConsensusReport(
     DateTimeOffset CheckedAt,
@@ -102,8 +113,18 @@ public static partial class IpReputationProbe
     private static readonly Uri CloudflareTraceUri = new("https://1.1.1.1/cdn-cgi/trace");
     private static readonly Uri YouTubeSwDataUri = new("https://www.youtube.com/sw.js_data");
     private static readonly Uri YouTubeHomeUri = new("https://www.youtube.com/?hl=en");
+    private static readonly Uri YouTubePremiumUri = new("https://www.youtube.com/premium?hl=en");
+    private static readonly Uri GeminiAppUri = new("https://gemini.google.com/app?hl=en");
+    private static readonly Uri GoogleSearchHomeUri = new("https://www.google.com/?hl=en&gws_rd=cr");
     private static readonly Uri GooglePrefsUri = new("https://www.google.com/preferences?hl=en");
     private static readonly Uri IpApiBatchUri = new("http://ip-api.com/batch?fields=status,country,countryCode,city,isp,org,as,proxy,hosting,query");
+
+    // Cookie обхода EU-экрана согласия (consent.google.com / consent.youtube.com), чтобы на серверах DE/NL/FI возвращался реальный GL
+    private const string GoogleConsentBypassCookie =
+        "SOCS=CAESHAgBEhJnd3NfMjAyNDAxMDEtMF9SQzEaAmVuIAEaBgiA_LyaBg; CONSENT=YES+cb.20240101-00-p0.en+FX+999; PREF=hl=en";
+
+    private const string DesktopChromeUserAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
 
     private static readonly string[] NonProxyOutboundTypes = ["freedom", "direct", "blackhole", "block", "dns"];
 
@@ -144,8 +165,14 @@ public static partial class IpReputationProbe
     [GeneratedRegex("""(?:"INNERTUBE_CONTEXT_GL"|"countryCode"|"gl")\s*:\s*"(?<code>[A-Za-z]{2})" """, RegexOptions.IgnoreCase | RegexOptions.IgnorePatternWhitespace)]
     private static partial Regex YouTubeGlRegex();
 
+    [GeneratedRegex("""\[\s*"[a-z]{2}(?:-[A-Za-z0-9]+)?"\s*,\s*"(?<code>[A-Z]{2})"\s*,""", RegexOptions.None)]
+    private static partial Regex YouTubeSwDataPositionalGlRegex();
+
     [GeneratedRegex("""(?:["']gl["']\s*:\s*["']|[?&]gl=)(?<code>[A-Za-z]{2})\b""", RegexOptions.IgnoreCase)]
     private static partial Regex GoogleGlRegex();
+
+    [GeneratedRegex("""class\s*=\s*["'][^"']*uU7dJb[^"']*["'][^>]*>\s*(?<country>[^<]{2,60}?)\s*<""", RegexOptions.IgnoreCase)]
+    private static partial Regex GoogleFooterCountryRegex();
 
     /// <summary>
     /// Извлекает все серверы (IP и домены) из подписки или одиночного конфига, включая мульти-outbound балансировщики в JSON Happ/Xray.
@@ -316,17 +343,97 @@ public static partial class IpReputationProbe
             return null;
         }
 
-        // В начале sw.js_data часто идёт префикс )]}' и массив с кодом страны вида ["RU",...]
         var match = YouTubeGlRegex().Match(rawPayload);
         if (match.Success)
         {
             return match.Groups["code"].Value.ToUpperInvariant();
         }
 
+        // В ответе youtube.com/sw.js_data часто идёт позиционный кортеж вида ["en","RU",...]
+        var swMatch = YouTubeSwDataPositionalGlRegex().Match(rawPayload);
+        if (swMatch.Success)
+        {
+            return swMatch.Groups["code"].Value.ToUpperInvariant();
+        }
+
+        return null;
+    }
+
+    public static bool? ParseYouTubePremiumAvailability(string? htmlBody)
+    {
+        if (string.IsNullOrWhiteSpace(htmlBody))
+        {
+            return null;
+        }
+
+        if (htmlBody.Contains("YouTube Premium is not available in your country", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("not available in your country", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("недоступна в вашей стране", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("недоступно в вашей стране", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("This offer is not available", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (htmlBody.Contains("Try 1 month", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("Try it free", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("Get YouTube Premium", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("Individual", StringComparison.OrdinalIgnoreCase) &&
+            (htmlBody.Contains("/month", StringComparison.OrdinalIgnoreCase) ||
+             htmlBody.Contains("EUR", StringComparison.OrdinalIgnoreCase) ||
+             htmlBody.Contains("USD", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return null;
+    }
+
+    public static bool? ParseGeminiAvailability(string? finalUri, int statusCode, string? htmlBody)
+    {
+        if (statusCode == 403 || statusCode == 451)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(finalUri) &&
+            (finalUri.Contains("/unsupported", StringComparison.OrdinalIgnoreCase) ||
+             finalUri.Contains("region_not_supported", StringComparison.OrdinalIgnoreCase) ||
+             finalUri.Contains("error/403", StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(htmlBody) &&
+            (htmlBody.Contains("isn't currently supported in your country", StringComparison.OrdinalIgnoreCase) ||
+             htmlBody.Contains("not available in your country", StringComparison.OrdinalIgnoreCase) ||
+             htmlBody.Contains("пока не поддерживается в вашей стране", StringComparison.OrdinalIgnoreCase) ||
+             htmlBody.Contains("недоступен в вашей стране", StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        if (statusCode is >= 200 and < 400 &&
+            (!string.IsNullOrWhiteSpace(finalUri) &&
+             (finalUri.Contains("gemini.google.com", StringComparison.OrdinalIgnoreCase) ||
+              finalUri.Contains("accounts.google.com", StringComparison.OrdinalIgnoreCase))))
+        {
+            return true;
+        }
+
         return null;
     }
 
     public static (string? RegionCode, bool HasCaptcha) ParseGoogleSearchRegionAndCaptcha(
+        string? finalUri,
+        int statusCode,
+        string? htmlBody)
+    {
+        var (regionCode, _, hasCaptcha) = ParseGoogleSearchRegionDetailed(finalUri, statusCode, htmlBody);
+        return (regionCode, hasCaptcha);
+    }
+
+    public static (string? RegionCode, string? FooterLabel, bool HasCaptcha) ParseGoogleSearchRegionDetailed(
         string? finalUri,
         int statusCode,
         string? htmlBody)
@@ -338,16 +445,64 @@ public static partial class IpReputationProbe
                            htmlBody.Contains("g-recaptcha", StringComparison.OrdinalIgnoreCase)));
 
         string? region = null;
+        string? footerLabel = null;
+
+        if (!string.IsNullOrWhiteSpace(finalUri) &&
+            finalUri.Contains("google.ru", StringComparison.OrdinalIgnoreCase))
+        {
+            region = "RU";
+            footerLabel = "google.ru";
+        }
+
         if (!string.IsNullOrWhiteSpace(htmlBody))
         {
-            var m = GoogleGlRegex().Match(htmlBody);
-            if (m.Success)
+            var footerMatch = GoogleFooterCountryRegex().Match(htmlBody);
+            if (footerMatch.Success)
             {
-                region = m.Groups["code"].Value.ToUpperInvariant();
+                footerLabel = footerMatch.Groups["country"].Value.Trim();
+                var mapped = MapCountryNameToIso(footerLabel);
+                if (!string.IsNullOrWhiteSpace(mapped))
+                {
+                    region = mapped;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(region))
+            {
+                var m = GoogleGlRegex().Match(htmlBody);
+                if (m.Success)
+                {
+                    region = m.Groups["code"].Value.ToUpperInvariant();
+                }
             }
         }
 
-        return (region, hasCaptcha);
+        return (region, footerLabel, hasCaptcha);
+    }
+
+    private static string? MapCountryNameToIso(string? label)
+    {
+        if (string.IsNullOrWhiteSpace(label)) return null;
+        var norm = label.Trim().ToLowerInvariant();
+        if (norm.Contains("russia", StringComparison.Ordinal) || norm.Contains("россия", StringComparison.Ordinal)) return "RU";
+        if (norm.Contains("netherlands", StringComparison.Ordinal) || norm.Contains("нидерланд", StringComparison.Ordinal)) return "NL";
+        if (norm.Contains("germany", StringComparison.Ordinal) || norm.Contains("герман", StringComparison.Ordinal)) return "DE";
+        if (norm.Contains("finland", StringComparison.Ordinal) || norm.Contains("финлянд", StringComparison.Ordinal)) return "FI";
+        if (norm.Contains("united states", StringComparison.Ordinal) || norm.Contains("сша", StringComparison.Ordinal)) return "US";
+        if (norm.Contains("united kingdom", StringComparison.Ordinal) || norm.Contains("великобритан", StringComparison.Ordinal)) return "GB";
+        if (norm.Contains("sweden", StringComparison.Ordinal) || norm.Contains("швец", StringComparison.Ordinal)) return "SE";
+        if (norm.Contains("poland", StringComparison.Ordinal) || norm.Contains("польш", StringComparison.Ordinal)) return "PL";
+        if (norm.Contains("france", StringComparison.Ordinal) || norm.Contains("франц", StringComparison.Ordinal)) return "FR";
+        if (norm.Contains("switzerland", StringComparison.Ordinal) || norm.Contains("швейцар", StringComparison.Ordinal)) return "CH";
+        if (norm.Contains("latvia", StringComparison.Ordinal) || norm.Contains("латв", StringComparison.Ordinal)) return "LV";
+        if (norm.Contains("estonia", StringComparison.Ordinal) || norm.Contains("эстон", StringComparison.Ordinal)) return "EE";
+        if (norm.Contains("lithuania", StringComparison.Ordinal) || norm.Contains("литв", StringComparison.Ordinal)) return "LT";
+        if (norm.Contains("turkey", StringComparison.Ordinal) || norm.Contains("türkiye", StringComparison.Ordinal) || norm.Contains("турц", StringComparison.Ordinal)) return "TR";
+        if (norm.Contains("kazakhstan", StringComparison.Ordinal) || norm.Contains("казахстан", StringComparison.Ordinal)) return "KZ";
+        if (norm.Contains("austria", StringComparison.Ordinal) || norm.Contains("австр", StringComparison.Ordinal)) return "AT";
+        if (norm.Contains("singapore", StringComparison.Ordinal) || norm.Contains("сингапур", StringComparison.Ordinal)) return "SG";
+        if (norm.Contains("japan", StringComparison.Ordinal) || norm.Contains("япон", StringComparison.Ordinal)) return "JP";
+        return null;
     }
 
     public static GoogleGeoVerdict EvaluateGoogleGeoVerdict(
@@ -356,7 +511,10 @@ public static partial class IpReputationProbe
         string? googleRegion,
         bool hasCaptcha,
         string routingChannelUsed,
-        bool probeExecuted)
+        bool probeExecuted,
+        bool? youtubePremiumAvailable = null,
+        bool? geminiAccessible = null,
+        string? googleFooterCountry = null)
     {
         var normPhysical = string.IsNullOrWhiteSpace(physicalCountryCode) ? null : physicalCountryCode.Trim().ToUpperInvariant();
         var normYt = string.IsNullOrWhiteSpace(youtubeGl) ? null : youtubeGl.Trim().ToUpperInvariant();
@@ -375,34 +533,87 @@ public static partial class IpReputationProbe
                 YouTubeCountryCode: null,
                 GoogleSearchRegion: null,
                 RoutingChannelUsed: routingChannelUsed,
-                VerdictTitle: "Проверка стороннего IP (живой ответ Google GL доступен для активного туннеля)",
-                VerdictSummary: "Google определяет гео-метку GL только по IP, с которого физически пришёл HTTP-запрос. Для точной проверки метки Google RU подключитесь к этому серверу и выберите режим «Активный интернет» или «Авто-прокси клиента ВПН».",
-                TechnicalEvidence: $"Режим: {routingChannelUsed} · Страна по базам GeoIP: {normPhysical ?? "—"}");
+                VerdictTitle: "Проверка стороннего IP (живой зонд Google доступен для активного туннеля)",
+                VerdictSummary: "Google определяет гео-метку GL и доступ к YouTube Premium / Gemini только по IP, с которого физически пришёл запрос. Для полной 4-сигнальной проверки подключитесь к этому серверу и запустите проверку активного IP или авто-прокси.",
+                TechnicalEvidence: $"Режим: {routingChannelUsed} · Страна по базам GeoIP: {normPhysical ?? "—"}",
+                YouTubePremiumAvailable: null,
+                GeminiAccessible: null,
+                GoogleFooterCountry: null,
+                SignalChecks:
+                [
+                    new GoogleSignalCheck("1. YouTube GL", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
+                    new GoogleSignalCheck("2. YouTube Premium", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
+                    new GoogleSignalCheck("3. Google Gemini / AI", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
+                    new GoogleSignalCheck("4. Google Search и капча", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
+                ]);
         }
 
-        var probeSucceeded = detectedGl is not null || hasCaptcha;
-        var isRuPoisoned = !string.IsNullOrWhiteSpace(normPhysical) &&
-                           !string.Equals(normPhysical, "RU", StringComparison.OrdinalIgnoreCase) &&
-                           (string.Equals(normYt, "RU", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(normGoogle, "RU", StringComparison.OrdinalIgnoreCase));
+        var isForeignPhysical = !string.IsNullOrWhiteSpace(normPhysical) &&
+                                !string.Equals(normPhysical, "RU", StringComparison.OrdinalIgnoreCase);
 
-        var evidence = $"Канал: {routingChannelUsed} · GeoIP страна: {normPhysical ?? "—"} · YouTube GL: {normYt ?? "—"} · Google Search GL: {normGoogle ?? "—"} · Капча /sorry/: {(hasCaptcha ? "ДА (429/sorry)" : "нет")}";
+        var explicitRuCode = string.Equals(normYt, "RU", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(normGoogle, "RU", StringComparison.OrdinalIgnoreCase);
+
+        // Если и YouTube Premium, и Google Gemini одновременно заблокированы по региону на зарубежном IP — это надёжный признак метки RU/санкций
+        var servicesBlockedForRegion = youtubePremiumAvailable == false && geminiAccessible == false;
+
+        var isRuPoisoned = isForeignPhysical && (explicitRuCode || servicesBlockedForRegion);
+
+        var signalChecks = BuildSignalChecks(
+            normYt,
+            youtubePremiumAvailable,
+            geminiAccessible,
+            normGoogle,
+            googleFooterCountry,
+            hasCaptcha,
+            isForeignPhysical);
+
+        var probeSucceeded = detectedGl is not null ||
+                             youtubePremiumAvailable.HasValue ||
+                             geminiAccessible.HasValue ||
+                             hasCaptcha;
+
+        var ytPremText = youtubePremiumAvailable switch
+        {
+            true => "Доступен",
+            false => "Заблокирован в стране",
+            _ => "—",
+        };
+        var geminiText = geminiAccessible switch
+        {
+            true => "Доступен",
+            false => "Заблокирован (RU/Unsupported)",
+            _ => "—",
+        };
+        var searchText = !string.IsNullOrWhiteSpace(googleFooterCountry)
+            ? $"{normGoogle ?? "—"} ({googleFooterCountry})"
+            : (normGoogle ?? "—");
+
+        var evidence = $"Канал: {routingChannelUsed} · GeoIP: {normPhysical ?? "—"} · YouTube GL: {normYt ?? "—"} · YT Premium: {ytPremText} · Gemini: {geminiText} · Google Search: {searchText} · Капча /sorry/: {(hasCaptcha ? "ДА (429/sorry)" : "нет")}";
 
         if (isRuPoisoned)
         {
+            var reason = explicitRuCode
+                ? $"Google/YouTube явно вернули код региона RU для сервера в {normPhysical}"
+                : $"YouTube Premium и Google Gemini одновременно заблокировали сервер в {normPhysical} по региону";
+
             return new GoogleGeoVerdict(
                 ProbeExecuted: true,
                 ProbeSucceeded: true,
-                DetectedGlCode: "RU",
+                DetectedGlCode: explicitRuCode ? "RU" : (detectedGl ?? "RU*"),
                 PhysicalCountryCode: normPhysical,
                 IsRuGeoPoisoned: true,
                 HasGoogleCaptchaBlock: hasCaptcha,
                 YouTubeCountryCode: normYt,
                 GoogleSearchRegion: normGoogle,
                 RoutingChannelUsed: routingChannelUsed,
-                VerdictTitle: $"КРИТИЧНО: Обнаружена «прокажённая метка RU» у Google (сервер в {normPhysical}, но Google видит RU)",
-                VerdictSummary: "Сервер физически находится за рубежом, но база геолокации Google пометила эту подсеть как Россию (RU) из-за утечек GPS/Wi-Fi со смартфонов пользователей. Из-за этого в YouTube остаётся регион РФ, не открывается Gemini / Google AI и возможна капча. Решение: смените локацию/подсеть или пустите geosite:google через другой чистый узел.",
-                TechnicalEvidence: evidence);
+                VerdictTitle: $"КРИТИЧНО: Обнаружена «прокажённая метка RU» у Google (сервер в {normPhysical}, но Google видит РФ)",
+                VerdictSummary: $"{reason}. Причина: массовый трафик смартфонов из РФ с Wi-Fi/GPS через эту подсеть заставил Google перепривязать IP к России. Решение: смените локацию или направьте geosite:google через чистый узел.",
+                TechnicalEvidence: evidence,
+                YouTubePremiumAvailable: youtubePremiumAvailable,
+                GeminiAccessible: geminiAccessible,
+                GoogleFooterCountry: googleFooterCountry,
+                SignalChecks: signalChecks);
         }
 
         if (hasCaptcha)
@@ -418,30 +629,17 @@ public static partial class IpReputationProbe
                 GoogleSearchRegion: normGoogle,
                 RoutingChannelUsed: routingChannelUsed,
                 VerdictTitle: "ВНИМАНИЕ: Google выдаёт капчу (/sorry/ · HTTP 429) на этот IP",
-                VerdictSummary: "Метки RU нет, но сам IP-адрес перегружен запросами соседей по ВПН-серверу или числится в спам-листах дата-центра. При поиске в Google будет периодически появляться reCAPTCHA.",
-                TechnicalEvidence: evidence);
+                VerdictSummary: "Принудительной метки RU нет, но сам IP перегружен запросами соседей по ВПН-серверу или числится в спам-листах дата-центра. При поиске в Google будет появляться reCAPTCHA.",
+                TechnicalEvidence: evidence,
+                YouTubePremiumAvailable: youtubePremiumAvailable,
+                GeminiAccessible: geminiAccessible,
+                GoogleFooterCountry: googleFooterCountry,
+                SignalChecks: signalChecks);
         }
 
-        if (string.Equals(detectedGl, "RU", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(normPhysical, "RU", StringComparison.OrdinalIgnoreCase))
+        if (isForeignPhysical && (geminiAccessible == false || youtubePremiumAvailable == false))
         {
-            return new GoogleGeoVerdict(
-                ProbeExecuted: true,
-                ProbeSucceeded: true,
-                DetectedGlCode: "RU",
-                PhysicalCountryCode: "RU",
-                IsRuGeoPoisoned: false,
-                HasGoogleCaptchaBlock: false,
-                YouTubeCountryCode: normYt,
-                GoogleSearchRegion: normGoogle,
-                RoutingChannelUsed: routingChannelUsed,
-                VerdictTitle: "Google видит российский IP (RU) — запрос ушёл напрямую без зарубежного ВПН",
-                VerdictSummary: "И базы GeoIP, и сам Google определяют ваш текущий выходной IP как российский (RU). Если ВПН включён, значит трафик Google идёт мимо туннеля или ваш ВПН работает только в режиме системного прокси (выберите режим «Авто-прокси клиента ВПН»).",
-                TechnicalEvidence: evidence);
-        }
-
-        if (!string.IsNullOrWhiteSpace(detectedGl))
-        {
+            var blockedService = geminiAccessible == false ? "Google Gemini / AI" : "YouTube Premium";
             return new GoogleGeoVerdict(
                 ProbeExecuted: true,
                 ProbeSucceeded: true,
@@ -452,9 +650,56 @@ public static partial class IpReputationProbe
                 YouTubeCountryCode: normYt,
                 GoogleSearchRegion: normGoogle,
                 RoutingChannelUsed: routingChannelUsed,
-                VerdictTitle: $"ОТЛИЧНО: Чистый зарубежный IP для Google (регион {detectedGl}, метки RU и капчи нет)",
-                VerdictSummary: $"Google и YouTube корректно определяют страну вашего ВПН-сервера как {detectedGl} (совпадает с зарубежной геолокацией {normPhysical ?? detectedGl}). YouTube Premium, Gemini и поиск работают без региональных ограничений РФ.",
-                TechnicalEvidence: evidence);
+                VerdictTitle: $"ВНИМАНИЕ: Частичное гео-ограничение Google ({blockedService} недоступен на этом IP)",
+                VerdictSummary: $"Явного кода GL=RU не найдено, но {blockedService} отклоняет эту подсеть по региону. Для полной работы всех сервисов Google лучше выбрать другой чистый узел.",
+                TechnicalEvidence: evidence,
+                YouTubePremiumAvailable: youtubePremiumAvailable,
+                GeminiAccessible: geminiAccessible,
+                GoogleFooterCountry: googleFooterCountry,
+                SignalChecks: signalChecks);
+        }
+
+        if (string.Equals(normPhysical, "RU", StringComparison.OrdinalIgnoreCase))
+        {
+            return new GoogleGeoVerdict(
+                ProbeExecuted: true,
+                ProbeSucceeded: probeSucceeded,
+                DetectedGlCode: detectedGl ?? "RU",
+                PhysicalCountryCode: "RU",
+                IsRuGeoPoisoned: false,
+                HasGoogleCaptchaBlock: false,
+                YouTubeCountryCode: normYt,
+                GoogleSearchRegion: normGoogle,
+                RoutingChannelUsed: routingChannelUsed,
+                VerdictTitle: "Запрос ушёл напрямую с российского IP (RU) — зарубежный ВПН сейчас не перехватывает Google",
+                VerdictSummary: "И базы GeoIP, и сервисы Google определяют ваш текущий IP как российский (RU). Если ВПН включён, проверьте режим TUN или выберите в Расширенном режиме проверку через «Авто-прокси клиента ВПН».",
+                TechnicalEvidence: evidence,
+                YouTubePremiumAvailable: youtubePremiumAvailable,
+                GeminiAccessible: geminiAccessible,
+                GoogleFooterCountry: googleFooterCountry,
+                SignalChecks: signalChecks);
+        }
+
+        if (probeSucceeded)
+        {
+            var shownRegion = detectedGl ?? normPhysical ?? "Зарубежный";
+            return new GoogleGeoVerdict(
+                ProbeExecuted: true,
+                ProbeSucceeded: true,
+                DetectedGlCode: shownRegion,
+                PhysicalCountryCode: normPhysical,
+                IsRuGeoPoisoned: false,
+                HasGoogleCaptchaBlock: false,
+                YouTubeCountryCode: normYt,
+                GoogleSearchRegion: normGoogle,
+                RoutingChannelUsed: routingChannelUsed,
+                VerdictTitle: $"ОТЛИЧНО: Чистый зарубежный IP для Google (регион {shownRegion}, метки RU и капчи нет)",
+                VerdictSummary: $"Все активные сигналы Google подтверждают чистую зарубежную репутацию подсети ({normPhysical ?? shownRegion}): YouTube GL, YouTube Premium, Gemini и Google Search работают без ограничений РФ.",
+                TechnicalEvidence: evidence,
+                YouTubePremiumAvailable: youtubePremiumAvailable,
+                GeminiAccessible: geminiAccessible,
+                GoogleFooterCountry: googleFooterCountry,
+                SignalChecks: signalChecks);
         }
 
         return new GoogleGeoVerdict(
@@ -467,9 +712,88 @@ public static partial class IpReputationProbe
             YouTubeCountryCode: null,
             GoogleSearchRegion: null,
             RoutingChannelUsed: routingChannelUsed,
-            VerdictTitle: "Не удалось прочитать код региона GL из ответа Google/YouTube",
-            VerdictSummary: "Запрос к Google выполнен, капчи /sorry/ не обнаружено, но сервер не вернул явный маркер INNERTUBE_CONTEXT_GL. Проверьте консенсус 4 баз репутации ниже.",
-            TechnicalEvidence: evidence);
+            VerdictTitle: "Сервисы Google/YouTube не ответили в пределах таймаута",
+            VerdictSummary: "Если ВПН выключен — ТСПУ блокирует прямой доступ к YouTube. Включите ВПН (TUN или системный прокси) и повторите проверку.",
+            TechnicalEvidence: evidence,
+            YouTubePremiumAvailable: null,
+            GeminiAccessible: null,
+            GoogleFooterCountry: null,
+            SignalChecks: signalChecks);
+    }
+
+    private static IReadOnlyList<GoogleSignalCheck> BuildSignalChecks(
+        string? ytGl,
+        bool? ytPremium,
+        bool? gemini,
+        string? searchRegion,
+        string? footerCountry,
+        bool hasCaptcha,
+        bool isForeignPhysical)
+    {
+        var ytIsRuAlert = isForeignPhysical && string.Equals(ytGl, "RU", StringComparison.OrdinalIgnoreCase);
+        var ytCheck = new GoogleSignalCheck(
+            "1. YouTube INNERTUBE_CONTEXT_GL",
+            ytGl is null ? "Нет ответа" : (ytIsRuAlert ? "МЕТКА RU!" : $"Регион: {ytGl}"),
+            ytGl is null
+                ? "YouTube не вернул код страны (возможна блокировка ТСПУ без ВПН)"
+                : (ytIsRuAlert ? "Критично: зарубежный IP, но YouTube определил регион РФ" : $"YouTube корректно определил страну {ytGl}"),
+            IsAlert: ytIsRuAlert,
+            IsPass: ytGl is not null && !ytIsRuAlert && !string.Equals(ytGl, "RU", StringComparison.OrdinalIgnoreCase));
+
+        var premCheck = new GoogleSignalCheck(
+            "2. Доступность YouTube Premium",
+            ytPremium switch
+            {
+                true => "Доступен",
+                false => "НЕДОСТУПЕН",
+                _ => "Не определено",
+            },
+            ytPremium switch
+            {
+                true => "YouTube предлагает зарубежную подписку Premium — регион чистый",
+                false => "YouTube сообщил «недоступна в вашей стране» (признак метки RU/санкций)",
+                _ => "Не удалось прочитать страницу /premium (таймаут или блокировка)",
+            },
+            IsAlert: ytPremium == false,
+            IsPass: ytPremium == true);
+
+        var geminiCheck = new GoogleSignalCheck(
+            "3. Доступ к Google Gemini / AI",
+            gemini switch
+            {
+                true => "Открыт",
+                false => "ЗАБЛОКИРОВАН",
+                _ => "Не определено",
+            },
+            gemini switch
+            {
+                true => "Google Gemini принимает подключения с этого IP без гео-блокировки",
+                false => "Gemini отклонил IP по региону (/unsupported или HTTP 403 — метка РФ)",
+                _ => "Нет ответа от gemini.google.com",
+            },
+            IsAlert: gemini == false,
+            IsPass: gemini == true);
+
+        var searchIsRuAlert = isForeignPhysical && string.Equals(searchRegion, "RU", StringComparison.OrdinalIgnoreCase);
+        var searchStatus = hasCaptcha
+            ? "КАПЧА 429"
+            : (searchIsRuAlert ? "МЕТКА RU!" : (searchRegion is not null ? $"Регион: {searchRegion}" : "Чисто (без капчи)"));
+        var searchDetail = hasCaptcha
+            ? "Google перенаправил запрос на /sorry/ (reCAPTCHA из-за перегруженного IP)"
+            : (searchIsRuAlert
+                ? $"Футер Google Search показал Россию ({footerCountry ?? "RU"}) на зарубежном IP"
+                : (!string.IsNullOrWhiteSpace(footerCountry)
+                    ? $"Google Search определил регион «{footerCountry}», капчи нет"
+                    : "Поиск Google доступен без капчи /sorry/"));
+
+        var searchCheck = new GoogleSignalCheck(
+            "4. Google Search (регион и /sorry/)",
+            searchStatus,
+            searchDetail,
+            IsAlert: hasCaptcha || searchIsRuAlert,
+            IsPass: !hasCaptcha && !searchIsRuAlert && (searchRegion is not null || !string.IsNullOrWhiteSpace(footerCountry)));
+
+        return [ytCheck, premCheck, geminiCheck, searchCheck];
     }
 
     public static IpReputationConsensusReport BuildConsensus(
@@ -669,7 +993,7 @@ public static partial class IpReputationProbe
             var t3 = ProbeIpInfoAsync(activeHttp, resolvedManualIp, ct);
             var t4 = ProbeCloudflareTraceAsync(activeHttp, resolvedManualIp, ct);
 
-            Task<(string? YtGl, string? GoogleGl, bool HasCaptcha)>? googleTask = null;
+            Task<(string? YtGl, string? GoogleGl, string? FooterCountry, bool HasCaptcha, bool? YtPremium, bool? GeminiOk)>? googleTask = null;
             if (mode != IpReputationRoutingMode.ManualTargetIp)
             {
                 googleTask = ProbeLiveGoogleAndYouTubeGeoAsync(activeHttp, ct);
@@ -694,14 +1018,17 @@ public static partial class IpReputationProbe
             GoogleGeoVerdict googleVerdict;
             if (googleTask is not null)
             {
-                var (ytGl, gGl, captcha) = await googleTask.ConfigureAwait(false);
+                var (ytGl, gGl, footerCountry, captcha, ytPrem, geminiOk) = await googleTask.ConfigureAwait(false);
                 googleVerdict = EvaluateGoogleGeoVerdict(
                     tempConsensusCountry,
                     ytGl,
                     gGl,
                     captcha,
                     channelLabel,
-                    probeExecuted: true);
+                    probeExecuted: true,
+                    youtubePremiumAvailable: ytPrem,
+                    geminiAccessible: geminiOk,
+                    googleFooterCountry: footerCountry);
             }
             else
             {
@@ -1165,57 +1492,128 @@ public static partial class IpReputationProbe
         }
     }
 
-    private static async Task<(string? YtGl, string? GoogleGl, bool HasCaptcha)> ProbeLiveGoogleAndYouTubeGeoAsync(
-        HttpClient http,
-        CancellationToken ct)
+    private static HttpRequestMessage CreateGoogleProbeRequest(Uri uri)
     {
-        string? ytGl = null;
-        string? googleGl = null;
-        var hasCaptcha = false;
+        var req = new HttpRequestMessage(HttpMethod.Get, uri);
+        req.Headers.TryAddWithoutValidation("User-Agent", DesktopChromeUserAgent);
+        req.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+        req.Headers.TryAddWithoutValidation("Cookie", GoogleConsentBypassCookie);
+        return req;
+    }
 
-        // 1. YouTube INNERTUBE_CONTEXT_GL (sw.js_data + fallback на главную)
+    private static async Task<(string? YtGl, string? GoogleGl, string? FooterCountry, bool HasCaptcha, bool? YtPremium, bool? GeminiOk)>
+        ProbeLiveGoogleAndYouTubeGeoAsync(
+            HttpClient http,
+            CancellationToken ct)
+    {
+        var ytGlTask = ProbeYouTubeGlSignalAsync(http, ct);
+        var ytPremTask = ProbeYouTubePremiumSignalAsync(http, ct);
+        var geminiTask = ProbeGeminiSignalAsync(http, ct);
+        var searchTask = ProbeGoogleSearchSignalAsync(http, ct);
+
+        await Task.WhenAll(ytGlTask, ytPremTask, geminiTask, searchTask).ConfigureAwait(false);
+
+        var ytGl = await ytGlTask.ConfigureAwait(false);
+        var ytPrem = await ytPremTask.ConfigureAwait(false);
+        var geminiOk = await geminiTask.ConfigureAwait(false);
+        var (googleGl, footerCountry, hasCaptcha) = await searchTask.ConfigureAwait(false);
+
+        return (ytGl, googleGl, footerCountry, hasCaptcha, ytPrem, geminiOk);
+    }
+
+    private static async Task<string?> ProbeYouTubeGlSignalAsync(HttpClient http, CancellationToken ct)
+    {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = new HttpRequestMessage(HttpMethod.Get, YouTubeSwDataUri);
-            req.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
+            using var req = CreateGoogleProbeRequest(YouTubeSwDataUri);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
-            ytGl = ParseYouTubeGlCode(body);
-
-            if (string.IsNullOrWhiteSpace(ytGl))
+            var gl = ParseYouTubeGlCode(body);
+            if (!string.IsNullOrWhiteSpace(gl))
             {
-                using var req2 = new HttpRequestMessage(HttpMethod.Get, YouTubeHomeUri);
-                req2.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
-                using var resp2 = await http.SendAsync(req2, cts.Token).ConfigureAwait(false);
-                var body2 = await resp2.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
-                ytGl = ParseYouTubeGlCode(body2);
+                return gl;
             }
+
+            using var req2 = CreateGoogleProbeRequest(YouTubeHomeUri);
+            using var resp2 = await http.SendAsync(req2, cts.Token).ConfigureAwait(false);
+            var body2 = await resp2.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            return ParseYouTubeGlCode(body2);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {
-            // YouTube может быть заблокирован ТСПУ, если проверяется без ВПН — продолжаем к Google Search
+            return null;
         }
+    }
 
-        // 2. Google Preferences / Search (проверка /sorry/ капчи и региона поиска)
+    private static async Task<bool?> ProbeYouTubePremiumSignalAsync(HttpClient http, CancellationToken ct)
+    {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = new HttpRequestMessage(HttpMethod.Get, GooglePrefsUri);
-            req.Headers.AcceptLanguage.ParseAdd("en-US,en;q=0.9");
+            using var req = CreateGoogleProbeRequest(YouTubePremiumUri);
+            using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
+            var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            return ParseYouTubePremiumAvailability(body);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            return null;
+        }
+    }
+
+    private static async Task<bool?> ProbeGeminiSignalAsync(HttpClient http, CancellationToken ct)
+    {
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            using var req = CreateGoogleProbeRequest(GeminiAppUri);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             var finalUri = resp.RequestMessage?.RequestUri?.ToString();
-            (googleGl, hasCaptcha) = ParseGoogleSearchRegionAndCaptcha(finalUri, (int)resp.StatusCode, body);
+            return ParseGeminiAvailability(finalUri, (int)resp.StatusCode, body);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {
-            // ignore
+            return null;
         }
+    }
 
-        return (ytGl, googleGl, hasCaptcha);
+    private static async Task<(string? GoogleGl, string? FooterCountry, bool HasCaptcha)> ProbeGoogleSearchSignalAsync(
+        HttpClient http,
+        CancellationToken ct)
+    {
+        try
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            using var req = CreateGoogleProbeRequest(GoogleSearchHomeUri);
+            using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
+            var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            var finalUri = resp.RequestMessage?.RequestUri?.ToString();
+            var detailed = ParseGoogleSearchRegionDetailed(finalUri, (int)resp.StatusCode, body);
+            if (detailed.GoogleRegion is not null || detailed.HasCaptcha)
+            {
+                return detailed;
+            }
+
+            using var req2 = CreateGoogleProbeRequest(GooglePrefsUri);
+            using var resp2 = await http.SendAsync(req2, cts.Token).ConfigureAwait(false);
+            var body2 = await resp2.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
+            var finalUri2 = resp2.RequestMessage?.RequestUri?.ToString();
+            var fallback = ParseGoogleSearchRegionDetailed(finalUri2, (int)resp2.StatusCode, body2);
+            return (
+                fallback.GoogleRegion ?? detailed.GoogleRegion,
+                fallback.FooterCountry ?? detailed.FooterCountry,
+                detailed.HasCaptcha || fallback.HasCaptcha);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+        {
+            return (null, null, false);
+        }
     }
 
     private static (string? Asn, string? Isp) SplitAsString(string? rawAs)

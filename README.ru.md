@@ -1,16 +1,15 @@
 <div align="center">
 
-# Контур ВПН (NetworkChecker V2 v2.1.0)
+# 🛡️ Контур ВПН — NetworkChecker V2
 
-**Глубокий аудит ВПН-подписок (Happ / Xray JSON / VLESS Reality XHTTP / AmneziaWG / Hysteria2), детектор отсечки 16 КБ на ТСПУ, подбор SNI сырым пакетом RFC 8446 TLS 1.3 и проверка репутации IP + «прокажённой метки RU» у Google**
+**Настольная утилита диагностики ВПН, подписок, ТСПУ-блокировок и «прокажённой метки RU» у Google для Windows**
 
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![C#](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
-[![Avalonia UI](https://img.shields.io/badge/Avalonia_UI-12.1.4-8B5CF6)](https://avaloniaui.net/)
-[![Платформа](https://img.shields.io/badge/Windows-x64_%7C_Single_File-0078D6?logo=windows)](https://github.com/AnfieldCorsair/NetworkChecker)
-[![Лицензия: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![C# 14](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
+[![Avalonia UI 12](https://img.shields.io/badge/Avalonia%20UI-12.1.4-8B44AC)](https://avaloniaui.net/)
+[![Version 2.2](https://img.shields.io/badge/Версия-2.2.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
 
-**[English Overview (README.md) →](./README.md)**
+[English README](README.md) · **Русский (README.ru.md)**
 
 </div>
 
@@ -18,133 +17,128 @@
 
 ## О проекте
 
-**Контур ВПН (NetworkChecker V2)** — это настольный и веб-комплекс диагностики ВПН-соединений, созданный специально под актуальные реалии фильтрации трафика в РФ:
-- **Аудит и безопасное улучшение подписок** (**Happ**, **v2rayN**, **Sing-box**, **Hiddify**, **NekoBox**, **AmneziaVPN**): программа сама скачивает подписку по `https://`-ссылке, разбирает сложные JSON-массивы с балансировщиками (`leastPing`), проверяет все локации и аккуратно вшивает чистый DNS или рабочий SNI без поломки синтаксиса JSON.
-- **Простой и Инженерный режимы**: по умолчанию включён понятный каждому *«Простой режим»* с верхней поясняющей плашкой на каждой вкладке, а все низкоуровневые параметры протоколов спрятаны под разворачиваемыми спойлерами.
-- **Проверка репутации IP и «прокажённой метки RU» у Google / YouTube**: развивает идею оригинального `NetworkChecker` (консенсус 4 независимых GeoIP-баз по правилам *Majority Vote* и *Any Vote*) и дополняет её живым детектором `INNERTUBE_CONTEXT_GL` у YouTube/Google, а также пакетным сканером сразу всех IP-адресов внутри вашей подписки.
+**Контур ВПН (NetworkChecker V2)** — автономное Windows-приложение на **.NET 10 / Avalonia UI 12**, созданное для быстрой и понятной диагностики современных ВПН-подключений в условиях ТСПУ РФ.
 
-![Вкладка 5 — Репутация IP и детектор метки Google RU](./screenshots/05-ip-reputation-google-ru.svg)
+Приложение работает в **двух режимах**, переключаемых одной кнопкой в верхней панели:
 
----
-
-## Обзор всех 6 вкладок программы
-
-### ШАГ 1. Проверка ВПН и подписки (`Happ / Xray JSON / VLESS / AmneziaWG / Hysteria2`)
-
-![Вкладка 1 — Проверка ВПН и подписки](./screenshots/01-config-audit-subscriptions.svg)
-
-- **Умное автораспознавание входа**: вставьте прямую `https://`-ссылку на подписку, Base64-список, JSON-массив Happ/Xray или одиночный ключ `vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, `AmneziaWG`.
-- **Карточка подписки**: отображает название сервиса, остаток трафика (`subscription-userinfo`), срок действия и список всех узлов с возможностью пинга всех серверов в один клик.
-- **Глубокий аудит защиты под РФ**:
-  - проверка транспорта на устойчивость к **отсечке 16 КБ ТСПУ** (`XHTTP / SplitHTTP` с `xPaddingBytes` и `xmux`, `VLESS TCP xtls-rprx-vision`, `AmneziaWG Jc/Jmin/Jmax/S1/S2/H1..H4`, `Hysteria2 Salamander`);
-  - проверка криптографии **TLS 1.3 Reality** (`uTLS fingerprint`, корректность X25519 `pbk`, `shortId`, отсутствие `allowInsecure=1` и IP-адреса в поле SNI);
-  - проверка маршрутизации сайтов `.RU` и российских банков напрямую (`geosite:category-ru`, `geoip:ru`).
-- **Локальная ссылка подписки**: встроенный HTTP-сервер поднимает локальную ссылку вида `http://127.0.0.1:17890/sub/kontur-patched.json`, которую можно вставить прямо в Happ или v2rayN.
+- **Базовый режим (по умолчанию · 3 вкладки)** — минималистичный интерфейс без инженерного шума:
+  1. **Проверка ВПН и подписки** — одно поле для ссылки подписки (`https://`) или ключа (`vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, AmneziaWG), выбор локации, проверка доступности и разбор простыми словами.
+  2. **Репутация IP и Google RU** — комплексный 4-сигнальный тест «прокажённой метки RU» у Google/YouTube и пакетная проверка всех IP из подписки.
+  3. **Заявка в техподдержку** — сбор срезов «Без ВПН / С ВПН» и готовый безопасный отчёт для Telegram без утечки ключей и домашнего IP.
+- **Расширенный режим (6 вкладок)** — открывает полный инженерный инструментарий: редактор сырых конфигов/JSON, пресеты, локальный хостинг подписки `127.0.0.1`, архитектор DNS (`DoH` / `DoT`), детектор ТСПУ-блокировок (16 КБ / UDP / белые списки), аудит сетевого стека Windows (`TUN` / `IPv6` / `MTU`) и сканер соседей SNI `/24` с живым TLS 1.3 handshake.
 
 ---
 
-### ШАГ 2. Защита DNS и безопасная интеграция в JSON
+## 🖼️ Скриншоты интерфейса
 
-![Вкладка 2 — Защита DNS и конструктор](./screenshots/02-dns-architect-injection.svg)
+### Минималистичный Базовый режим (запуск по умолчанию · 3 вкладки)
 
-- **Живая проверка DNS-спуфинга**: параллельно сравнивает ответы системного DNS вашего провайдера с зашифрованным DoH, мгновенно выявляя подмену IP-адресов или заглушки `NXDOMAIN`.
-- **Два эталонных профиля DNS под рукой**:
-  1. **Классика DoH (по умолчанию)** — `Cloudflare (https://1.1.1.1/dns-query)` + `Google (https://dns.google/dns-query)` для зарубежных ресурсов и `Яндекс.DNS (77.88.8.8)` строго для доменов `.ru / .рф / geosite:category-ru` со стратегией `UseIPv4`.
-  2. **Приватный Ninja (Zero-Log)** — `Njalla (https://dns.njal.la/dns-query)` + `LibreDNS (https://doh.libredns.gr/dns-query)` + `Quad9` + `Mullvad` для ценителей максимальной приватности без логирования.
-- **Гарантия целостности JSON (без сломанных запятых)**:
-  - вставка DNS никогда не использует хрупкую склейку строк: программа модифицирует AST-дерево (`JsonNode`), автоматически адаптируется под одиночный конфиг Xray, Sing-box или мульти-профильный JSON-массив Happ и выполняет строгую пост-проверку через `JsonDocument.Parse` (`AllowTrailingCommas = false`).
-  - кнопка **«Скопировать блок DNS»** копирует чистый, валидный JSON-объект `{ "dns": { ... } }`, а кнопка **«Вшить в конфиг на вкладке 1»** автоматически обновляет всю подписку целиком.
+> Чистый интерфейс без сырых JSON-полей и лишних панелей: только ссылка/ключ, список локаций, понятный вердикт и быстрая проверка Google RU.
+
+![Базовый минималистичный режим — 3 вкладки](screenshots/00-basic-mode-minimalist.svg)
 
 ---
 
-### ШАГ 3. Проверка блокировок провайдера (ТСПУ и 16 КБ)
+### Расширенный режим (6 инженерных вкладок)
 
-![Вкладка 3 — Проверка блокировок ТСПУ](./screenshots/03-tspu-fingerprints-16kb.svg)
+#### 1. Проверка ВПН и подписки (Happ / Xray JSON / VLESS / AWG / Hysteria2)
+![Проверка ВПН и подписки](screenshots/01-config-audit-subscriptions.svg)
 
-Четыре специализированных сетевых зонда для диагностики линии провайдера:
-1. **Детектор отсечки 16 КБ (TCP 16 KB Cap)**: проверяет, не обрывает ли ТСПУ передачу данных после первых 14–16 КБ при обращении к зарубежным дата-центрам (Cloudflare / Hetzner / OVH).
-2. **Проверка подмены TLS-сертификатов (MITM)**: сверяет цепочки сертификатов зарубежных узлов с системным хранилищем корневых УЦ, выявляя DPI-перехват.
-3. **Голосовые звонки и игры (UDP / STUN RFC 5389)**: отправляет реальные UDP Binding Request к `stun.l.google.com:19302` и `stun.cloudflare.com:3478`, проверяя работоспособность звонков в Telegram/Discord и протоколов `Hysteria2` / `AmneziaWG`.
-4. **Детектор режима «Белых списков»**: сопоставляет доступность российских ресурсов и зарубежного интернета на мобильных сетях.
+#### 2. Защита DNS (Классика DoH и Приватный Ninja + врезка в конфиг)
+![Защита DNS](screenshots/02-dns-architect-injection.svg)
 
----
+#### 3. Проверка блокировок ТСПУ (16 КБ, UDP-звонки, DNS-спуфинг, белые списки)
+![Проверка блокировок ТСПУ](screenshots/03-tspu-fingerprints-16kb.svg)
 
-### ШАГ 4. Сеть Windows и подбор SNI для VLESS Reality
+#### 4. Сеть Windows (TUN / IPv6 / MTU) и Охотник за SNI Reality (TLS 1.3)
+![Сеть Windows и Охотник SNI](screenshots/04-windows-stack-sni-hunter.svg)
 
-![Вкладка 4 — Сеть Windows и подбор SNI](./screenshots/04-windows-stack-sni-hunter.svg)
+#### 5. Репутация IP, 4-сигнальный детектор «метки RU» у Google и все IP подписки
+![Репутация IP и Google RU](screenshots/05-ip-reputation-google-ru.svg)
 
-- **Нативный аудит сетевого стека Windows**:
-  - проверяет наличие активного виртуального интерфейса **Wintun / Sing-box TUN / WireGuard / AmneziaWG** и его `MTU` (рекомендуемый диапазон `1280–1400`);
-  - отфильтровывает служебный шум (`WSL`, `Hyper-V`, `Bluetooth`, фиктивные заглушки `fec0:0:0:ffff::1..3`);
-  - выявляет утечки провайдерского DNS мимо TUN (SMHNR) и глобальные маршрутизируемые IPv6-адреса (`2000::/3`) вне туннеля;
-  - сканирует локальные порты прокси-клиентов (`10808`, `10809`, `2080`, `7890`, `1080`).
-- **Эталонный подбор SNI для VLESS Reality (`SniHunterProbe`)**:
-  - вместо обычного `SslStream`, который может молча откатиться на TLS 1.2 или согласиться на `HelloRetryRequest`, зонд отправляет **сырой пакет RFC 8446 TLS 1.3 ClientHello** (только `TLS 1.3 0x0304`, `X25519 key_share`, `ALPN h2`) и побайтово разбирает `ServerHello`;
-  - домен помечается как **«Идеален для Reality»** только если сервер согласовал чистый `TLS 1.3 (0x0304)` за один раунд без `HelloRetryRequest`, вернул валидный сертификат для целевого хоста и поддерживает `ALPN h2`;
-  - точечная вставка SNI обновляет `realitySettings.serverName` во всех `outbounds` подписки, не затирая кастомный `xhttpSettings.host`.
+#### 6. Конструктор заявки в техподдержку (Telegram + маскирование секретов)
+![Заявка в техподдержку](screenshots/06-support-ticket-generator.svg)
 
 ---
 
-### ШАГ 5. Репутация IP, детектор «прокажённой метки RU» у Google и аудит всех IP подписки
+## 🎯 Как работает детектор «прокажённой метки RU» у Google (v2.2)
 
-![Вкладка 5 — Репутация IP и метка Google RU](./screenshots/05-ip-reputation-google-ru.svg)
+Даже если ВПН-сервер физически находится в Нидерландах, Германии или Финляндии, Google нередко перепривязывает популярные подсети к России (`RU`) из-за массового трафика смартфонов с российскими Wi-Fi/GPS. В результате перестаёт открываться **Gemini**, пропадает **YouTube Premium**, а поиск начинает выдавать капчу `/sorry/`.
 
-#### 1. Детектор «прокажённой метки RU» у Google и YouTube
-Почему зарубежный ВПН-сервер в Нидерландах или Германии внезапно открывает YouTube с российскими ограничениями, не пускает в **Google Gemini / AI Studio** и требует бесконечную капчу?
-- Когда сотни пользователей со смартфонами из РФ подключаются к одному IP зарубежного хостера (особенно `Aeza`, `PQ.Hosting / Stark Industries`, `Timeweb` и др.), сервисы Google Location Services сопоставляют BSSID российских точек Wi-Fi и GPS-координаты с этим выходным IP и **принудительно привязывают всю зарубежную подсеть к региону `RU`**.
-- Во всех стандартных базах (`MaxMind`, `ipinfo`, `ipwho.is`) сервер продолжает числиться как `NL` или `DE`, но внутри Google он уже помечен как `RU`.
-- **Как программа это проверяет**:
-  - поддерживает 3 режима: **«1. Активный интернет / TUN-адаптер»**, **«2. Авто-прокси запущенного клиента ВПН (порты 10809/10808/2080/7890)»** и **«3. Ручная проверка любого IP или домена»**;
-  - выполняет прямой запрос к `youtube.com/sw.js_data` и `google.com/preferences?hl=en`, извлекая внутренний параметр Google **`INNERTUBE_CONTEXT_GL`** и проверяя наличие редиректа на `/sorry/index` (`HTTP 429`);
-  - если физическая страна по консенсусу GeoIP ≠ `RU`, а Google возвращает `GL = "RU"`, программа выдаёт красный вердикт **«КРИТИЧНО: Обнаружена прокажённая метка RU у Google»** с рекомендацией сменить узел или направить `geosite:google` через чистую локацию.
+В версии **2.2** модуль проверки Google полностью переработан:
 
-#### 2. Консенсус 4 независимых GeoIP-баз
-Параллельно опрашивает `ipwho.is`, `ip-api.com`, `ipinfo.io` и `Cloudflare Trace` (`1.1.1.1/cdn-cgi/trace`):
-- **Hosting / Дата-центр (Majority Vote `>= 50%`)**: IP признаётся дата-центром только при согласии большинства баз.
-- **Proxy / VPN / Tor (Any Vote `хотя бы один`)**: предупреждает о риске капчи, если хотя бы одна база пометила IP как прокси.
-- **Сверка видимого IP (HTTP vs CDN)**: проверяет, не расходятся ли выходные IP при обращении к обычным сайтам и к сети Cloudflare.
-
-#### 3. Пакетная проверка сразу всех IP внутри подписки («Все IP из вашей подписки»)
-- Одним нажатием извлекает все серверы из подписки на вкладке 1 (включая все `outbounds` внутри JSON-балансировщиков Happ/Xray, все ссылки `vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, `AmneziaWG`).
-- Параллельно резолвит доменные имена серверов в реальные IPv4/IPv6-адреса.
-- Пакетно проверяет страну, `ASN / ISP`, флаги `Hosting / Proxy`, **риск метки RU у Google** и **риск ТСПУ 16 КБ**, позволяя за 2 секунды выбрать самый чистый сервер из десятков локаций.
+- **Обход EU-баннера согласия (`consent.google.com`)**: ко всем запросам прикрепляются cookie `SOCS` + `CONSENT` и десктопный `User-Agent`, благодаря чему европейские узлы (`DE`, `NL`, `FI`, `PL`) возвращают реальный контент без редиректа на страницу согласия.
+- **4 параллельных независимых сигнала**:
+  1. **YouTube `INNERTUBE_CONTEXT_GL`** — чтение внутреннего кода страны из `youtube.com/sw.js_data` (ключи + позиционный парсер) с фолбэком на `youtube.com/?hl=en`.
+  2. **Доступность YouTube Premium** — проверка `youtube.com/premium?hl=en` на маркер *«not available in your country»* против нормальной зарубежной оферты.
+  3. **Доступ к Google Gemini / AI** — проверка `gemini.google.com/app?hl=en` на редирект `/unsupported`, HTTP `403`/`451` и геоблок РФ.
+  4. **Google Search (регион и `/sorry/`)** — чтение реальной страны из футера поиска `<div class="uU7dJb">...</div>`, проверка редиректа на `google.ru` и детекция reCAPTCHA `/sorry/` (`HTTP 429`).
+- **Консенсус 4 GeoIP-баз** (`ipwho.is`, `ip-api.com`, `ipinfo.io`, `Cloudflare Trace`):
+  - **Hosting / ДЦ**: правило большинства (*Majority Vote ≥ 50%*).
+  - **Proxy / VPN / Tor**: строгое правило *Any Vote* (срабатывание хотя бы в одной базе).
+  - **Совпадение IP (HTTP vs CDN)**: выявляет скрытый сплит-трафик.
+- **Пакетный сканер всех IP подписки**: извлекает все узлы из подписки Happ / Xray JSON / списков `vless://`, `hy2://`, `trojan://`, резолвит домены в IP и пакетно оценивает риск метки Google RU и риск лимита ТСПУ 16 КБ по ASN.
+- **3 режима маршрутизации** (в Расширенном режиме):
+  1. Активный интернет / TUN-адаптер ОС.
+  2. Авто-прокси запущенного ВПН-клиента (автопоиск локальных портов `10809`, `10808`, `2080`, `7890`, `1080`).
+  3. Ручная проверка произвольного IP или домена без переключения ВПН.
 
 ---
 
-### ШАГ 6. 2-шаговый генератор заявки в техподдержку
+## 🏗️ Архитектура решения
 
-![Вкладка 6 — Заявка в техподдержку](./screenshots/06-support-ticket-generator.svg)
-
-- **Сравнительный замер в 2 клика**:
-  - *Шаг 1 (Без ВПН)* — фиксирует вашего РФ-провайдера, ASN и базовую скорость линии;
-  - *Шаг 2 (С ВПН)* — фиксирует выходной ASN туннеля и реальную скорость через ВПН.
-- **Мультивыбор проблем с интернетом**: можно отметить сразу несколько симптомов галочками (например, падение скорости + обрыв после 16 КБ + проблемы с DNS).
-- **Без привязки к одному случайному серверу и без утечки секретов**: отчёт не засоряется параметрами одного конкретного узла из большой подписки, а все пароли, `UUID`, `pbk` и последние октеты домашнего IP автоматически скрываются (`xxx.xxx`).
-
----
-
-## Сборка и запуск C# Desktop (`.NET 10 / Avalonia 12.1.4`)
-
-### Требования
-- **.NET 10 SDK** (`10.0.100` или новее)
-- ОС: **Windows 10 / 11 (x64)** (также собирается и проходит все тесты на Linux и macOS)
-
-### Запуск тестов и приложения из исходников
-
-```bash
-cd desktop-cs
-dotnet test NetworkChecker.slnx
-dotnet run --project src/NetworkChecker.App/NetworkChecker.App.csproj
+```text
+NetworkChecker.slnx
+├── Directory.Build.props                # .NET 10, C# 14, TreatWarningsAsErrors=true, AnalysisMode=Recommended
+├── src/
+│   ├── NetworkChecker.Core/             # Бизнес-логика, парсеры и сетевые зонды (без UI-зависимостей)
+│   │   └── VpnAudit/
+│   │       ├── VpnConfigParser.cs       # Парсер VLESS / XHTTP / Vision / AWG / Hysteria2 / Happ JSON
+│   │       ├── VpnConfigAuditor.cs      # Правила аудита РФ + автолечение
+│   │       ├── IpReputationProbe.cs     # 4 GeoIP-базы + 4-сигнальный зонд Google RU + сканер IP подписки
+│   │       ├── SubscriptionService.cs   # Загрузка подписок, заголовки трафика, локальный сервер 127.0.0.1
+│   │       ├── BlockingFingerprintDetector.cs  # Детектор ТСПУ 16 КБ / UDP / белых списков / DNS-спуфинга
+│   │       ├── WindowsNetworkStackAuditor.cs   # Аудит адаптеров Windows (TUN, IPv6, MTU, порты прокси)
+│   │       ├── SubnetSniScanner.cs      # Охотник за SNI в /24 подсети с проверкой TLS 1.3 ServerHello
+│   │       └── SupportTicketBuilder.cs  # Генератор тикетов Telegram с маскированием UUID/ключей/IP
+│   └── NetworkChecker.App/              # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Базовый и Расширенный UI)
+└── tests/
+    └── NetworkChecker.Core.Tests/       # Модульные тесты xUnit (парсеры, Google RU, ТСПУ, стек Windows)
 ```
 
-### Сборка автономного `.exe` (Single-File без необходимости ставить .NET)
+---
 
-```bash
-cd desktop-cs
-dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj \
-  -c Release -r win-x64 --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true
+## 🚀 Сборка и запуск (Windows)
+
+Требуется [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows 10/11 x64).
+
+```powershell
+# 1. Клонировать ветку Version-2.0
+git clone -b Version-2.0 https://github.com/AnfieldCorsair/NetworkChecker.git
+cd NetworkChecker
+
+# 2. Собрать решение (TreatWarningsAsErrors включён — 0 предупреждений)
+dotnet build NetworkChecker.slnx -c Release
+
+# 3. Запустить модульные тесты
+dotnet test NetworkChecker.slnx -c Release
+
+# 4. Запустить настольное приложение
+dotnet run --project src/NetworkChecker.App -c Release
 ```
 
-Готовый исполняемый файл появится в папке `.cache/bin/NetworkChecker.App/Release/net10.0/win-x64/publish/NetworkChecker.exe`.
+### Сборка автономного EXE (Self-Contained Single File)
+
+```powershell
+dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj `
+  -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+---
+
+## 🔒 Приватность и безопасность
+
+- Все проверки выполняются локально с вашего ПК без промежуточных серверов телеметрии.
+- UUID, приватные ключи AmneziaWG/Reality, пароли и последние два октета домашнего IP автоматически маскируются при формировании заявки в техподдержку.
+- Точечная замена DNS-блока в подписке сохраняет все ваши серверы, ключи и правила маршрутизации без изменений.

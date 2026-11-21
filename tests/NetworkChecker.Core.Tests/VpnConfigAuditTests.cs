@@ -1027,6 +1027,70 @@ public sealed class VpnConfigAuditTests
         Assert.True(hetzner16Kb);
     }
 
+    [Fact]
+    public void IpReputationProbe_FourSignalGoogleProbeDetectsPremiumGeminiFooterAndSwJsData()
+    {
+        // 1. Positional sw.js_data parser
+        const string swJsPositional = ")]}'\n[[\"1\",[[\"en\",\"RU\",\"10\",\"20\"]]]]";
+        Assert.Equal("RU", IpReputationProbe.ParseYouTubeGlCode(swJsPositional));
+
+        // 2. YouTube Premium availability
+        Assert.False(IpReputationProbe.ParseYouTubePremiumAvailability("<html>YouTube Premium is not available in your country.</html>"));
+        Assert.True(IpReputationProbe.ParseYouTubePremiumAvailability("<html>Try YouTube Premium Free · €12.99/month</html>"));
+
+        // 3. Google Gemini availability
+        Assert.False(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/unsupported", 200, "<html></html>"));
+        Assert.False(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/app", 403, "<html>Gemini isn't currently supported in your country</html>"));
+        Assert.True(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/app", 200, "<html><title>Google Gemini</title><script>window.WIZ_global_data={};</script></html>"));
+
+        // 4. Google Search footer region (EU consent bypass)
+        var ruFooter = IpReputationProbe.ParseGoogleSearchRegionDetailed(
+            "https://www.google.com/?hl=en&gws_rd=cr",
+            200,
+            "<html><footer><div class=\"uU7dJb\">Russia</div></footer></html>");
+        Assert.Equal("RU", ruFooter.GoogleRegion);
+        Assert.Equal("Russia", ruFooter.FooterCountry);
+        Assert.False(ruFooter.HasCaptcha);
+
+        var nlFooter = IpReputationProbe.ParseGoogleSearchRegionDetailed(
+            "https://www.google.com/?hl=en&gws_rd=cr",
+            200,
+            "<html><footer><div class=\"uU7dJb\">Netherlands</div></footer></html>");
+        Assert.Equal("NL", nlFooter.GoogleRegion);
+        Assert.Equal("Netherlands", nlFooter.FooterCountry);
+
+        // 5. Foreign IP (NL) where YouTube GL didn't fire, but BOTH YouTube Premium=false and Gemini=false -> IsRuGeoPoisoned = true
+        var silentPoison = IpReputationProbe.EvaluateGoogleGeoVerdict(
+            physicalCountryCode: "NL",
+            youtubeGl: null,
+            googleRegion: null,
+            hasCaptcha: false,
+            routingChannelUsed: "Активный TUN",
+            probeExecuted: true,
+            youtubePremiumAvailable: false,
+            geminiAccessible: false,
+            googleFooterCountry: null);
+        Assert.True(silentPoison.IsRuGeoPoisoned);
+        Assert.NotNull(silentPoison.SignalChecks);
+        Assert.Equal(4, silentPoison.SignalChecks!.Count);
+
+        // 6. Clean foreign IP (DE) with all 4 signals green
+        var cleanAll = IpReputationProbe.EvaluateGoogleGeoVerdict(
+            physicalCountryCode: "DE",
+            youtubeGl: "DE",
+            googleRegion: "DE",
+            hasCaptcha: false,
+            routingChannelUsed: "Активный TUN",
+            probeExecuted: true,
+            youtubePremiumAvailable: true,
+            geminiAccessible: true,
+            googleFooterCountry: "Germany");
+        Assert.False(cleanAll.IsRuGeoPoisoned);
+        Assert.True(cleanAll.ProbeSucceeded);
+        Assert.Equal(4, cleanAll.SignalChecks!.Count);
+        Assert.All(cleanAll.SignalChecks!, s => Assert.False(s.IsAlert));
+    }
+
     private static readonly byte[] TestHrrRandom =
     [
         0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11,

@@ -5,9 +5,9 @@
     <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
     <text x="22" y="34" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="19" font-weight="bold">Контур ВПН</text>
     <rect x="148" y="16" width="350" height="24" rx="4" fill="#131F36" stroke="#253859" />
-    <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.1 · Подписки Happ / VLESS / AWG / HY2</text>
+    <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.2 · Подписки Happ / VLESS / AWG / HY2</text>
     <rect x="920" y="14" width="258" height="28" rx="5" fill="#2563EB" />
-    <text x="936" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Режим: Простой (понятно каждому)</text>
+    <text x="936" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Расширенный режим (6 вкладок)</text>
     
       <rect x="20" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" stroke-width="1" />
       <text x="32" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 1</text>

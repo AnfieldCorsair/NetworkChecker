@@ -497,22 +497,42 @@ public sealed partial class ConfigAuditViewModel : ViewModelBase
     [RelayCommand]
     private async Task FetchSubscriptionAsync(CancellationToken ct)
     {
-        var candidateUrl = SubscriptionUrl.Trim();
-        if (string.IsNullOrWhiteSpace(candidateUrl) &&
+        var candidate = SubscriptionUrl.Trim();
+        if (string.IsNullOrWhiteSpace(candidate) &&
             VpnConfigParser.TryExtractHttpSubscriptionUrl(RawConfig, out var fromRaw) &&
             fromRaw is not null)
         {
-            candidateUrl = fromRaw.ToString();
-            SubscriptionUrl = candidateUrl;
+            candidate = fromRaw.ToString();
+            SubscriptionUrl = candidate;
         }
 
-        if (!Uri.TryCreate(candidateUrl, UriKind.Absolute, out var uri))
+        if (string.IsNullOrWhiteSpace(candidate))
         {
-            StatusText = "Вставьте корректную https:// ссылку на подписку (в верхнее поле ссылки или прямо в главное окно).";
+            StatusText = "Вставьте https:// ссылку на подписку или ключ vless:// / hy2:// / trojan://.";
             return;
         }
 
-        await FetchSubscriptionCoreAsync(uri, ct).ConfigureAwait(true);
+        if (Uri.TryCreate(candidate, UriKind.Absolute, out var uri) &&
+            (string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase)))
+        {
+            await FetchSubscriptionCoreAsync(uri, ct).ConfigureAwait(true);
+            return;
+        }
+
+        // Если в Базовом режиме вставлен напрямую ключ (vless://, hy2://, trojan://, vmess://, ss://, JSON или AWG) — сразу разбираем
+        _suppressAutoUrlFetch = true;
+        try
+        {
+            HasSubscriptionCard = false;
+            RawConfig = candidate;
+        }
+        finally
+        {
+            _suppressAutoUrlFetch = false;
+        }
+
+        StatusText = "Ключ/конфиг загружен и разобран. Выберите локацию или нажмите «Проверить этот узел».";
     }
 
     private async Task FetchSubscriptionCoreAsync(Uri uri, CancellationToken ct)

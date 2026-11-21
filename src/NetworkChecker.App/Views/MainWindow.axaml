@@ -18,7 +18,7 @@
             BorderThickness="0,0,0,1"
             Padding="20,12">
       <StackPanel Spacing="12">
-        <!-- Верхний ряд: бренд + переключатель Простой / Инженерный режим -->
+        <!-- Верхний ряд: бренд + переключатель Базовый / Расширенный режим -->
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
             <TextBlock Text="Контур ВПН" FontSize="19" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
@@ -27,15 +27,19 @@
                     BorderThickness="1"
                     CornerRadius="4"
                     Padding="8,3"
-                    VerticalAlignment="Center">
-              <TextBlock Text="NetworkChecker V2 · Подписки Happ / VLESS / AWG / HY2"
+                    VerticalAlignment="Center"
+                    IsVisible="{Binding IsAdvancedMode}">
+              <TextBlock Text="NetworkChecker V2 · Инженерный набор (Happ / VLESS / AWG / HY2)"
                          FontSize="11.5"
                          Foreground="#93C5FD" />
             </Border>
           </StackPanel>
 
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <TextBlock Text="Отображение проверок:" FontSize="12" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding ModeHintText}"
+                       FontSize="12"
+                       Foreground="{StaticResource TextMuted}"
+                       VerticalAlignment="Center" />
             <Button Content="{Binding ModeButtonLabel}"
                     Command="{Binding ToggleModeCommand}"
                     Classes="primary"
@@ -43,11 +47,11 @@
           </StackPanel>
         </Grid>
 
-        <!-- Ряд кнопок-вкладок верхней навигации (6 разделов) -->
-        <ItemsControl ItemsSource="{Binding NavItems}">
+        <!-- Ряд кнопок-вкладок верхней навигации (3 в Базовом режиме, 6 в Расширенном) -->
+        <ItemsControl ItemsSource="{Binding VisibleNavItems}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="6" />
+              <UniformGrid Columns="{Binding NavColumnsCount}" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
@@ -79,20 +83,24 @@
       </StackPanel>
     </Border>
 
-    <!-- ПОЯСНЯЮЩАЯ ПЛАШКА ДЛЯ ПОЛЬЗОВАТЕЛЯ («ЧТО И ЗАЧЕМ ПРОВЕРЯЕТСЯ») -->
+    <!-- ПОЯСНЯЮЩАЯ ПЛАШКА ДЛЯ ПОЛЬЗОВАТЕЛЯ (полная в Расширенном, лаконичная в Базовом) -->
     <Border Grid.Row="1"
             Background="{StaticResource SurfaceBrush}"
             BorderBrush="{StaticResource BorderBrush2}"
             BorderThickness="0,0,0,1"
-            Padding="22,12">
+            Padding="22,10">
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-        <StackPanel Spacing="3">
+        <StackPanel Spacing="2">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <TextBlock Text="{Binding CurrentPage.Title}" FontSize="17" FontWeight="SemiBold" Foreground="#FFFFFF" />
-            <TextBlock Text="· Что здесь проверяется и что нажимать:" FontSize="13" Foreground="#93C5FD" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding CurrentPage.Title}" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+            <TextBlock Text="· Краткая подсказка:"
+                       FontSize="12.5"
+                       Foreground="#93C5FD"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding IsAdvancedMode}" />
           </StackPanel>
           <TextBlock Text="{Binding CurrentPage.SimpleGuideText}"
-                     FontSize="12.5"
+                     FontSize="12"
                      Foreground="#D1DCF0"
                      TextWrapping="Wrap" />
         </StackPanel>

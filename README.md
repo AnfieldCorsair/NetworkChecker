@@ -1,16 +1,15 @@
 <div align="center">
 
-# Контур ВПН (NetworkChecker V2)
+# 🛡️ Kontur VPN — NetworkChecker V2
 
-**Deep VPN Configuration Auditor, TSPU 16 KB & DPI Fingerprint Scanner, RFC 8446 TLS 1.3 Reality SNI Hunter, and IP Reputation + Google `RU` Geo-Poisoning Inspector**
+**Windows Desktop Diagnostics Suite for VPN Configs, Subscriptions, DPI/TSPU Fingerprints & Google `RU` Geo-Poisoning Detection**
 
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![C#](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
-[![Avalonia UI](https://img.shields.io/badge/Avalonia_UI-12.1.4-8B5CF6)](https://avaloniaui.net/)
-[![Platform](https://img.shields.io/badge/Platform-Windows_x64_%7C_Web-0078D6?logo=windows)](https://github.com/AnfieldCorsair/NetworkChecker)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![C# 14](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
+[![Avalonia UI 12](https://img.shields.io/badge/Avalonia%20UI-12.1.4-8B44AC)](https://avaloniaui.net/)
+[![Version 2.2](https://img.shields.io/badge/Version-2.2.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
 
-**[Русская документация (Полное руководство со скриншотами) →](./README.ru.md)**
+**English (README.md)** · [Русский README](README.ru.md)
 
 </div>
 
@@ -18,98 +17,128 @@
 
 ## Overview
 
-**Контур ВПН (NetworkChecker V2 v2.1.0)** is a comprehensive VPN & network diagnostic suite engineered for modern censorship-circumvention protocols (**VLESS Reality XHTTP / SplitHTTP**, **VLESS TCP Vision**, **AmneziaWG**, **Hysteria2 QUIC**, **Sing-box / Xray / Happ JSON subscriptions**).
+**Kontur VPN (NetworkChecker V2)** is a standalone **.NET 10 / Avalonia UI 12** desktop application for Windows designed to audit VPN subscriptions, diagnose ISP/DPI interference, inspect Windows TUN/IPv6 leaks, and detect Google `RU` geo-poisoning on foreign VPN nodes.
 
-It ships as both:
-1. **Native Windows Desktop Application (`/desktop-cs/NetworkChecker.slnx`)** built on **.NET 10**, **C# 14**, **Avalonia UI 12.1.4**, and **CommunityToolkit.Mvvm 8.4.2** with `TreatWarningsAsErrors=true` and zero reflection (`ViewLocator` compatible with `PublishSingleFile` / NativeAOT).
-2. **Interactive Web Workbench** (React 19 + TypeScript + Express backend) that mirrors the 6 diagnostic tabs and packages the entire C# Desktop solution into a one-click downloadable `NetworkChecker-V2-CSharp-Desktop.zip`.
+The interface provides **two switchable modes** right from the top bar:
 
-![Tab 5 — IP Reputation & Google RU Geo-Poisoning Inspector](./screenshots/05-ip-reputation-google-ru.svg)
-
----
-
-## Key Capabilities (6 Diagnostic Modules)
-
-| Tab | Module | What It Audits & Fixes |
-| :--- | :--- | :--- |
-| **Step 1** | **VPN & Subscription Auditor** | Auto-detects `https://` subscription URLs, **Happ / Xray JSON balancer arrays**, Base64 lists, `vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, and **AmneziaWG**. Injects clean DNS & SNI into every node and hosts a local subscription URL (`http://127.0.0.1:17890/sub/...`). |
-| **Step 2** | **DNS Protection & JSON Architect** | Live DNS spoofing comparison (System ISP DNS vs encrypted DoH). Generates **Classic DoH (`Cloudflare 1.1.1.1 + Google 8.8.8.8`)** and **Privacy Ninja (`Njalla + LibreDNS + Quad9 + Mullvad`)** with `.RU` split routing (`77.88.8.8`), validating strict JSON syntax (`JsonDocument.Parse`) on every injection. |
-| **Step 3** | **TSPU & 16 KB Block Scanner** | Detects the **16 KB TCP connection cap** on foreign cloud ASNs (Hetzner, OVH, Cloudflare, DigitalOcean), TLS certificate MITM replacement, UDP / STUN (`RFC 5389`) voice call blocking, and mobile **"Whitelist Mode"** lockdowns. |
-| **Step 4** | **Windows Network Stack & Reality SNI Hunter** | Native L3 audit of **Wintun / Sing-box TUN** adapters, MTU, outside-TUN DNS leaks (SMHNR), and global IPv6 (`2000::/3`) leaks. Includes a **raw RFC 8446 TLS 1.3 ClientHello SNI probe** that verifies real `0x0304` negotiation, `X25519` key share, `h2` ALPN, and rejects servers triggering `HelloRetryRequest`. |
-| **Step 5** | **IP Reputation & Google `RU` Inspector** | **4-Provider GeoIP Consensus** (`ipwho.is`, `ip-api.com`, `ipinfo.io`, `Cloudflare Trace` — **Majority Vote `>=50%`** for `Hosting`, **Any Vote** for `Proxy/VPN`), live **Google / YouTube `INNERTUBE_CONTEXT_GL` & `/sorry/` probe** to detect foreign VPN IPs poisoned with Google's `RU` region tag, plus a **Batch Subscription IP Scanner** that extracts and audits all server IPs inside your subscription. |
-| **Step 6** | **2-Step Support Ticket Builder** | Captures comparative snapshots (**Step 1: Without VPN** vs **Step 2: With VPN**), supports multi-select internet symptoms, omits specific single-node details, and masks all private keys (`UUID`, `pbk`, home IP). |
+- **Basic Mode (default · 3 tabs)** — clean, distraction-free workspace for everyday checks:
+  1. **VPN & Subscription Audit** — single input for subscription URLs (`https://`) or direct keys (`vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, AmneziaWG), node selector, one-click reachability test, and plain-language verdicts.
+  2. **IP Reputation & Google `RU`** — 4-signal Google/YouTube geo-poisoning probe and batch reputation scanner for every server inside your subscription.
+  3. **Support Ticket Generator** — two-step *Without VPN / With VPN* capture and masked report ready for Telegram support.
+- **Advanced Mode (6 tabs)** — unlocks the full engineering suite: raw JSON/URI editor, presets, local `127.0.0.1` subscription hosting, DNS Architect (`DoH`/`DoT` injection), DPI/TSPU fingerprint tests (16 KB cutoff / UDP / whitelists), Windows network stack audit (`TUN` / `IPv6` / `MTU`), and `/24` Reality SNI scanner with live TLS 1.3 handshake verification.
 
 ---
 
-## Visual Tour of All 6 Tabs
+## 🖼️ Interface Previews
 
-### 1. VPN & Subscription Auditor (`Happ / Xray JSON / VLESS / AmneziaWG / Hysteria2`)
-![Tab 1 — VPN & Subscription Auditor](./screenshots/01-config-audit-subscriptions.svg)
+### Minimalist Basic Mode (Default Startup · 3 Tabs)
 
-### 2. DNS Protection & Strict JSON Injection (`Classic DoH` & `Privacy Ninja`)
-![Tab 2 — DNS Architect](./screenshots/02-dns-architect-injection.svg)
+> Clean workspace with zero raw-config clutter: paste a subscription URL or VPN key, pick a node, inspect verdicts, and check Google `RU` reputation.
 
-### 3. TSPU Fingerprints & 16 KB TCP Cap Scanner
-![Tab 3 — TSPU Fingerprints](./screenshots/03-tspu-fingerprints-16kb.svg)
-
-### 4. Windows Network Stack & Raw RFC 8446 TLS 1.3 Reality SNI Hunter
-![Tab 4 — Windows Stack & SNI Hunter](./screenshots/04-windows-stack-sni-hunter.svg)
-
-### 5. IP Reputation, Google `RU` Geo-Poisoning Detector & Batch Subscription IP Scanner
-![Tab 5 — IP Reputation & Google RU Inspector](./screenshots/05-ip-reputation-google-ru.svg)
-
-### 6. 2-Step Support Ticket Generator (Multi-Select Symptoms & Secret Redaction)
-![Tab 6 — Support Ticket Builder](./screenshots/06-support-ticket-generator.svg)
+![Minimalist Basic Mode — 3 Tabs](screenshots/00-basic-mode-minimalist.svg)
 
 ---
 
-## Architecture & Build Instructions (C# Desktop `.NET 10`)
+### Advanced Mode (Full 6-Tab Engineering Suite)
+
+#### 1. VPN & Subscription Audit (Happ / Xray JSON / VLESS / AWG / Hysteria2)
+![VPN & Subscription Audit](screenshots/01-config-audit-subscriptions.svg)
+
+#### 2. DNS Protection Architect (Classic DoH / Private Ninja + Config Injection)
+![DNS Protection Architect](screenshots/02-dns-architect-injection.svg)
+
+#### 3. DPI / TSPU Blocking Fingerprints (16 KB Cutoff, UDP Calls, DNS Spoofing, Whitelists)
+![DPI & TSPU Fingerprints](screenshots/03-tspu-fingerprints-16kb.svg)
+
+#### 4. Windows Network Stack (TUN / IPv6 / MTU) & Reality SNI Hunter (TLS 1.3)
+![Windows Network Stack and SNI Hunter](screenshots/04-windows-stack-sni-hunter.svg)
+
+#### 5. IP Reputation, 4-Signal Google `RU` Detector & Batch Subscription IP Audit
+![IP Reputation and Google RU](screenshots/05-ip-reputation-google-ru.svg)
+
+#### 6. Support Ticket Builder (Telegram Report with Automatic Secret Masking)
+![Support Ticket Builder](screenshots/06-support-ticket-generator.svg)
+
+---
+
+## 🎯 How the 4-Signal Google `RU` Geo-Poisoning Probe Works (v2.2)
+
+Foreign VPS subnets heavily used by VPN clients often get re-tagged as **Russia (`RU`)** inside Google's internal geo database due to mobile Wi-Fi/GPS telemetry. Even when GeoIP databases report `NL`, `DE`, or `FI`, **Google Gemini** blocks access, **YouTube Premium** becomes unavailable, and Search may trigger `/sorry/` captchas.
+
+In **v2.2**, the Google detection engine uses:
+
+- **EU Consent Wall Bypass**: attaches `SOCS` + `CONSENT` cookies and a desktop Chrome `User-Agent` to prevent European exit nodes (`DE`, `NL`, `FI`, `PL`) from redirecting to `consent.google.com`.
+- **4 Parallel Independent Signals**:
+  1. **YouTube `INNERTUBE_CONTEXT_GL`** — parses `youtube.com/sw.js_data` (both keyed and positional arrays) with `youtube.com/?hl=en` fallback.
+  2. **YouTube Premium Availability** — checks `youtube.com/premium?hl=en` for *"not available in your country"* vs normal regional offers.
+  3. **Google Gemini / AI Access** — probes `gemini.google.com/app?hl=en` for `/unsupported` redirects, HTTP `403`/`451`, and regional blocks.
+  4. **Google Search Region & `/sorry/` Captcha** — extracts the footer country (`<div class="uU7dJb">...</div>`), checks `google.ru` redirects, and detects `HTTP 429` `/sorry/` reCAPTCHA blocks.
+- **4-Provider GeoIP Consensus** (`ipwho.is`, `ip-api.com`, `ipinfo.io`, `Cloudflare Trace`):
+  - **Hosting / Datacenter**: Majority Vote (≥ 50% of reporting providers).
+  - **Proxy / VPN / Tor**: Strict Any-Vote detection.
+  - **HTTP vs CDN IP Consistency**: Detects split-routing discrepancies.
+- **Batch Subscription IP Scanner**: extracts every server from Happ JSON arrays, Xray configs, or URI lists, resolves domains to IPv4/IPv6, and evaluates ASN hosting/proxy status, Google `RU` bleed risk, and DPI 16 KB cloud risk.
+- **3 Routing Modes** (in Advanced Mode):
+  1. Active OS Internet / TUN Adapter.
+  2. Auto-detect Local VPN Client Proxy (`10809`, `10808`, `2080`, `7890`, `1080`).
+  3. Manual IP / Hostname Lookup without toggling your VPN.
+
+---
+
+## 🏗️ Project Structure
 
 ```text
-desktop-cs/
-├── NetworkChecker.slnx
-├── Directory.Build.props                # .NET 10, C# 14, Nullable, TreatWarningsAsErrors=true
-├── screenshots/                         # Visual SVG previews of all 6 tabs
+NetworkChecker.slnx
+├── Directory.Build.props                # .NET 10, C# 14, TreatWarningsAsErrors=true, AnalysisMode=Recommended
 ├── src/
-│   ├── NetworkChecker.Core/             # Pure diagnostic & protocol engine
+│   ├── NetworkChecker.Core/             # Pure C# diagnostics core (zero UI dependencies)
 │   │   └── VpnAudit/
-│   │       ├── VpnConfigParser.cs       # Happ JSON arrays, VLESS, HY2, AWG, Base64
-│   │       ├── VpnConfigAuditor.cs      # RF-focused security & DPI resistance rules
-│   │       ├── DnsConfigArchitect.cs    # Classic DoH + Privacy Ninja + strict JSON AST patcher
-│   │       ├── TspuBlockingScanner.cs   # 16 KB TCP cap, TLS MITM, STUN RFC 5389, Whitelist mode
-│   │       ├── WindowsNetworkStackAuditor.cs # TUN/Wintun, MTU, SMHNR DNS, IPv6 2000::/3, proxy ports
-│   │       ├── SniHunterProbe.cs        # Raw RFC 8446 TLS 1.3 ClientHello + ServerHello parser
-│   │       ├── IpReputationProbe.cs     # 4-provider GeoIP consensus, Google GL=RU probe, batch IP scanner
-│   │       ├── RttBenchmarkProbe.cs     # Multi-sample TCP RTT, Jitter, P95, loss
-│   │       ├── SubscriptionService.cs   # Subscription fetcher, bulk patcher & local loopback host
-│   │       └── SupportTicketBuilder.cs  # 2-step comparative support report generator
-│   └── NetworkChecker.App/              # Avalonia 12.1.4 MVVM Desktop UI
-│       ├── ViewModels/                  # 6 Tab ViewModels + MainWindowViewModel
-│       └── Views/                       # Compiled AXAML Views + adaptive DPI MainWindow
+│   │       ├── VpnConfigParser.cs       # VLESS / XHTTP / Vision / AWG / Hysteria2 / Happ JSON parser
+│   │       ├── VpnConfigAuditor.cs      # Audit rules & one-click patchers
+│   │       ├── IpReputationProbe.cs     # 4 GeoIP consensus + 4-signal Google RU probe + batch IP scanner
+│   │       ├── SubscriptionService.cs   # Subscription fetcher, traffic metadata, local 127.0.0.1 host
+│   │       ├── BlockingFingerprintDetector.cs  # 16 KB cutoff, UDP, DNS spoofing, whitelist detector
+│   │       ├── WindowsNetworkStackAuditor.cs   # Windows adapter audit (TUN, IPv6, MTU, local proxy ports)
+│   │       ├── SubnetSniScanner.cs      # /24 Reality SNI hunter with live TLS 1.3 ServerHello check
+│   │       └── SupportTicketBuilder.cs  # Masked Telegram & Markdown support report generator
+│   └── NetworkChecker.App/              # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Basic & Advanced UI)
 └── tests/
-    └── NetworkChecker.Core.Tests/       # xUnit test suite covering all parsers, probes & patchers
-```
-
-### Build & Run on Windows / Linux / macOS
-
-```bash
-cd desktop-cs
-dotnet test NetworkChecker.slnx
-dotnet run --project src/NetworkChecker.App/NetworkChecker.App.csproj
-```
-
-### Publish Standalone Single-File Windows `.exe`
-
-```bash
-cd desktop-cs
-dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj \
-  -c Release -r win-x64 --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true
+    └── NetworkChecker.Core.Tests/       # xUnit test suite (parsers, Google RU signals, DPI, Windows stack)
 ```
 
 ---
 
-## Detailed Russian Documentation
+## 🚀 Build & Run (Windows)
 
-For a full walkthrough of every diagnostic check, Google `RU` geo-poisoning detection mechanics, and JSON subscription patching, read **[README.ru.md](./README.ru.md)**.
+Requires [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on Windows 10/11 x64.
+
+```powershell
+# 1. Clone the Version-2.0 branch
+git clone -b Version-2.0 https://github.com/AnfieldCorsair/NetworkChecker.git
+cd NetworkChecker
+
+# 2. Build (TreatWarningsAsErrors enabled — 0 warnings)
+dotnet build NetworkChecker.slnx -c Release
+
+# 3. Run unit tests
+dotnet test NetworkChecker.slnx -c Release
+
+# 4. Launch desktop app
+dotnet run --project src/NetworkChecker.App -c Release
+```
+
+### Publish Self-Contained Single-File EXE
+
+```powershell
+dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj `
+  -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+---
+
+## 🔒 Privacy & Safety
+
+- All diagnostics run locally from your machine with no telemetry servers.
+- UUIDs, AmneziaWG/Reality private keys, passwords, and home IP suffixes are masked automatically in generated support tickets.
+- Targeted DNS injection preserves every server endpoint, key, and routing rule intact.

@@ -17,7 +17,8 @@
 
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
           <Button Content="Подставить IP выбранного узла"
-                  Command="{Binding FillManualFromActiveNodeCommand}" />
+                  Command="{Binding FillManualFromActiveNodeCommand}"
+                  IsVisible="{Binding ShowTechnicalDetails}" />
           <Button Content="Скопировать отчёт по IP"
                   Command="{Binding CopyReputationReportCommand}" />
         </StackPanel>
@@ -27,7 +28,7 @@
       <Border Classes="card">
         <StackPanel Spacing="12">
           <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-            <StackPanel Spacing="5">
+            <StackPanel Spacing="5" IsVisible="{Binding ShowTechnicalDetails}">
               <TextBlock Text="Режим проверки активного соединения или выбранного IP:"
                          FontSize="12.5"
                          FontWeight="SemiBold"
@@ -37,13 +38,20 @@
                         HorizontalAlignment="Stretch" />
             </StackPanel>
 
+            <TextBlock Text="Быстрая проверка активного IP, 4 сигналов Google/YouTube и всех серверов подписки:"
+                       IsVisible="{Binding !ShowTechnicalDetails}"
+                       VerticalAlignment="Center"
+                       FontSize="12.5"
+                       Foreground="#D1DCF0"
+                       TextWrapping="Wrap" />
+
             <Button Grid.Column="1"
                     Classes="primary"
                     VerticalAlignment="Bottom"
                     Padding="16,9"
                     Command="{Binding RunActiveInspectionCommand}"
                     IsEnabled="{Binding !IsInspectingActive}"
-                    Content="Проверить активный IP и реакцию Google" />
+                    Content="Проверить активный IP и Google RU" />
 
             <Button Grid.Column="2"
                     VerticalAlignment="Bottom"
@@ -53,7 +61,7 @@
                     Content="Достать и проверить все IP из подписки" />
           </Grid>
 
-          <!-- Поле ручного ввода IP или домена (видно в режиме 3) -->
+          <!-- Поле ручного ввода IP или домена (видно в режиме 3 в Расширенном режиме) -->
           <Grid ColumnDefinitions="Auto,*,Auto"
                 ColumnSpacing="10"
                 IsVisible="{Binding IsManualTargetVisible}">
@@ -123,9 +131,43 @@
                          Foreground="#E2E8F0"
                          TextWrapping="Wrap" />
 
+              <!-- 4 независимых сигнала Google / YouTube (с обходом EU-согласия) -->
+              <ItemsControl ItemsSource="{Binding GoogleSignalItems}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:GoogleSignalDisplayItem">
+                    <Border Background="{StaticResource SurfaceAltBrush}"
+                            BorderBrush="{StaticResource BorderBrush2}"
+                            BorderThickness="1"
+                            CornerRadius="5"
+                            Padding="10,7"
+                            Margin="0,0,0,6">
+                      <StackPanel Spacing="2">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                          <TextBlock Text="{Binding SignalName}"
+                                     FontSize="12"
+                                     FontWeight="SemiBold"
+                                     Foreground="#E2E8F0" />
+                          <TextBlock Grid.Column="1"
+                                     Text="{Binding StatusText}"
+                                     FontFamily="{StaticResource MonoFont}"
+                                     FontSize="11.5"
+                                     FontWeight="Bold"
+                                     Foreground="{Binding StatusBrush}" />
+                        </Grid>
+                        <TextBlock Text="{Binding Detail}"
+                                   FontSize="11.5"
+                                   Foreground="{StaticResource TextMuted}"
+                                   TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
               <Border Background="{StaticResource SurfaceAltBrush}"
                       CornerRadius="6"
-                      Padding="10,8">
+                      Padding="10,8"
+                      IsVisible="{Binding ShowTechnicalDetails}">
                 <TextBlock Text="{Binding GoogleVerdictEvidence}"
                            FontFamily="{StaticResource MonoFont}"
                            FontSize="11.5"
@@ -202,8 +244,9 @@
                 </Border>
               </WrapPanel>
 
-              <!-- Таблица 4 провайдеров GeoIP -->
-              <ItemsControl ItemsSource="{Binding ProviderItems}">
+              <!-- Таблица 4 провайдеров GeoIP (видна в Расширенном режиме) -->
+              <ItemsControl ItemsSource="{Binding ProviderItems}"
+                            IsVisible="{Binding ShowTechnicalDetails}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:GeoProviderDisplayItem">
                     <Border Background="{StaticResource SurfaceAltBrush}"

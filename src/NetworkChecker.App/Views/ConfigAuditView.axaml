@@ -35,10 +35,12 @@
                   IsEnabled="{Binding !IsBusy}" />
           <Button Content="Проверить маскировку SNI"
                   Command="{Binding ProbeSniCommand}"
-                  IsEnabled="{Binding !IsBusy}" />
+                  IsEnabled="{Binding !IsBusy}"
+                  IsVisible="{Binding ShowTechnicalDetails}" />
           <Button Content="Стабильность пинга (6×)"
                   Command="{Binding RunRttBenchmarkCommand}"
-                  IsEnabled="{Binding !IsBusy}" />
+                  IsEnabled="{Binding !IsBusy}"
+                  IsVisible="{Binding ShowTechnicalDetails}" />
         </StackPanel>
       </Grid>
     </Border>
@@ -48,18 +50,21 @@
       <StackPanel Spacing="8">
         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
           <TextBlock Grid.Column="0"
-                     Text="Ссылка на подписку:"
+                     Text="Подписка или ключ:"
                      FontWeight="SemiBold"
                      VerticalAlignment="Center" />
           <TextBox Grid.Column="1"
                    Text="{Binding SubscriptionUrl, Mode=TwoWay}"
-                   Watermark="Вставьте https:// ссылку на вашу подписку (например из Happ или Telegram-бота)" />
+                   Watermark="Вставьте ссылку https:// на подписку или ключ vless:// / hy2:// / trojan://" />
           <Button Grid.Column="2"
-                  Content="Загрузить подписку по ссылке"
+                  Content="Загрузить и проверить"
                   Classes="primary"
                   Command="{Binding FetchSubscriptionCommand}"
                   IsEnabled="{Binding !IsBusy}" />
-          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+          <StackPanel Grid.Column="3"
+                      Orientation="Horizontal"
+                      Spacing="6"
+                      IsVisible="{Binding ShowTechnicalDetails}">
             <Button Content="Автолечение (Блок-патч)" Command="{Binding ApplyBulkPatchCommand}" />
             <CheckBox Content="Скрывать личные пароли" IsChecked="{Binding MaskSecrets, Mode=TwoWay}" VerticalAlignment="Center" Margin="6,0,0,0" />
           </StackPanel>
@@ -73,18 +78,21 @@
                   Padding="10,5" />
           <Button Content="Вшить приватный DNS (Njalla + LibreDNS)"
                   Command="{Binding QuickInjectNinjaDnsCommand}"
+                  IsVisible="{Binding ShowTechnicalDetails}"
                   Margin="0,0,8,4"
                   Padding="10,5" />
-          <Button Content="Скопировать выбранный узел в буфер (для Happ)"
+          <Button Content="Скопировать выбранный узел (для Happ)"
                   Command="{Binding CopySelectedNodeOnlyCommand}"
                   Margin="0,0,8,4"
                   Padding="10,5" />
           <Button Content="Создать локальную ссылку подписки (127.0.0.1)"
                   Command="{Binding HostLocalSubscriptionCommand}"
+                  IsVisible="{Binding ShowTechnicalDetails}"
                   Margin="0,0,8,4"
                   Padding="10,5" />
           <Button Content="Сохранить исправленную подписку в файл"
                   Command="{Binding SavePatchedSubscriptionFileCommand}"
+                  IsVisible="{Binding ShowTechnicalDetails}"
                   Margin="0,0,8,4"
                   Padding="10,5" />
           <TextBlock Text="{Binding HostedSubscriptionUrl}"
@@ -131,15 +139,19 @@
       </Grid>
     </Border>
 
-    <!-- 4. Левая колонка: список локаций подписки + поле ввода ссылки/конфига -->
+    <!-- 4. Левая колонка: список локаций подписки + (в Расширенном режиме) пресеты и редактор конфига -->
     <Border Grid.Row="3" Grid.Column="0" Classes="card" Padding="14">
       <DockPanel LastChildFill="True">
         <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,0,10">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Локации подписки и поле ввода (можно вставить ссылку https://)" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
-            <Button Grid.Column="1" Content="Копировать всё" Command="{Binding CopyConfigCommand}" Padding="10,4" />
+            <TextBlock Text="Локации подписки" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <Button Grid.Column="1"
+                    Content="Копировать всё"
+                    Command="{Binding CopyConfigCommand}"
+                    IsVisible="{Binding ShowTechnicalDetails}"
+                    Padding="10,4" />
           </Grid>
-          <WrapPanel Orientation="Horizontal">
+          <WrapPanel Orientation="Horizontal" IsVisible="{Binding ShowTechnicalDetails}">
             <Button Content="Пример подписки Happ (JSON)" Command="{Binding LoadPresetCommand}" CommandParameter="happ" Margin="0,0,6,4" Padding="8,4" />
             <Button Content="VLESS XHTTP (эталон)" Command="{Binding LoadPresetCommand}" CommandParameter="xhttp" Margin="0,0,6,4" Padding="8,4" />
             <Button Content="VLESS с ошибками" Command="{Binding LoadPresetCommand}" CommandParameter="broken" Margin="0,0,6,4" Padding="8,4" />
@@ -147,12 +159,12 @@
           </WrapPanel>
         </StackPanel>
 
-        <!-- Список локаций подписки (сверху над сырым текстом, чтобы работяга сразу видел понятные названия) -->
+        <!-- Список локаций подписки -->
         <StackPanel DockPanel.Dock="Top" IsVisible="{Binding HasMultipleNodes}" Spacing="6" Margin="0,0,0,10">
-          <TextBlock Text="Выберите локацию из подписки для подробного разбора или копирования:" FontSize="12" Foreground="#93C5FD" FontWeight="SemiBold" />
+          <TextBlock Text="Выберите сервер для подробного разбора или копирования:" FontSize="12" Foreground="#93C5FD" FontWeight="SemiBold" />
           <ListBox ItemsSource="{Binding SubscriptionNodes}"
                    SelectedItem="{Binding SelectedNode, Mode=TwoWay}"
-                   MaxHeight="210"
+                   MaxHeight="280"
                    Background="{StaticResource AppBackground}"
                    BorderBrush="{StaticResource BorderBrush2}"
                    BorderThickness="1">
@@ -191,7 +203,21 @@
           </ListBox>
         </StackPanel>
 
+        <Border DockPanel.Dock="Top"
+                IsVisible="{Binding !ShowTechnicalDetails}"
+                Background="{StaticResource SurfaceAltBrush}"
+                BorderBrush="{StaticResource BorderBrush2}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12,10">
+          <TextBlock Text="В Базовом режиме сырой JSON/конфиг скрыт для чистоты интерфейса. Переключите «Расширенный режим» вверху, чтобы редактировать конфиг вручную, открывать пресеты и сохранять локальную подписку."
+                     FontSize="12"
+                     Foreground="{StaticResource TextMuted}"
+                     TextWrapping="Wrap" />
+        </Border>
+
         <TextBox Text="{Binding RawConfig, Mode=TwoWay}"
+                 IsVisible="{Binding ShowTechnicalDetails}"
                  AcceptsReturn="True"
                  TextWrapping="Wrap"
                  Watermark="Вставьте сюда ссылку на подписку (https://...), ключ vless://, hy2://, конфиг AmneziaWG или JSON..."
@@ -205,7 +231,11 @@
       <DockPanel LastChildFill="True">
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
           <TextBlock Text="Что проверено и что это значит простыми словами" Classes="h2" VerticalAlignment="Center" />
-          <Button Grid.Column="1" Content="Скопировать JSON узла" Command="{Binding CopyOutboundJsonCommand}" Padding="10,4" />
+          <Button Grid.Column="1"
+                  Content="Скопировать JSON узла"
+                  Command="{Binding CopyOutboundJsonCommand}"
+                  IsVisible="{Binding ShowTechnicalDetails}"
+                  Padding="10,4" />
         </Grid>
 
         <ScrollViewer>

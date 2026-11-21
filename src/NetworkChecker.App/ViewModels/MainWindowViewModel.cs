@@ -6,7 +6,8 @@ namespace NetworkChecker.App.ViewModels;
 
 public sealed partial class MainWindowViewModel : ObservableObject
 {
-    private readonly ViewModelBase[] _pages;
+    private readonly ConfigAuditViewModel _configAudit;
+    private readonly NavItem[] _allNavItems;
 
     public MainWindowViewModel(
         ConfigAuditViewModel configAudit,
@@ -16,55 +17,90 @@ public sealed partial class MainWindowViewModel : ObservableObject
         IpReputationViewModel ipReputation,
         SupportTicketViewModel supportTicket)
     {
-        _pages =
+        _configAudit = configAudit;
+        _allNavItems =
         [
-            configAudit,
-            dnsArchitect,
-            tspuFingerprints,
-            windowsStackSni,
-            ipReputation,
-            supportTicket,
+            new NavItem(1, configAudit, isBasicTab: true, SelectPage),
+            new NavItem(2, dnsArchitect, isBasicTab: false, SelectPage),
+            new NavItem(3, tspuFingerprints, isBasicTab: false, SelectPage),
+            new NavItem(4, windowsStackSni, isBasicTab: false, SelectPage),
+            new NavItem(5, ipReputation, isBasicTab: true, SelectPage),
+            new NavItem(6, supportTicket, isBasicTab: true, SelectPage),
         ];
 
-        NavItems = new ObservableCollection<NavItem>(
-            _pages.Select((p, idx) => new NavItem(idx + 1, p, SelectPage)));
+        VisibleNavItems = [];
+        RebuildVisibleNavItems();
 
         CurrentPage = configAudit;
         SelectPage(configAudit);
     }
 
-    public ObservableCollection<NavItem> NavItems { get; }
+    public ObservableCollection<NavItem> VisibleNavItems { get; }
 
     [ObservableProperty]
     public partial ViewModelBase CurrentPage { get; set; }
 
     [ObservableProperty]
-    public partial bool IsEngineeringMode { get; set; }
+    public partial bool IsAdvancedMode { get; set; }
 
-    public string ModeButtonLabel => IsEngineeringMode
-        ? "Режим: Инженерный (все техдетали открыты)"
-        : "Режим: Простой (понятно каждому)";
+    public int NavColumnsCount => IsAdvancedMode ? 6 : 3;
 
-    partial void OnIsEngineeringModeChanged(bool value)
+    public string ModeButtonLabel => IsAdvancedMode
+        ? "Расширенный режим (6 вкладок)"
+        : "Базовый режим (3 вкладки)";
+
+    public string ModeHintText => IsAdvancedMode
+        ? "Открыты все инженерные инструменты и 6 вкладок"
+        : "Минималистичный режим · нажмите для всех 6 вкладок";
+
+    partial void OnIsAdvancedModeChanged(bool value)
     {
+        OnPropertyChanged(nameof(NavColumnsCount));
         OnPropertyChanged(nameof(ModeButtonLabel));
-        foreach (var page in _pages)
+        OnPropertyChanged(nameof(ModeHintText));
+
+        foreach (var item in _allNavItems)
         {
-            page.ShowTechnicalDetails = value;
+            item.Page.ShowTechnicalDetails = value;
+        }
+
+        RebuildVisibleNavItems();
+
+        if (!value)
+        {
+            var currentItem = _allNavItems.FirstOrDefault(i => ReferenceEquals(i.Page, CurrentPage));
+            if (currentItem is not null && !currentItem.IsBasicTab)
+            {
+                SelectPage(_configAudit);
+            }
         }
     }
 
     [RelayCommand]
     private void ToggleMode()
     {
-        IsEngineeringMode = !IsEngineeringMode;
+        IsAdvancedMode = !IsAdvancedMode;
+    }
+
+    private void RebuildVisibleNavItems()
+    {
+        VisibleNavItems.Clear();
+        var step = 1;
+        foreach (var item in _allNavItems)
+        {
+            if (IsAdvancedMode || item.IsBasicTab)
+            {
+                item.StepNumber = step++;
+                VisibleNavItems.Add(item);
+            }
+        }
     }
 
     private void SelectPage(ViewModelBase page)
     {
-        page.ShowTechnicalDetails = IsEngineeringMode;
+        page.ShowTechnicalDetails = IsAdvancedMode;
         CurrentPage = page;
-        foreach (var item in NavItems)
+        foreach (var item in _allNavItems)
         {
             item.IsSelected = ReferenceEquals(item.Page, page);
         }
