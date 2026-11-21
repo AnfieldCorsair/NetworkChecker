@@ -698,7 +698,7 @@ public sealed partial class SubscriptionService(HttpClient? httpClient = null)
             }
             catch (Exception ex) when (ex is IOException or SocketException or InvalidOperationException)
             {
-                if (ReferenceEquals(s_localListener, null))
+                if (s_localListener is null)
                 {
                     break;
                 }

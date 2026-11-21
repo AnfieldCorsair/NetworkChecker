@@ -56,7 +56,9 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
 
     public IReadOnlyList<string> ScopeChoices { get; } =
     [
-        "Только блок \"dns\" (нижние секции конфига не трогаем)",
+        "Вставка в готовый конфиг (\"dns\": { ... }, без внешних { } и с запятой)",
+        "Отдельный валидный JSON-объект ({ \"dns\": { ... } })",
+        "Только тело DNS (для поля Custom DNS в v2rayN: { \"servers\": [...] })",
         "Полный блок \"dns\" + \"routing\" (вместе с правилами маршрутов)",
     ];
 
@@ -139,9 +141,13 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
             _ => DnsProviderProfile.CloudflareGoogle,
         };
 
-        var scope = SelectedScopeIndex == 0
-            ? DnsOutputScope.DnsBlockOnly
-            : DnsOutputScope.FullDnsAndRouting;
+        var scope = SelectedScopeIndex switch
+        {
+            0 => DnsOutputScope.DnsPropertySnippet,
+            1 => DnsOutputScope.DnsBlockOnly,
+            2 => DnsOutputScope.DnsInnerBodyOnly,
+            _ => DnsOutputScope.FullDnsAndRouting,
+        };
 
         return new DnsArchitectOptions(
             target,
@@ -166,8 +172,8 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
         SelectedCoreIndex = 1;
         SelectedProviderIndex = 0;
         SelectedScopeIndex = 0;
-        GeneratedConfig = DnsConfigArchitect.ClassicSampleJson;
-        StatusText = "Выбрана классика DoH: Cloudflare (1.1.1.1) + Google (8.8.8.8) + 77.88.8.8 для РФ. Надёжный базовый вариант.";
+        GeneratedConfig = DnsConfigArchitect.FormatAsPropertySnippet(DnsConfigArchitect.ClassicSampleJson, includeTrailingComma: true);
+        StatusText = "Выбрана классика DoH (Cloudflare + Google + 77.88.8.8) в формате вставки \"dns\": { ... }, — без лишних внешних { } и с запятой в конце.";
     }
 
     [RelayCommand]
@@ -176,24 +182,51 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
         SelectedCoreIndex = 1;
         SelectedProviderIndex = 1;
         SelectedScopeIndex = 0;
-        GeneratedConfig = DnsConfigArchitect.NinjaSampleJson;
-        StatusText = "Выбран приватный вариант Ninja: Njalla + LibreDNS + 77.88.8.8 для РФ + bootstrap localhost (для ценителей приватности, не догма).";
+        GeneratedConfig = DnsConfigArchitect.FormatAsPropertySnippet(DnsConfigArchitect.NinjaSampleJson, includeTrailingComma: true);
+        StatusText = "Выбран приватный Ninja (Njalla + LibreDNS + 77.88.8.8) в формате вставки \"dns\": { ... }, — без лишних внешних { } и с запятой в конце.";
+    }
+
+    [RelayCommand]
+    private async Task CopyPropertySnippetAsync()
+    {
+        if (SelectedCoreIndex == 2)
+        {
+            await CopyGeneratedAsync().ConfigureAwait(true);
+            return;
+        }
+
+        var opt = BuildCurrentOptions() with { OutputScope = DnsOutputScope.DnsPropertySnippet };
+        var snippet = DnsConfigArchitect.GenerateOptimalBlock(opt);
+        if (!DnsConfigArchitect.ValidateDnsJsonOrSnippet(snippet, out var err, out _))
+        {
+            StatusText = $"Копирование остановлено: {err}";
+            return;
+        }
+
+        var ok = await _ui.CopyTextAsync(snippet).ConfigureAwait(true);
+        StatusText = ok
+            ? "Скопирован фрагмент \"dns\": { ... }, (внешние { } сняты, запятая в конце добавлена — можно сразу вставлять в конфиг Happ/Xray/Sing-box!)."
+            : "Буфер обмена недоступен.";
     }
 
     [RelayCommand]
     private async Task CopyGeneratedAsync()
     {
-        if (SelectedCoreIndex != 2 && !DnsConfigArchitect.ValidateStrictJson(GeneratedConfig, out var err))
+        if (SelectedCoreIndex != 2 && !DnsConfigArchitect.ValidateDnsJsonOrSnippet(GeneratedConfig, out var err, out _))
         {
-            StatusText = $"Копирование предупреждено: {err}";
+            StatusText = $"Копирование остановлено: {err}";
             return;
         }
 
         var ok = await _ui.CopyTextAsync(GeneratedConfig).ConfigureAwait(true);
         StatusText = ok
-            ? (SelectedScopeIndex == 0
-                ? "Только блок \"dns\" скопирован в буфер обмена (JSON валиден)."
-                : "Полный блок DNS + маршрутизации скопирован в буфер обмена.")
+            ? SelectedScopeIndex switch
+            {
+                0 => "Фрагмент \"dns\": { ... }, скопирован (без внешних { }, с запятой в конце — готов к вставке в конфиг).",
+                1 => "Отдельный JSON-объект { \"dns\": { ... } } скопирован в буфер обмена.",
+                2 => "Тело секции DNS { \"servers\": [...] } скопировано (для поля Custom DNS в v2rayN).",
+                _ => "Полный блок DNS + маршрутизации скопирован в буфер обмена.",
+            }
             : "Буфер обмена недоступен.";
     }
 
@@ -285,9 +318,9 @@ public sealed partial class DnsArchitectViewModel : ViewModelBase
     private void RunAudit(string raw)
     {
         var trimmed = raw.Trim();
-        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        if (trimmed.StartsWith('{') || trimmed.StartsWith('[') || trimmed.StartsWith('"'))
         {
-            var valid = DnsConfigArchitect.ValidateStrictJson(trimmed, out var msg);
+            var valid = DnsConfigArchitect.ValidateDnsJsonOrSnippet(trimmed, out var msg, out _);
             JsonValidationStatus = msg;
             JsonValidationBrush = valid ? CleanBrush : DangerBrush;
         }

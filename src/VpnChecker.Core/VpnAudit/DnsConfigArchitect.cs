@@ -17,6 +17,8 @@ public enum DnsOutputScope
 {
     DnsBlockOnly,
     FullDnsAndRouting,
+    DnsPropertySnippet,
+    DnsInnerBodyOnly,
 }
 
 public enum DnsProviderProfile
@@ -166,6 +168,101 @@ public static class DnsConfigArchitect
             message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса JSON (строка {ex.LineNumber + 1}, позиция {ex.BytePositionInLine + 1}): {ex.Message}");
             return false;
         }
+    }
+
+    /// <summary>
+    /// Проверяет как полный JSON-документ ({ ... } / [ ... ]), так и фрагмент свойства для вставки внутрь готового конфига
+    /// ("dns": { ... }, без внешних фигурных скобок и с запятой в конце).
+    /// </summary>
+    public static bool ValidateDnsJsonOrSnippet(string raw, out string message, out bool isPropertySnippet)
+    {
+        isPropertySnippet = false;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            message = "Пустой JSON.";
+            return false;
+        }
+
+        var trimmed = raw.Trim();
+        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        {
+            return ValidateStrictJson(trimmed, out message);
+        }
+
+        if (trimmed.StartsWith('"'))
+        {
+            isPropertySnippet = true;
+            var bodyWithoutTrailingComma = trimmed.EndsWith(',')
+                ? trimmed[..^1].TrimEnd()
+                : trimmed;
+
+            var wrapped = "{\n" + bodyWithoutTrailingComma + "\n}";
+            try
+            {
+                using var doc = JsonDocument.Parse(wrapped, StrictValidationJson);
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    message = "Фрагмент должен быть парой \"dns\": { ... },";
+                    return false;
+                }
+
+                message = trimmed.EndsWith(',')
+                    ? "Фрагмент для вставки проверен: внешние { } убраны, запятая в конце на месте — можно вставлять прямо в конфиг."
+                    : "Фрагмент для вставки проверен (без внешних { } и без запятой в конце — подходит для последней секции конфига).";
+                return true;
+            }
+            catch (JsonException ex)
+            {
+                var lineNum = Math.Max(1, ex.LineNumber);
+                message = string.Create(CultureInfo.InvariantCulture, $"Ошибка синтаксиса фрагмента JSON (строка {lineNum}, позиция {ex.BytePositionInLine + 1}): {ex.Message}");
+                return false;
+            }
+        }
+
+        message = "Нераспознанный формат JSON (ожидается { ... } или \"dns\": { ... },).";
+        return false;
+    }
+
+    /// <summary>
+    /// Преобразует валидный JSON-объект вида { "dns": { ... } } во фрагмент для прямой вставки внутрь готового конфига:
+    /// убирает внешние { и }, выравнивает отступы и ставит запятую в конце ("dns": { ... },).
+    /// </summary>
+    public static string FormatAsPropertySnippet(string standaloneJsonObject, bool includeTrailingComma = true)
+    {
+        if (string.IsNullOrWhiteSpace(standaloneJsonObject))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = standaloneJsonObject.Trim();
+        if (trimmed.StartsWith('"'))
+        {
+            var baseSnippet = trimmed.EndsWith(',') ? trimmed[..^1].TrimEnd() : trimmed;
+            return includeTrailingComma ? baseSnippet + "," : baseSnippet;
+        }
+
+        // Парсим и пересобираем через System.Text.Json, гарантируя 100% ровные скобки и запятые
+        using var doc = JsonDocument.Parse(trimmed, TolerantInputJson);
+        var pretty = JsonSerializer.Serialize(doc.RootElement, PrettyJson);
+        var lines = pretty.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        if (lines.Length < 3 || lines[0].Trim() != "{" || lines[^1].Trim() != "}")
+        {
+            return pretty;
+        }
+
+        var innerLines = new List<string>(lines.Length - 2);
+        for (var i = 1; i < lines.Length - 1; i++)
+        {
+            var line = lines[i];
+            innerLines.Add(line.StartsWith("  ", StringComparison.Ordinal) ? line[2..] : line);
+        }
+
+        if (includeTrailingComma && innerLines.Count > 0 && !innerLines[^1].TrimEnd().EndsWith(','))
+        {
+            innerLines[^1] = innerLines[^1].TrimEnd() + ",";
+        }
+
+        return string.Join(Environment.NewLine, innerLines);
     }
 
     public static string GenerateOptimalBlock(DnsArchitectOptions? options = null)
@@ -402,10 +499,10 @@ public static class DnsConfigArchitect
         var trimmed = rawDns.Trim();
         var lower = trimmed.ToLowerInvariant();
 
-        // 0. Проверка валидности JSON (запятые / скобки), если это JSON-блок
-        if (trimmed.StartsWith('{') || trimmed.StartsWith('['))
+        // 0. Проверка валидности JSON (как полного { ... }, так и фрагмента "dns": { ... },)
+        if (trimmed.StartsWith('{') || trimmed.StartsWith('[') || trimmed.StartsWith('"'))
         {
-            if (!ValidateStrictJson(trimmed, out var jsonErr))
+            if (!ValidateDnsJsonOrSnippet(trimmed, out var jsonErr, out var isSnippet))
             {
                 findings.Add(new VpnAuditFinding(
                     "dns-invalid-json",
@@ -423,11 +520,17 @@ public static class DnsConfigArchitect
                     "dns-valid-json-ok",
                     AuditCategory.Routing,
                     AuditSeverity.Ok,
-                    "Синтаксис JSON проверен: запятые и скобки в порядке",
-                    "Блок корректно читается стандартным JSON-парсером без ошибок.",
-                    "Строгая проверка JsonDocument (без висячих запятых) пройдена.",
-                    "JSON валиден",
-                    "Можно безопасно вшивать в подписку или конфиг."));
+                    isSnippet
+                        ? "Фрагмент для вставки проверен: внешние { } сняты, запятая на месте"
+                        : "Синтаксис JSON проверен: запятые и скобки в порядке",
+                    isSnippet
+                        ? "Этот фрагмент можно сразу вставлять на место секции \"dns\" внутри готового конфига (Happ / Xray / Sing-box) без ручной правки скобок и запятых."
+                        : "Блок корректно читается стандартным JSON-парсером без ошибок.",
+                    jsonErr,
+                    isSnippet ? "Фрагмент \"dns\": { ... }, валиден" : "JSON валиден",
+                    isSnippet
+                        ? "Если вставляете в самый конец конфига (после блока нет других секций), уберите последнюю запятую или нажмите «Вшить в выбранный узел»."
+                        : "Можно безопасно вшивать в подписку или конфиг."));
             }
         }
 
@@ -619,6 +722,7 @@ public static class DnsConfigArchitect
     {
         var (primaryDoh, secondaryDoh, _, _) = GetProviderEndpoints(opt.ProviderProfile);
         var servers = new List<object>();
+        var isFullRouting = opt.OutputScope == DnsOutputScope.FullDnsAndRouting;
 
         if (opt.UseFakeIp)
         {
@@ -631,29 +735,48 @@ public static class DnsConfigArchitect
 
         if (opt.RfSplitTunneling)
         {
-            servers.Add(new
+            if (isFullRouting)
             {
-                address = "77.88.8.8",
-                domains = XrayRuDomains,
-                skipFallback = true,
-            });
+                servers.Add(new
+                {
+                    address = "77.88.8.8",
+                    tag = "dns-direct",
+                    domains = XrayRuDomains,
+                    skipFallback = true,
+                });
+            }
+            else
+            {
+                servers.Add(new
+                {
+                    address = "77.88.8.8",
+                    domains = XrayRuDomains,
+                    skipFallback = true,
+                });
+            }
         }
 
-        if (opt.OutputScope == DnsOutputScope.DnsBlockOnly)
+        if (!isFullRouting)
         {
             servers.Add(primaryDoh);
             servers.Add(secondaryDoh);
             servers.Add("localhost");
 
-            var dnsOnlyDoc = new
+            var dnsInnerObj = new
             {
-                dns = new
-                {
-                    queryStrategy = opt.Ipv4Only ? "UseIPv4" : "UseIP",
-                    servers,
-                },
+                queryStrategy = opt.Ipv4Only ? "UseIPv4" : "UseIP",
+                servers,
             };
-            return JsonSerializer.Serialize(dnsOnlyDoc, PrettyJson);
+
+            if (opt.OutputScope == DnsOutputScope.DnsInnerBodyOnly)
+            {
+                return JsonSerializer.Serialize(dnsInnerObj, PrettyJson);
+            }
+
+            var standalone = JsonSerializer.Serialize(new { dns = dnsInnerObj }, PrettyJson);
+            return opt.OutputScope == DnsOutputScope.DnsPropertySnippet
+                ? FormatAsPropertySnippet(standalone, includeTrailingComma: true)
+                : standalone;
         }
 
         servers.Add(new { address = primaryDoh, tag = "dns-remote" });
@@ -716,9 +839,17 @@ public static class DnsConfigArchitect
             reverse_mapping = true,
         };
 
-        if (opt.OutputScope == DnsOutputScope.DnsBlockOnly)
+        if (opt.OutputScope == DnsOutputScope.DnsInnerBodyOnly)
         {
-            return JsonSerializer.Serialize(new { dns = dnsObject }, PrettyJson);
+            return JsonSerializer.Serialize(dnsObject, PrettyJson);
+        }
+
+        if (opt.OutputScope is DnsOutputScope.DnsBlockOnly or DnsOutputScope.DnsPropertySnippet)
+        {
+            var standalone = JsonSerializer.Serialize(new { dns = dnsObject }, PrettyJson);
+            return opt.OutputScope == DnsOutputScope.DnsPropertySnippet
+                ? FormatAsPropertySnippet(standalone, includeTrailingComma: true)
+                : standalone;
         }
 
         var doc = new

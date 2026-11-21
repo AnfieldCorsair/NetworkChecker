@@ -1214,6 +1214,46 @@ public sealed class VpnConfigAuditTests
         Assert.False(cleanIsp.HighRuGoogleBleedRisk);
     }
 
+    private static readonly DnsCoreTarget[] JsonDnsCores = [DnsCoreTarget.XrayCore, DnsCoreTarget.SingBox112];
+
+    [Fact]
+    public void DnsArchitect_PropertySnippetAndInnerBody_HaveValidBracesAndCommasWhenPastedIntoConfig()
+    {
+        foreach (var core in JsonDnsCores)
+        {
+            var snippet = DnsConfigArchitect.GenerateOptimalBlock(new DnsArchitectOptions(
+                Core: core,
+                RfSplitTunneling: true,
+                Ipv4Only: true,
+                ProviderProfile: DnsProviderProfile.CloudflareGoogle,
+                OutputScope: DnsOutputScope.DnsPropertySnippet));
+
+            Assert.StartsWith("\"dns\": {", snippet.TrimStart(), StringComparison.Ordinal);
+            Assert.EndsWith("},", snippet.TrimEnd(), StringComparison.Ordinal);
+            Assert.True(DnsConfigArchitect.ValidateDnsJsonOrSnippet(snippet, out _, out var isSnippet));
+            Assert.True(isSnippet);
+
+            // Вставка скопированного фрагмента напрямую внутрь готового конфига перед "outbounds" даёт 100% валидный JSON
+            var pastedIntoRealConfig = "{\n" + snippet + "\n  \"outbounds\": []\n}";
+            Assert.True(DnsConfigArchitect.ValidateStrictJson(pastedIntoRealConfig, out _));
+
+            // Аудит фрагмента не выдаёт критических ошибок
+            var snippetFindings = DnsConfigArchitect.AuditDnsBlock(snippet);
+            Assert.DoesNotContain(snippetFindings, f => f.Severity == AuditSeverity.Critical);
+
+            // Режим DnsInnerBodyOnly (для поля Custom DNS в v2rayN) даёт валидный JSON без внешней обёртки "dns"
+            var innerBody = DnsConfigArchitect.GenerateOptimalBlock(new DnsArchitectOptions(
+                Core: core,
+                OutputScope: DnsOutputScope.DnsInnerBodyOnly));
+            Assert.True(DnsConfigArchitect.ValidateStrictJson(innerBody, out _));
+            Assert.DoesNotContain("\"dns\":", innerBody, StringComparison.Ordinal);
+        }
+
+        // Сломанный фрагмент с лишней запятой внутри массива отлавливается валидатором
+        const string brokenSnippet = "\"dns\": { \"servers\": [\"1.1.1.1\",] },";
+        Assert.False(DnsConfigArchitect.ValidateDnsJsonOrSnippet(brokenSnippet, out _, out _));
+    }
+
     private static readonly byte[] TestHrrRandom =
     [
         0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11,

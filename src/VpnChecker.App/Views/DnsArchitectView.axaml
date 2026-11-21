@@ -59,7 +59,8 @@
           </StackPanel>
 
           <WrapPanel Orientation="Horizontal">
-            <Button Content="Скопировать блок DNS" Classes="primary" Command="{Binding CopyGeneratedCommand}" Margin="0,0,8,6" />
+            <Button Content="Скопировать в конфиг (&quot;dns&quot;: {...},)" Classes="primary" Command="{Binding CopyPropertySnippetCommand}" Margin="0,0,8,6" />
+            <Button Content="Скопировать как в редакторе" Command="{Binding CopyGeneratedCommand}" Margin="0,0,8,6" />
             <Button Content="Сохранить в файл" Command="{Binding SaveGeneratedCommand}" Margin="0,0,0,6" />
           </WrapPanel>
 
@@ -148,7 +149,7 @@
       <DockPanel LastChildFill="True">
         <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,10">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Готовый блок настроек DNS (в режиме «Только блок dns» нижние секции не затрагиваются)" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Text="Готовый блок настроек DNS (по умолчанию без внешних { } и с запятой — для прямой вставки в конфиг)" Classes="h2" VerticalAlignment="Center" TextWrapping="Wrap" />
             <Button Grid.Column="1" Content="Сбросить к выбранному" Command="{Binding RegenerateCommand}" Padding="10,4" />
           </Grid>
           <TextBlock Text="{Binding JsonValidationStatus}"
