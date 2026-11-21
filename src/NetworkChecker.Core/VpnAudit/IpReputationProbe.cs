@@ -377,11 +377,13 @@ public static partial class IpReputationProbe
 
         if (htmlBody.Contains("Try 1 month", StringComparison.OrdinalIgnoreCase) ||
             htmlBody.Contains("Try it free", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("Try YouTube Premium", StringComparison.OrdinalIgnoreCase) ||
+            htmlBody.Contains("Start free trial", StringComparison.OrdinalIgnoreCase) ||
             htmlBody.Contains("Get YouTube Premium", StringComparison.OrdinalIgnoreCase) ||
-            htmlBody.Contains("Individual", StringComparison.OrdinalIgnoreCase) &&
-            (htmlBody.Contains("/month", StringComparison.OrdinalIgnoreCase) ||
-             htmlBody.Contains("EUR", StringComparison.OrdinalIgnoreCase) ||
-             htmlBody.Contains("USD", StringComparison.OrdinalIgnoreCase)))
+            (htmlBody.Contains("Individual", StringComparison.OrdinalIgnoreCase) &&
+             (htmlBody.Contains("/month", StringComparison.OrdinalIgnoreCase) ||
+              htmlBody.Contains("EUR", StringComparison.OrdinalIgnoreCase) ||
+              htmlBody.Contains("USD", StringComparison.OrdinalIgnoreCase))))
         {
             return true;
         }
@@ -969,15 +971,24 @@ public static partial class IpReputationProbe
                         ? "127.0.0.1"
                         : openPort.BindAddress;
                     var proxyUri = new Uri(string.Create(CultureInfo.InvariantCulture, $"{proxyScheme}://{hostAddr}:{openPort.Port}"));
-                    var handler = new HttpClientHandler
+                    HttpClientHandler? handler = null;
+                    try
                     {
-                        Proxy = new WebProxy(proxyUri),
-                        UseProxy = true,
-                    };
-                    customProxyClient = new HttpClient(handler, disposeHandler: true)
+                        handler = new HttpClientHandler
+                        {
+                            Proxy = new WebProxy(proxyUri),
+                            UseProxy = true,
+                        };
+                        customProxyClient = new HttpClient(handler, disposeHandler: true)
+                        {
+                            Timeout = TimeSpan.FromSeconds(10),
+                        };
+                        handler = null;
+                    }
+                    finally
                     {
-                        Timeout = TimeSpan.FromSeconds(10),
-                    };
+                        handler?.Dispose();
+                    }
                     customProxyClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0");
                     activeHttp = customProxyClient;
                     channelLabel = string.Create(CultureInfo.InvariantCulture, $"Локальный прокси ВПН ({proxyScheme}://{hostAddr}:{openPort.Port} · {openPort.ExpectedClient})");
@@ -1492,13 +1503,11 @@ public static partial class IpReputationProbe
         }
     }
 
-    private static HttpRequestMessage CreateGoogleProbeRequest(Uri uri)
+    private static void ApplyGoogleProbeHeaders(HttpRequestMessage req)
     {
-        var req = new HttpRequestMessage(HttpMethod.Get, uri);
         req.Headers.TryAddWithoutValidation("User-Agent", DesktopChromeUserAgent);
         req.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
         req.Headers.TryAddWithoutValidation("Cookie", GoogleConsentBypassCookie);
-        return req;
     }
 
     private static async Task<(string? YtGl, string? GoogleGl, string? FooterCountry, bool HasCaptcha, bool? YtPremium, bool? GeminiOk)>
@@ -1527,7 +1536,8 @@ public static partial class IpReputationProbe
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = CreateGoogleProbeRequest(YouTubeSwDataUri);
+            using var req = new HttpRequestMessage(HttpMethod.Get, YouTubeSwDataUri);
+            ApplyGoogleProbeHeaders(req);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             var gl = ParseYouTubeGlCode(body);
@@ -1536,7 +1546,8 @@ public static partial class IpReputationProbe
                 return gl;
             }
 
-            using var req2 = CreateGoogleProbeRequest(YouTubeHomeUri);
+            using var req2 = new HttpRequestMessage(HttpMethod.Get, YouTubeHomeUri);
+            ApplyGoogleProbeHeaders(req2);
             using var resp2 = await http.SendAsync(req2, cts.Token).ConfigureAwait(false);
             var body2 = await resp2.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             return ParseYouTubeGlCode(body2);
@@ -1553,7 +1564,8 @@ public static partial class IpReputationProbe
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = CreateGoogleProbeRequest(YouTubePremiumUri);
+            using var req = new HttpRequestMessage(HttpMethod.Get, YouTubePremiumUri);
+            ApplyGoogleProbeHeaders(req);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             return ParseYouTubePremiumAvailability(body);
@@ -1570,7 +1582,8 @@ public static partial class IpReputationProbe
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = CreateGoogleProbeRequest(GeminiAppUri);
+            using var req = new HttpRequestMessage(HttpMethod.Get, GeminiAppUri);
+            ApplyGoogleProbeHeaders(req);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             var finalUri = resp.RequestMessage?.RequestUri?.ToString();
@@ -1582,7 +1595,7 @@ public static partial class IpReputationProbe
         }
     }
 
-    private static async Task<(string? GoogleGl, string? FooterCountry, bool HasCaptcha)> ProbeGoogleSearchSignalAsync(
+    private static async Task<(string? RegionCode, string? FooterLabel, bool HasCaptcha)> ProbeGoogleSearchSignalAsync(
         HttpClient http,
         CancellationToken ct)
     {
@@ -1590,24 +1603,26 @@ public static partial class IpReputationProbe
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(5));
-            using var req = CreateGoogleProbeRequest(GoogleSearchHomeUri);
+            using var req = new HttpRequestMessage(HttpMethod.Get, GoogleSearchHomeUri);
+            ApplyGoogleProbeHeaders(req);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             var finalUri = resp.RequestMessage?.RequestUri?.ToString();
             var detailed = ParseGoogleSearchRegionDetailed(finalUri, (int)resp.StatusCode, body);
-            if (detailed.GoogleRegion is not null || detailed.HasCaptcha)
+            if (detailed.RegionCode is not null || detailed.HasCaptcha)
             {
                 return detailed;
             }
 
-            using var req2 = CreateGoogleProbeRequest(GooglePrefsUri);
+            using var req2 = new HttpRequestMessage(HttpMethod.Get, GooglePrefsUri);
+            ApplyGoogleProbeHeaders(req2);
             using var resp2 = await http.SendAsync(req2, cts.Token).ConfigureAwait(false);
             var body2 = await resp2.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             var finalUri2 = resp2.RequestMessage?.RequestUri?.ToString();
             var fallback = ParseGoogleSearchRegionDetailed(finalUri2, (int)resp2.StatusCode, body2);
             return (
-                fallback.GoogleRegion ?? detailed.GoogleRegion,
-                fallback.FooterCountry ?? detailed.FooterCountry,
+                fallback.RegionCode ?? detailed.RegionCode,
+                fallback.FooterLabel ?? detailed.FooterLabel,
                 detailed.HasCaptcha || fallback.HasCaptcha);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)

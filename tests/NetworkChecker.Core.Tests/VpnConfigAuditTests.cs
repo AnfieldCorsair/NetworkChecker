@@ -1048,16 +1048,16 @@ public sealed class VpnConfigAuditTests
             "https://www.google.com/?hl=en&gws_rd=cr",
             200,
             "<html><footer><div class=\"uU7dJb\">Russia</div></footer></html>");
-        Assert.Equal("RU", ruFooter.GoogleRegion);
-        Assert.Equal("Russia", ruFooter.FooterCountry);
+        Assert.Equal("RU", ruFooter.RegionCode);
+        Assert.Equal("Russia", ruFooter.FooterLabel);
         Assert.False(ruFooter.HasCaptcha);
 
         var nlFooter = IpReputationProbe.ParseGoogleSearchRegionDetailed(
             "https://www.google.com/?hl=en&gws_rd=cr",
             200,
             "<html><footer><div class=\"uU7dJb\">Netherlands</div></footer></html>");
-        Assert.Equal("NL", nlFooter.GoogleRegion);
-        Assert.Equal("Netherlands", nlFooter.FooterCountry);
+        Assert.Equal("NL", nlFooter.RegionCode);
+        Assert.Equal("Netherlands", nlFooter.FooterLabel);
 
         // 5. Foreign IP (NL) where YouTube GL didn't fire, but BOTH YouTube Premium=false and Gemini=false -> IsRuGeoPoisoned = true
         var silentPoison = IpReputationProbe.EvaluateGoogleGeoVerdict(
@@ -1087,6 +1087,7 @@ public sealed class VpnConfigAuditTests
             googleFooterCountry: "Germany");
         Assert.False(cleanAll.IsRuGeoPoisoned);
         Assert.True(cleanAll.ProbeSucceeded);
+        Assert.NotNull(cleanAll.SignalChecks);
         Assert.Equal(4, cleanAll.SignalChecks!.Count);
         Assert.All(cleanAll.SignalChecks!, s => Assert.False(s.IsAlert));
     }

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.Net.Sockets;
 using System.Text;
@@ -178,7 +179,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         }
     }
 
-    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
     {
         ArgumentNullException.ThrowIfNull(e);
         base.OnPropertyChanged(e);

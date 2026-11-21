@@ -11,7 +11,8 @@
       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
         <StackPanel Spacing="4">
           <TextBlock Classes="h1" Text="Репутация IP, метка Google RU и сканер всех IP подписки" />
-          <TextBlock Classes="subtitle"
+          <TextBlock Classes="muted"
+                     TextWrapping="Wrap"
                      Text="Консенсус 4 независимых GeoIP-баз (Majority Vote по Hosting, Any Vote по Proxy/VPN), живой зонд прокажённой метки RU у Google/YouTube и пакетная проверка всех серверов подписки" />
         </StackPanel>
 
@@ -85,7 +86,7 @@
             <TextBlock Grid.Column="1"
                        Text="{Binding CopyFeedback}"
                        FontSize="12"
-                       Foreground="{StaticResource SuccessBrush}"
+                       Foreground="{StaticResource CleanBrush}"
                        IsVisible="{Binding CopyFeedback, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           </Grid>
         </StackPanel>

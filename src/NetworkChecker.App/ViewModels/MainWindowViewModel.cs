@@ -43,8 +43,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsAdvancedMode { get; set; }
 
-    public int NavColumnsCount => IsAdvancedMode ? 6 : 3;
-
     public string ModeButtonLabel => IsAdvancedMode
         ? "Расширенный режим (6 вкладок)"
         : "Базовый режим (3 вкладки)";
@@ -55,7 +53,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     partial void OnIsAdvancedModeChanged(bool value)
     {
-        OnPropertyChanged(nameof(NavColumnsCount));
         OnPropertyChanged(nameof(ModeButtonLabel));
         OnPropertyChanged(nameof(ModeHintText));
 

@@ -51,7 +51,7 @@
         <ItemsControl ItemsSource="{Binding VisibleNavItems}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <UniformGrid Columns="{Binding NavColumnsCount}" />
+              <UniformGrid Rows="1" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
