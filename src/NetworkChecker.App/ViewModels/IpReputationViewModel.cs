@@ -28,21 +28,147 @@ public sealed record GeoProviderDisplayItem(
     IBrush ProxyBrush,
     string StatusText);
 
-public sealed record SubscriptionIpDisplayItem(
-    string DisplayName,
-    string ProtocolAndPort,
-    string HostAndResolvedIp,
-    string CountryDisplay,
-    string AsnOrgDisplay,
-    string HostingProxyBadges,
-    string GoogleRuBleedBadge,
-    IBrush GoogleRuBleedBrush,
-    string Cloud16KbBadge,
-    IBrush Cloud16KbBrush,
-    string SummaryNote);
+public sealed partial class SubscriptionIpDisplayItem : ObservableObject
+{
+    public SubscriptionIpDisplayItem(
+        string displayName,
+        string protocolAndPort,
+        string rawHost,
+        string? resolvedIp,
+        string hostAndResolvedIp,
+        string countryDisplay,
+        string asnOrgDisplay,
+        string rdapDisplay,
+        bool hasRdapInfo,
+        IBrush rdapBrush,
+        string hostingProxyBadges,
+        string googleRuBleedBadge,
+        IBrush googleRuBleedBrush,
+        string cloud16KbBadge,
+        IBrush cloud16KbBrush,
+        string summaryNote,
+        Func<SubscriptionIpDisplayItem, Task> onProbeLive)
+    {
+        ArgumentNullException.ThrowIfNull(onProbeLive);
+
+        DisplayName = displayName;
+        ProtocolAndPort = protocolAndPort;
+        RawHost = rawHost;
+        ResolvedIp = resolvedIp;
+        HostAndResolvedIp = hostAndResolvedIp;
+        CountryDisplay = countryDisplay;
+        AsnOrgDisplay = asnOrgDisplay;
+        RdapDisplay = rdapDisplay;
+        HasRdapInfo = hasRdapInfo;
+        RdapBrush = rdapBrush;
+        HostingProxyBadges = hostingProxyBadges;
+        GoogleRuBleedBadge = googleRuBleedBadge;
+        GoogleRuBleedBrush = googleRuBleedBrush;
+        Cloud16KbBadge = cloud16KbBadge;
+        Cloud16KbBrush = cloud16KbBrush;
+        SummaryNote = summaryNote;
+        ProbeLiveNodeCommand = new AsyncRelayCommand(() => onProbeLive(this));
+    }
+
+    public string DisplayName { get; }
+
+    public string ProtocolAndPort { get; }
+
+    public string RawHost { get; }
+
+    public string? ResolvedIp { get; }
+
+    public string HostAndResolvedIp { get; }
+
+    public string CountryDisplay { get; }
+
+    public string AsnOrgDisplay { get; }
+
+    public string RdapDisplay { get; }
+
+    public bool HasRdapInfo { get; }
+
+    public IBrush RdapBrush { get; }
+
+    public string HostingProxyBadges { get; }
+
+    public string GoogleRuBleedBadge { get; }
+
+    public IBrush GoogleRuBleedBrush { get; }
+
+    public string Cloud16KbBadge { get; }
+
+    public IBrush Cloud16KbBrush { get; }
+
+    public string SummaryNote { get; }
+
+    public IAsyncRelayCommand ProbeLiveNodeCommand { get; }
+
+    [ObservableProperty]
+    public partial bool IsLiveVerified { get; set; }
+
+    [ObservableProperty]
+    public partial string LiveVerificationText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial IBrush LiveVerificationBrush { get; set; } = SolidColorBrush.Parse("#94A3B8");
+
+    [ObservableProperty]
+    public partial string LiveAiBadgesText { get; set; } = string.Empty;
+
+    public void ApplyLiveGoogleVerdict(GoogleGeoVerdict verdict, string exitIp, bool exactIpMatch)
+    {
+        ArgumentNullException.ThrowIfNull(verdict);
+
+        var scopeLabel = exactIpMatch ? $"IP {exitIp}" : $"подсеть /24 ({exitIp})";
+        var aiStudioShort = verdict.AiStudioAccessible switch
+        {
+            true => "AI Studio: ПУСКАЕТ",
+            false => "AI Studio: БЛОК",
+            _ => "AI Studio: —",
+        };
+        var geminiShort = verdict.GeminiAccessible switch
+        {
+            true => "Gemini: ПУСКАЕТ",
+            false => "Gemini: БЛОК",
+            _ => "Gemini: —",
+        };
+        var playShort = !string.IsNullOrWhiteSpace(verdict.GooglePlayCurrency)
+            ? $"Play: {verdict.GooglePlayCurrency}"
+            : "Play: —";
+
+        LiveAiBadgesText = $"{aiStudioShort} · {geminiShort} · {playShort}";
+
+        if (verdict.IsRuGeoPoisoned)
+        {
+            LiveVerificationText = verdict.AiStudioAccessible == true
+                ? $"ЖИВОЙ ТЕСТ ({scopeLabel}): МЕТКА RU ЕСТЬ (но AI Studio пускает)"
+                : $"ЖИВОЙ ТЕСТ ({scopeLabel}): МЕТКА RU ПОДТВЕРЖДЕНА";
+            LiveVerificationBrush = SolidColorBrush.Parse("#F87171");
+        }
+        else if (verdict.HasGoogleCaptchaBlock || verdict.AiStudioAccessible == false || verdict.GeminiAccessible == false)
+        {
+            LiveVerificationText = $"ЖИВОЙ ТЕСТ ({scopeLabel}): Частичные ограничения / капча Google";
+            LiveVerificationBrush = SolidColorBrush.Parse("#F59E0B");
+        }
+        else if (verdict.ProbeSucceeded)
+        {
+            LiveVerificationText = $"ЖИВОЙ ТЕСТ ({scopeLabel}): ЧИСТЫЙ ({verdict.DetectedGlCode ?? "OK"})";
+            LiveVerificationBrush = SolidColorBrush.Parse("#34D399");
+        }
+        else
+        {
+            LiveVerificationText = $"ЖИВОЙ ТЕСТ ({scopeLabel}): Нет ответа Google";
+            LiveVerificationBrush = SolidColorBrush.Parse("#94A3B8");
+        }
+
+        IsLiveVerified = true;
+    }
+}
 
 /// <summary>
-/// Вкладка 5: Репутация IP, консенсус 4 GeoIP-баз, детектор «прокажённой метки RU» у Google и пакетный сканер всех IP подписки.
+/// Вкладка 5: Репутация IP, консенсус 4 GeoIP-баз, 6-сигнальный живой детектор «прокажённой метки RU» у Google
+/// с независимыми бейджами AI Studio / Gemini и пакетный аудит всех IP подписки через RIPE/RDAP WHOIS.
 /// </summary>
 public sealed partial class IpReputationViewModel : ViewModelBase
 {
@@ -65,7 +191,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
         RoutingModeOptions =
         [
-            "1. Активный интернет / TUN-адаптер (проверка текущего выхода ОС и живой реакции Google/YouTube)",
+            "1. Активный интернет / TUN-адаптер (6 сигналов Google: YouTube, Premium, Play, Terms, Gemini, AI Studio)",
             "2. Авто-прокси запущенного клиента ВПН (Happ / v2rayN / Sing-box / NekoBox на 10808/10809/2080/7890)",
             "3. Ручная проверка любого IP или домена сервера (4 GeoIP-базы без переключения ВПН)",
         ];
@@ -76,13 +202,13 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
     public override string Title => "Репутация IP и Google RU";
 
-    public override string Subtitle => "Метка RU у Google и все IP подписки";
+    public override string Subtitle => "Метка RU, AI Studio и все IP";
 
     public override string Description =>
-        "Консенсус 4 независимых GeoIP-баз, живой зонд «прокажённой метки RU» у Google / YouTube и пакетный аудит всех IP-адресов подписки.";
+        "Консенсус 4 GeoIP-баз, 6-сигнальный живой детектор метки RU у Google (YouTube, Play, Terms, Gemini, AI Studio) и пакетный RIPE/RDAP аудит всех IP подписки.";
 
     public override string SimpleGuideText =>
-        "Слева нажмите «Проверить активный IP и реакцию Google» — программа опросит 4 независимые GeoIP-базы (ipwho.is, ip-api.com, ipinfo.io, Cloudflare) и выполнит прямой запрос к YouTube/Google, чтобы проверить, не выдал ли Google вашему зарубежному серверу «прокажённую метку RU». Справа нажмите «Достать и проверить все IP из подписки», чтобы разом просканировать все серверы вашей подписки.";
+        "Слева нажмите «Проверить активный IP и Google RU» — программа проверит 6 независимых сигналов Google (YouTube GL, Premium, валюту Google Play, Terms/Search, Gemini и AI Studio) и покажет отдельно метку RU и доступ к AI Studio. Справа нажмите «Достать и проверить все IP из подписки», чтобы прогнать все серверы через RIPE/RDAP WHOIS и честно оценить риск подсетей.";
 
     public IReadOnlyList<string> RoutingModeOptions { get; }
 
@@ -100,7 +226,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string ActiveInspectionStatus { get; set; } =
-        "Выберите режим маршрутизации и нажмите «Проверить активный IP и реакцию Google».";
+        "Нажмите «Проверить активный IP и Google RU» для 6-сигнального теста через текущее подключение.";
 
     [ObservableProperty]
     public partial string DetectedExitIp { get; set; } = "—";
@@ -130,18 +256,35 @@ public sealed partial class IpReputationViewModel : ViewModelBase
     public partial IBrush IpConsistencyBrush { get; set; } = SolidColorBrush.Parse("#9CA9BE");
 
     [ObservableProperty]
-    public partial string GoogleVerdictTitle { get; set; } = "Ожидание проверки реакции Google / YouTube";
+    public partial string GoogleVerdictTitle { get; set; } = "Ожидание проверки реакции Google (6 сигналов)";
 
     [ObservableProperty]
     public partial string GoogleVerdictSummary { get; set; } =
-        "При проверке через активный интернет или локальный прокси ВПН программа извлекает код страны INNERTUBE_CONTEXT_GL напрямую из ответа YouTube и Google.";
+        "Проверяем независимо: метку RU (YouTube GL, Premium, валюта Google Play, Terms/Search) и отдельно фактический доступ к Google AI Studio и Gemini.";
 
     [ObservableProperty]
     public partial string GoogleVerdictEvidence { get; set; } =
-        "Если физически сервер в Нидерландах или Германии, а Google возвращает GL=RU — значит подсеть «отравлена» российским гео-таргетингом.";
+        "Если сервер физически в Нидерландах или Германии, а YouTube/Play/Terms возвращают RU или RUB — подсеть «отравлена» меткой RU, даже если AI Studio ещё пускает.";
 
     [ObservableProperty]
-    public partial string DetectedGlBadge { get; set; } = "YouTube GL: — · Google GL: —";
+    public partial string DetectedGlBadge { get; set; } = "YT: — · Play: — · Terms: —";
+
+    [ObservableProperty]
+    public partial string AiStudioBadgeText { get; set; } = "Google AI Studio: ожидание";
+
+    [ObservableProperty]
+    public partial IBrush AiStudioBadgeBrush { get; set; } = SolidColorBrush.Parse("#94A3B8");
+
+    [ObservableProperty]
+    public partial string GeminiBadgeText { get; set; } = "Google Gemini Web: ожидание";
+
+    [ObservableProperty]
+    public partial IBrush GeminiBadgeBrush { get; set; } = SolidColorBrush.Parse("#94A3B8");
+
+    [ObservableProperty]
+    public partial string AiDivergenceNotice { get; set; } = string.Empty;
+
+    public bool HasAiDivergenceNotice => !string.IsNullOrWhiteSpace(AiDivergenceNotice);
 
     [ObservableProperty]
     public partial IBrush GoogleVerdictBorderBrush { get; set; } = SolidColorBrush.Parse("#2B3548");
@@ -151,7 +294,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial string SubscriptionIpSummary { get; set; } =
-        "Нажмите «Достать и проверить все IP из подписки», чтобы извлечь все узлы из вкладки 1, разрешить домены в IP и проверить их репутацию.";
+        "Нажмите «Достать и проверить все IP из подписки», чтобы проверить все узлы через DNS + GeoIP + RIPE/RDAP WHOIS с честной 4-уровневой шкалой риска метки RU.";
 
     [ObservableProperty]
     public partial string CopyFeedback { get; set; } = string.Empty;
@@ -165,6 +308,11 @@ public sealed partial class IpReputationViewModel : ViewModelBase
     public IpReputationConsensusReport? LastActiveReport { get; private set; }
 
     public bool IsManualTargetVisible => ShowTechnicalDetails && SelectedRoutingModeIndex == 2;
+
+    partial void OnAiDivergenceNoticeChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasAiDivergenceNotice));
+    }
 
     partial void OnSelectedRoutingModeIndexChanged(int value)
     {
@@ -227,9 +375,9 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
             ActiveInspectionStatus = mode switch
             {
-                IpReputationRoutingMode.AutoLocalVpnProxy => "Ищем локальный порт ВПН-клиента (10809/10808/2080/7890) и опрашиваем 4 GeoIP-базы + Google/YouTube...",
+                IpReputationRoutingMode.AutoLocalVpnProxy => "Ищем локальный порт ВПН-клиента (10809/10808/2080/7890) и опрашиваем 4 GeoIP-базы + 6 сигналов Google...",
                 IpReputationRoutingMode.ManualTargetIp => $"Разрешаем '{ManualTargetInput}' и опрашиваем 4 GeoIP-базы по его репутации...",
-                _ => "Опрашиваем 4 GeoIP-базы (ipwho.is, ip-api, ipinfo, Cloudflare) и проверяем метку GL у Google/YouTube...",
+                _ => "Опрашиваем 4 GeoIP-базы и 6 независимых сигналов Google (YouTube GL, Premium, Play, Terms, Gemini, AI Studio)...",
             };
 
             var report = await IpReputationProbe.RunActiveOrManualInspectionAsync(
@@ -240,6 +388,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
 
             LastActiveReport = report;
             ApplyConsensusReport(report);
+            ApplyLiveReportToMatchingSubscriptionNodes(report, requestedNode: null);
         }
         catch (Exception ex) when (ex is ArgumentException or HttpRequestException or OperationCanceledException or SocketException)
         {
@@ -249,6 +398,114 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         {
             IsInspectingActive = false;
         }
+    }
+
+    private async Task ProbeSubscriptionNodeLiveAsync(SubscriptionIpDisplayItem node)
+    {
+        if (IsInspectingActive)
+        {
+            return;
+        }
+
+        IsInspectingActive = true;
+        CopyFeedback = string.Empty;
+
+        try
+        {
+            // Всегда проверяем через живой канал (если выбран режим «Ручной IP», временно используем активный TUN)
+            var mode = SelectedRoutingModeIndex == 1
+                ? IpReputationRoutingMode.AutoLocalVpnProxy
+                : IpReputationRoutingMode.DirectOrActiveTun;
+
+            ActiveInspectionStatus = $"Живой 6-сигнальный прогон Google для «{node.DisplayName}» ({node.ResolvedIp ?? node.RawHost})...";
+
+            var report = await IpReputationProbe.RunActiveOrManualInspectionAsync(
+                _http,
+                mode,
+                manualTarget: null,
+                CancellationToken.None).ConfigureAwait(true);
+
+            LastActiveReport = report;
+            ApplyConsensusReport(report);
+            ApplyLiveReportToMatchingSubscriptionNodes(report, requestedNode: node);
+        }
+        catch (Exception ex) when (ex is ArgumentException or HttpRequestException or OperationCanceledException or SocketException)
+        {
+            ActiveInspectionStatus = $"Ошибка живого прогона узла: {ex.Message}";
+        }
+        finally
+        {
+            IsInspectingActive = false;
+        }
+    }
+
+    private void ApplyLiveReportToMatchingSubscriptionNodes(
+        IpReputationConsensusReport report,
+        SubscriptionIpDisplayItem? requestedNode)
+    {
+        if (!report.GoogleVerdict.ProbeExecuted || string.IsNullOrWhiteSpace(report.ConsensusIp))
+        {
+            return;
+        }
+
+        var exitIp = report.ConsensusIp.Trim();
+        var matchedRequested = false;
+        var matchedAny = 0;
+
+        foreach (var item in SubscriptionIpItems)
+        {
+            if (string.IsNullOrWhiteSpace(item.ResolvedIp))
+            {
+                continue;
+            }
+
+            var (isMatch, exactMatch) = MatchIpOrSlash24(exitIp, item.ResolvedIp);
+            if (!isMatch)
+            {
+                continue;
+            }
+
+            item.ApplyLiveGoogleVerdict(report.GoogleVerdict, exitIp, exactMatch);
+            matchedAny++;
+            if (ReferenceEquals(item, requestedNode))
+            {
+                matchedRequested = true;
+            }
+        }
+
+        if (requestedNode is not null && !matchedRequested)
+        {
+            var expectedIp = requestedNode.ResolvedIp ?? requestedNode.RawHost;
+            ActiveInspectionStatus =
+                $"Текущий выходной IP ({exitIp}) не совпадает с «{requestedNode.DisplayName}» ({expectedIp}). Переключитесь на этот сервер в Happ/v2rayN и нажмите «Проверить вживую» ещё раз.";
+        }
+        else if (matchedAny > 0)
+        {
+            ActiveInspectionStatus =
+                $"{ActiveInspectionStatus} · Живой вердикт Google привязан к узлам подписки: {matchedAny}";
+        }
+    }
+
+    private static (bool IsMatch, bool ExactMatch) MatchIpOrSlash24(string ipA, string ipB)
+    {
+        var a = ipA.Trim();
+        var b = ipB.Trim();
+        if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, true);
+        }
+
+        var partsA = a.Split('.');
+        var partsB = b.Split('.');
+        if (partsA.Length == 4 && partsB.Length == 4 &&
+            string.Equals(partsA[0], partsB[0], StringComparison.Ordinal) &&
+            string.Equals(partsA[1], partsB[1], StringComparison.Ordinal) &&
+            string.Equals(partsA[2], partsB[2], StringComparison.Ordinal))
+        {
+            return (true, false);
+        }
+
+        return (false, false);
     }
 
     [RelayCommand]
@@ -278,30 +535,35 @@ public sealed partial class IpReputationViewModel : ViewModelBase
                 return;
             }
 
-            SubscriptionIpSummary = $"Найдено узлов в подписке: {endpoints.Count}. Выполняем DNS-резолв доменов в реальные IP и пакетную проверку GeoIP / ASN...";
+            SubscriptionIpSummary = $"Найдено узлов: {endpoints.Count}. Выполняем DNS-резолв, пакетный GeoIP и проверку владельца подсетей в RIPE/RDAP WHOIS...";
 
             var rows = await IpReputationProbe.ScanSubscriptionIpsAsync(_http, raw, CancellationToken.None).ConfigureAwait(true);
             SubscriptionIpItems.Clear();
 
-            var ruRiskCount = 0;
+            var criticalOrHighCount = 0;
+            var mediumDcCount = 0;
+            var cleanIspCount = 0;
             var cloud16KbCount = 0;
-            var hostingCount = 0;
 
             foreach (var row in rows)
             {
-                if (row.HighRuGoogleBleedRisk)
+                switch (row.RiskTier)
                 {
-                    ruRiskCount++;
+                    case RuBleedRiskTier.CriticalRu:
+                    case RuBleedRiskTier.HighRisk:
+                        criticalOrHighCount++;
+                        break;
+                    case RuBleedRiskTier.MediumDatacenterUnverified:
+                        mediumDcCount++;
+                        break;
+                    case RuBleedRiskTier.LowCleanIsp:
+                        cleanIspCount++;
+                        break;
                 }
 
                 if (row.High16KbRisk)
                 {
                     cloud16KbCount++;
-                }
-
-                if (row.IsHosting)
-                {
-                    hostingCount++;
                 }
 
                 var resolvedText = string.IsNullOrWhiteSpace(row.ResolvedIp) ? "Не разрешён" : row.ResolvedIp;
@@ -310,12 +572,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
                     : $"{row.RawHost} → {resolvedText}";
 
                 var hostingProxy = $"Hosting: {(row.IsHosting ? "ДА" : "НЕТ")} · Proxy/VPN: {(row.IsProxyOrVpn ? "ДА" : "НЕТ")}";
-                var ruBadge = row.HighRuGoogleBleedRisk
-                    ? "Риск метки RU у Google: ВЫСОКИЙ"
-                    : "Риск метки RU: Низкий";
-                var ruBrush = row.HighRuGoogleBleedRisk
-                    ? SolidColorBrush.Parse("#F59E0B")
-                    : SolidColorBrush.Parse("#10B981");
+                var (ruBadge, ruBrush) = FormatRiskTierBadge(row.RiskTier);
 
                 var cloudBadge = row.High16KbRisk
                     ? "ТСПУ 16 КБ: Риск облака"
@@ -332,18 +589,37 @@ public sealed partial class IpReputationViewModel : ViewModelBase
                     ? (row.Isp ?? "—")
                     : $"{row.Asn} · {row.Isp}";
 
+                var hasRdap = !string.IsNullOrWhiteSpace(row.RdapCountry) || !string.IsNullOrWhiteSpace(row.RdapOrgOrNetName);
+                var rdapText = hasRdap
+                    ? $"RIPE/RDAP: {row.RdapCountry ?? "—"} · {row.RdapOrgOrNetName ?? "—"}{(row.HasRuRdapFootprint ? " [РФ-СЛЕД!]" : string.Empty)}"
+                    : string.Empty;
+                var rdapBrush = row.HasRuRdapFootprint
+                    ? SolidColorBrush.Parse("#F87171")
+                    : SolidColorBrush.Parse("#94A3B8");
+
                 SubscriptionIpItems.Add(new SubscriptionIpDisplayItem(
                     row.NodeName,
                     $"{row.ProtocolLabel} · :{row.Port}",
+                    row.RawHost,
+                    row.ResolvedIp,
                     hostAndIp,
                     countryLabel,
                     asnOrgLabel,
+                    rdapText,
+                    hasRdap,
+                    rdapBrush,
                     hostingProxy,
                     ruBadge,
                     ruBrush,
                     cloudBadge,
                     cloudBrush,
-                    $"{row.CleanlinessVerdict} — {row.TechnicalNotes}"));
+                    $"{row.CleanlinessVerdict} — {row.TechnicalNotes}",
+                    ProbeSubscriptionNodeLiveAsync));
+            }
+
+            if (LastActiveReport is not null)
+            {
+                ApplyLiveReportToMatchingSubscriptionNodes(LastActiveReport, requestedNode: null);
             }
 
             var uniqueIps = rows
@@ -353,7 +629,7 @@ public sealed partial class IpReputationViewModel : ViewModelBase
                 .Count();
 
             SubscriptionIpSummary =
-                $"Проверено узлов: {rows.Count} (уникальных IP: {uniqueIps}) · Дата-центры (Hosting): {hostingCount} · Высокий риск метки RU у Google: {ruRiskCount} · Популярные у ТСПУ 16 КБ облака: {cloud16KbCount}";
+                $"Узлов: {rows.Count} (уник. IP: {uniqueIps}) · Критичный/Высокий риск RU: {criticalOrHighCount} · Дата-центры (нужен живой тест): {mediumDcCount} · Чистый ISP: {cleanIspCount} · Облака 16 КБ: {cloud16KbCount}";
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or SocketException)
         {
@@ -365,53 +641,74 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         }
     }
 
+    private static (string Badge, IBrush Brush) FormatRiskTierBadge(RuBleedRiskTier tier)
+    {
+        return tier switch
+        {
+            RuBleedRiskTier.CriticalRu => ("Риск метки RU: КРИТИЧНЫЙ (RIPE/РФ)", SolidColorBrush.Parse("#F87171")),
+            RuBleedRiskTier.HighRisk => ("Риск метки RU: ВЫСОКИЙ (ASN/Proxy)", SolidColorBrush.Parse("#F59E0B")),
+            RuBleedRiskTier.MediumDatacenterUnverified => ("Риск метки RU: СРЕДНИЙ · ДЦ (нужен живой тест)", SolidColorBrush.Parse("#FBBF24")),
+            _ => ("Риск метки RU: Низкий (чистый ISP)", SolidColorBrush.Parse("#4ADE80")),
+        };
+    }
+
     [RelayCommand]
     private async Task CopyReputationReportAsync()
     {
         var sb = new StringBuilder();
-        sb.AppendLine("=== КОНТУР ВПН (NetworkChecker V2) — ОТЧЁТ О РЕПУТАЦИИ IP И МЕТКЕ GOOGLE RU ===");
+        sb.AppendLine("=== КОНТУР ВПН (NetworkChecker V2) — ОТЧЁТ О РЕПУТАЦИИ IP, МЕТКЕ GOOGLE RU И AI STUDIO ===");
 
         if (LastActiveReport is not null)
         {
-            sb.AppendLine(CultureInfo.InvariantCulture, $"Канал проверки: {LastActiveReport.GoogleVerdict.RoutingChannelUsed}");
+            var g = LastActiveReport.GoogleVerdict;
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Канал проверки: {g.RoutingChannelUsed}");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Внешний IP: {LastActiveReport.ConsensusIp ?? "—"}");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Физическое гео (консенсус): {LastActiveReport.ConsensusCountryCode ?? "—"} ({LastActiveReport.ConsensusCountryName ?? "—"})");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Провайдер / ASN: {LastActiveReport.ConsensusAsn ?? "—"} · {LastActiveReport.ConsensusIsp ?? "—"}");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Hosting / ДЦ (Majority Vote): {(LastActiveReport.MajorityHosting ? "ДА" : "НЕТ")} ({LastActiveReport.HostingPositiveCount}/{LastActiveReport.HostingKnownCount})");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Proxy / VPN / Tor (Any Vote): {(LastActiveReport.AnyProxyOrVpn ? "ДА" : "НЕТ")} ({LastActiveReport.ProxyPositiveCount}/{LastActiveReport.ProxyKnownCount})");
             sb.AppendLine(CultureInfo.InvariantCulture, $"Совпадение IP (HTTP vs CDN): {(LastActiveReport.IpConsistencyOk ? "Совпадает" : "Расхождение IP!")}");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"Вердикт Google / YouTube: {LastActiveReport.GoogleVerdict.VerdictTitle}");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"YouTube GL: {LastActiveReport.GoogleVerdict.YouTubeCountryCode ?? "—"} · Google GL: {LastActiveReport.GoogleVerdict.GoogleSearchRegion ?? "—"}");
-            if (LastActiveReport.GoogleVerdict.SignalChecks is { Count: > 0 } signals)
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Вердикт по метке RU: {g.VerdictTitle}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Независимые бейджи ИИ: {AiStudioBadgeText} | {GeminiBadgeText}");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"YouTube GL: {g.YouTubeCountryCode ?? "—"} · Google Play: {g.GooglePlayCountry ?? "—"} ({g.GooglePlayCurrency ?? "—"}) · Terms/Search: {g.GoogleTermsCountry ?? g.GoogleSearchRegion ?? "—"}");
+            if (g.SignalChecks is { Count: > 0 } signals)
             {
                 foreach (var sig in signals)
                 {
                     sb.AppendLine(CultureInfo.InvariantCulture, $"  - {sig.SignalName}: {sig.StatusText} ({sig.Detail})");
                 }
             }
-            sb.AppendLine(CultureInfo.InvariantCulture, $"Пояснение: {LastActiveReport.GoogleVerdict.VerdictSummary}");
+            if (!string.IsNullOrWhiteSpace(AiDivergenceNotice))
+            {
+                sb.AppendLine(CultureInfo.InvariantCulture, $"Расхождение AI Studio / RU: {AiDivergenceNotice}");
+            }
+            sb.AppendLine(CultureInfo.InvariantCulture, $"Пояснение: {g.VerdictSummary}");
         }
 
         if (SubscriptionIpItems.Count > 0)
         {
             sb.AppendLine();
-            sb.AppendLine(CultureInfo.InvariantCulture, $"--- ВСЕ IP ИЗ ПОДПИСКИ ({SubscriptionIpItems.Count} узлов) ---");
+            sb.AppendLine(CultureInfo.InvariantCulture, $"--- ВСЕ IP ИЗ ПОДПИСКИ ({SubscriptionIpItems.Count} узлов, RIPE/RDAP + GeoIP) ---");
             foreach (var item in SubscriptionIpItems)
             {
-                sb.AppendLine(CultureInfo.InvariantCulture, $"• {item.DisplayName} [{item.ProtocolAndPort}] — {item.HostAndResolvedIp} | {item.CountryDisplay} | {item.AsnOrgDisplay} | {item.GoogleRuBleedBadge}");
+                var rdapPart = item.HasRdapInfo ? $" | {item.RdapDisplay}" : string.Empty;
+                var livePart = item.IsLiveVerified ? $" | {item.LiveVerificationText} ({item.LiveAiBadgesText})" : string.Empty;
+                sb.AppendLine(CultureInfo.InvariantCulture, $"• {item.DisplayName} [{item.ProtocolAndPort}] — {item.HostAndResolvedIp} | {item.CountryDisplay} | {item.AsnOrgDisplay}{rdapPart} | {item.GoogleRuBleedBadge}{livePart}");
             }
         }
 
         var ok = await _uiService.CopyTextAsync(sb.ToString().Trim()).ConfigureAwait(true);
         CopyFeedback = ok
-            ? "Сводка по репутации IP и метке Google RU скопирована в буфер обмена."
+            ? "Сводка по репутации IP, 6 сигналам Google и RIPE/RDAP скопирована в буфер обмена."
             : "Буфер обмена недоступен.";
     }
 
     private void ApplyConsensusReport(IpReputationConsensusReport report)
     {
         var okCount = report.Providers.Count(p => p.Ok);
-        ActiveInspectionStatus = $"{report.GoogleVerdict.RoutingChannelUsed} · Ответило GeoIP-баз: {okCount} из {report.Providers.Count}";
+        var g = report.GoogleVerdict;
+
+        ActiveInspectionStatus = $"{g.RoutingChannelUsed} · Ответило GeoIP-баз: {okCount} из {report.Providers.Count}";
         DetectedExitIp = report.ConsensusIp ?? "Не определён";
         PhysicalGeoBadge = $"Физическое гео: {report.ConsensusCountryCode ?? "—"} ({report.ConsensusCountryName ?? "—"})";
         DetectedAsnBadge = string.IsNullOrWhiteSpace(report.ConsensusAsn)
@@ -435,25 +732,43 @@ public sealed partial class IpReputationViewModel : ViewModelBase
             ? SolidColorBrush.Parse("#10B981")
             : SolidColorBrush.Parse("#F59E0B");
 
-        GoogleVerdictTitle = report.GoogleVerdict.VerdictTitle;
-        GoogleVerdictSummary = report.GoogleVerdict.VerdictSummary;
-        GoogleVerdictEvidence = report.GoogleVerdict.TechnicalEvidence;
-        var ytPremShort = report.GoogleVerdict.YouTubePremiumAvailable switch
+        GoogleVerdictTitle = g.VerdictTitle;
+        GoogleVerdictSummary = g.VerdictSummary;
+        GoogleVerdictEvidence = g.TechnicalEvidence;
+
+        var playShort = !string.IsNullOrWhiteSpace(g.GooglePlayCurrency)
+            ? g.GooglePlayCurrency
+            : (g.GooglePlayCountry ?? "—");
+        var termsShort = g.GoogleTermsCountry ?? g.GoogleSearchRegion ?? "—";
+        DetectedGlBadge = $"YT: {g.YouTubeCountryCode ?? "—"} · Play: {playShort} · Terms: {termsShort}";
+
+        (AiStudioBadgeText, AiStudioBadgeBrush) = g.AiStudioAccessible switch
         {
-            true => "Да",
-            false => "Нет",
-            _ => "—",
+            true => ("Google AI Studio: ПУСКАЕТ", SolidColorBrush.Parse("#34D399")),
+            false => ("Google AI Studio: ЗАБЛОКИРОВАН", SolidColorBrush.Parse("#F87171")),
+            _ => (g.ProbeExecuted ? "Google AI Studio: нет ответа" : "Google AI Studio: не проверялся", SolidColorBrush.Parse("#94A3B8")),
         };
-        var geminiShort = report.GoogleVerdict.GeminiAccessible switch
+
+        (GeminiBadgeText, GeminiBadgeBrush) = g.GeminiAccessible switch
         {
-            true => "Да",
-            false => "Нет",
-            _ => "—",
+            true => ("Google Gemini Web: ПУСКАЕТ", SolidColorBrush.Parse("#34D399")),
+            false => ("Google Gemini Web: ЗАБЛОКИРОВАН", SolidColorBrush.Parse("#F87171")),
+            _ => (g.ProbeExecuted ? "Google Gemini Web: нет ответа" : "Google Gemini Web: не проверялся", SolidColorBrush.Parse("#94A3B8")),
         };
-        DetectedGlBadge = $"YT GL: {report.GoogleVerdict.YouTubeCountryCode ?? "—"} · Premium: {ytPremShort} · Gemini: {geminiShort} · Search: {report.GoogleVerdict.GoogleSearchRegion ?? "—"}";
+
+        if (g.AiAccessDivergesFromRuTag)
+        {
+            AiDivergenceNotice = g.AiStudioAccessible == true && g.GeminiAccessible != true
+                ? "На подсети есть метка RU (YouTube/Play/Terms), но Google AI Studio сейчас пускает этот IP. У Google разные гео-таблицы для YouTube/Search и API-шлюза AI Studio — поэтому AI Studio может работать на части «отравленных» серверов, а Gemini/YouTube — нет."
+                : "На подсети обнаружена метка RU (YouTube/Play/Terms), но часть ИИ-контуров Google (AI Studio / Gemini) сейчас пропускает этот IP благодаря отдельной гео-базе Google Cloud.";
+        }
+        else
+        {
+            AiDivergenceNotice = string.Empty;
+        }
 
         GoogleSignalItems.Clear();
-        if (report.GoogleVerdict.SignalChecks is { Count: > 0 } signals)
+        if (g.SignalChecks is { Count: > 0 } signals)
         {
             foreach (var sig in signals)
             {
@@ -464,20 +779,21 @@ public sealed partial class IpReputationViewModel : ViewModelBase
             }
         }
 
-        if (report.GoogleVerdict.IsRuGeoPoisoned)
+        if (g.IsRuGeoPoisoned)
         {
             GoogleVerdictBorderBrush = SolidColorBrush.Parse("#EF4444");
             GoogleVerdictTitleBrush = SolidColorBrush.Parse("#FCA5A5");
         }
-        else if (report.GoogleVerdict.HasGoogleCaptchaBlock ||
-                 report.GoogleVerdict.YouTubePremiumAvailable == false ||
-                 report.GoogleVerdict.GeminiAccessible == false)
+        else if (g.HasGoogleCaptchaBlock ||
+                 g.YouTubePremiumAvailable == false ||
+                 g.GeminiAccessible == false ||
+                 g.AiStudioAccessible == false)
         {
             GoogleVerdictBorderBrush = SolidColorBrush.Parse("#F59E0B");
             GoogleVerdictTitleBrush = SolidColorBrush.Parse("#FCD34D");
         }
-        else if (report.GoogleVerdict.ProbeSucceeded &&
-                 !string.Equals(report.GoogleVerdict.DetectedGlCode, "RU", StringComparison.OrdinalIgnoreCase))
+        else if (g.ProbeSucceeded &&
+                 !string.Equals(g.DetectedGlCode, "RU", StringComparison.OrdinalIgnoreCase))
         {
             GoogleVerdictBorderBrush = SolidColorBrush.Parse("#10B981");
             GoogleVerdictTitleBrush = SolidColorBrush.Parse("#6EE7B7");
@@ -532,10 +848,12 @@ public sealed partial class IpReputationViewModel : ViewModelBase
     {
         GoogleSignalItems.Clear();
         var muted = SolidColorBrush.Parse("#6B7894");
-        GoogleSignalItems.Add(new GoogleSignalDisplayItem("1. YouTube INNERTUBE_CONTEXT_GL", "Ожидание", "Проверка реального кода страны YouTube с обходом EU-согласия", muted));
-        GoogleSignalItems.Add(new GoogleSignalDisplayItem("2. Доступность YouTube Premium", "Ожидание", "Проверка «недоступна в вашей стране» (признак метки RU)", muted));
-        GoogleSignalItems.Add(new GoogleSignalDisplayItem("3. Доступ к Google Gemini / AI", "Ожидание", "Проверка гео-блокировки /unsupported и HTTP 403 для РФ", muted));
-        GoogleSignalItems.Add(new GoogleSignalDisplayItem("4. Google Search (регион и /sorry/)", "Ожидание", "Проверка футера страны в Google Search и капчи reCAPTCHA 429", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("1. YouTube INNERTUBE_CONTEXT_GL", "Ожидание", "Реальный код страны YouTube с обходом EU-согласия", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("2. YouTube Premium", "Ожидание", "Проверка «недоступна в вашей стране» (признак метки RU)", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("3. Google Play (регион и валюта)", "Ожидание", "Проверка валюты (RUB vs EUR/USD) и доступности платных приложений", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("4. Google Terms / Search и /sorry/", "Ожидание", "Юрисдикция policies.google.com/terms, футер Search и капча 429", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("5. Google Gemini Web", "Ожидание", "Независимая проверка доступа к gemini.google.com", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("6. Google AI Studio + API", "Ожидание", "Независимая проверка aistudio.google.com и API-шлюза generativelanguage", muted));
 
         ProviderItems.Clear();
         ProviderItems.Add(new GeoProviderDisplayItem("ipwho.is", "—", "Ожидание запуска", "Проверка ASN, ISP, флагов Hosting / Proxy / Tor", "Hosting: —", muted, "Proxy/VPN: —", muted, "Готов"));

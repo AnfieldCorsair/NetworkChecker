@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
-  <rect width="1200" height="700" fill="#0B1120" rx="10" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" width="1200" height="760">
+  <rect width="1200" height="760" fill="#0B1120" rx="10" />
   <!-- Top Bar (Advanced Mode: 6 tabs) -->
   <rect x="0" y="0" width="1200" height="122" fill="#0D1526" />
   <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
   <text x="22" y="34" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="19" font-weight="bold">Контур ВПН</text>
-  <rect x="148" y="16" width="386" height="24" rx="4" fill="#131F36" stroke="#253859" />
-  <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.2 · Инженерный набор (Happ / VLESS / AWG / HY2)</text>
+  <rect x="148" y="16" width="396" height="24" rx="4" fill="#131F36" stroke="#253859" />
+  <text x="158" y="32" fill="#93C5FD" font-family="Segoe UI, Inter, sans-serif" font-size="11.5">NetworkChecker V2 v2.3 · Инженерный набор (Happ / VLESS / AWG / HY2)</text>
   <rect x="920" y="14" width="258" height="28" rx="5" fill="#2563EB" />
   <text x="942" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Расширенный режим (6 вкладок)</text>
 
@@ -32,7 +32,7 @@
   <rect x="796" y="54" width="186" height="58" rx="6" fill="#17253F" stroke="#3B82F6" stroke-width="1.8" />
   <text x="808" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 5</text>
   <text x="808" y="88" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12.5" font-weight="600">Репутация IP и Google RU</text>
-  <text x="808" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">4 сигнала Google и все IP</text>
+  <text x="808" y="103" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="10.5">6 сигналов + RIPE/RDAP</text>
 
   <rect x="990" y="54" width="186" height="58" rx="6" fill="#0F172A" stroke="#22304A" />
   <text x="1002" y="71" fill="#60A5FA" font-family="Consolas, monospace" font-size="10" font-weight="bold">ШАГ 6</text>
@@ -42,88 +42,108 @@
   <!-- Guide Strip -->
   <rect x="0" y="123" width="1200" height="44" fill="#11192B" />
   <line x1="0" y1="167" x2="1200" y2="167" stroke="#22304A" stroke-width="1" />
-  <text x="22" y="149" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="13.5" font-weight="bold">Репутация IP и Google RU <tspan fill="#C5D2E6" font-weight="normal" font-size="12">· 4-сигнальный зонд Google/YouTube (с обходом EU-согласия), консенсус 4 GeoIP-баз и пакетный сканер всех IP подписки.</tspan></text>
+  <text x="22" y="149" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="13.5" font-weight="bold">Репутация IP и Google RU <tspan fill="#C5D2E6" font-weight="normal" font-size="12">· 6 сигналов Google (YouTube, Premium, Play, Terms, Gemini, AI Studio), RIPE/RDAP WHOIS и живой прогон узлов.</tspan></text>
 
   <!-- Top Control Card -->
-  <rect x="22" y="180" width="1156" height="52" rx="8" fill="#11192B" stroke="#22304A" />
-  <rect x="36" y="191" width="538" height="30" rx="5" fill="#0B1120" stroke="#2E446B" />
-  <text x="48" y="210" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5">Режим: 2. Авто-прокси клиента ВПН (Happ / v2rayN / Sing-box на 10809/2080)</text>
-  <rect x="586" y="191" width="272" height="30" rx="5" fill="#2563EB" />
-  <text x="614" y="210" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">Проверить активный IP и Google RU</text>
-  <rect x="870" y="191" width="294" height="30" rx="5" fill="#162238" stroke="#3B82F6" />
-  <text x="890" y="210" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">Достать и проверить все IP подписки (3)</text>
+  <rect x="22" y="180" width="1156" height="50" rx="8" fill="#11192B" stroke="#22304A" />
+  <rect x="36" y="190" width="538" height="30" rx="5" fill="#0B1120" stroke="#2E446B" />
+  <text x="48" y="209" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5">Режим: 1. Активный интернет / TUN (6 сигналов Google + AI Studio)</text>
+  <rect x="586" y="190" width="272" height="30" rx="5" fill="#2563EB" />
+  <text x="614" y="209" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">Проверить активный IP и Google RU</text>
+  <rect x="870" y="190" width="294" height="30" rx="5" fill="#162238" stroke="#3B82F6" />
+  <text x="888" y="209" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold">Достать и проверить все IP подписки (3)</text>
 
-  <!-- Left Column: 4-Signal Google RU Geo-Poisoning Verdict -->
-  <rect x="22" y="244" width="538" height="290" rx="8" fill="#11192B" stroke="#EF4444" stroke-width="1.8" />
-  <text x="38" y="266" fill="#93C5FD" font-family="Consolas, monospace" font-size="10.5" font-weight="bold">КОМПЛЕКСНЫЙ 4-СИГНАЛЬНЫЙ ЗОНД GOOGLE / YOUTUBE (ОБХОД EU-CONSENT)</text>
-  <text x="38" y="290" fill="#FCA5A5" font-family="Segoe UI, sans-serif" font-size="13.5" font-weight="bold">КРИТИЧНО: Обнаружена «прокажённая метка RU» (сервер NL → Google = RU)</text>
-  <text x="38" y="310" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5">Все 4 сигнала подтвердили перепривязку этой зарубежной подсети к России.</text>
+  <!-- Left Column: 6-Signal Google RU + AI Studio Divergence -->
+  <rect x="22" y="242" width="538" height="498" rx="8" fill="#11192B" stroke="#EF4444" stroke-width="1.8" />
+  <text x="38" y="264" fill="#93C5FD" font-family="Consolas, monospace" font-size="10.5" font-weight="bold">ДЕТЕКТОР МЕТКИ RU У GOOGLE (6 НЕЗАВИСИМЫХ СИГНАЛОВ)</text>
+  <rect x="380" y="249" width="166" height="20" rx="4" fill="#0B1120" stroke="#22304A" />
+  <text x="388" y="263" fill="#E2E8F0" font-family="Consolas, monospace" font-size="10">YT: RU · Play: RUB · Terms: RU</text>
 
-  <!-- Signal 1 -->
-  <rect x="38" y="322" width="506" height="44" rx="5" fill="#0B1120" stroke="#1E2C45" />
-  <text x="50" y="340" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">1. YouTube INNERTUBE_CONTEXT_GL (sw.js_data)</text>
-  <text x="454" y="340" fill="#F87171" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">МЕТКА RU!</text>
-  <text x="50" y="357" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10.5">Критично: зарубежный IP (NL), но YouTube вернул регион РФ</text>
+  <text x="38" y="288" fill="#FCA5A5" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">МЕТКА RU ОБНАРУЖЕНА (сервер NL, но Google AI Studio пускает)</text>
 
-  <!-- Signal 2 -->
-  <rect x="38" y="372" width="506" height="44" rx="5" fill="#0B1120" stroke="#1E2C45" />
-  <text x="50" y="390" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">2. Доступность YouTube Premium (/premium?hl=en)</text>
-  <text x="444" y="390" fill="#F87171" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">НЕДОСТУПЕН</text>
-  <text x="50" y="407" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10.5">YouTube сообщил «not available in your country» (признак метки RU)</text>
+  <!-- Independent AI Studio & Gemini Badges -->
+  <rect x="38" y="298" width="228" height="24" rx="5" fill="#0B1120" stroke="#10B981" />
+  <text x="50" y="314" fill="#34D399" font-family="Consolas, monospace" font-size="11" font-weight="bold">Google AI Studio: ПУСКАЕТ</text>
+  <rect x="276" y="298" width="268" height="24" rx="5" fill="#0B1120" stroke="#EF4444" />
+  <text x="288" y="314" fill="#F87171" font-family="Consolas, monospace" font-size="11" font-weight="bold">Google Gemini Web: ЗАБЛОКИРОВАН</text>
 
-  <!-- Signal 3 -->
-  <rect x="38" y="422" width="506" height="44" rx="5" fill="#0B1120" stroke="#1E2C45" />
-  <text x="50" y="440" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">3. Доступ к Google Gemini / AI (gemini.google.com/app)</text>
-  <text x="434" y="440" fill="#F87171" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">ЗАБЛОКИРОВАН</text>
-  <text x="50" y="457" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10.5">Gemini отклонил IP по региону (/unsupported · HTTP 403)</text>
+  <!-- Divergence Notice -->
+  <rect x="38" y="330" width="506" height="40" rx="5" fill="#2A200C" stroke="#F59E0B" />
+  <text x="48" y="346" fill="#FDE68A" font-family="Segoe UI, sans-serif" font-size="10.5">На подсети есть метка RU (YouTube/Play/Terms), но AI Studio пускает этот IP.</text>
+  <text x="48" y="362" fill="#FDE68A" font-family="Segoe UI, sans-serif" font-size="10.5">У Google разные гео-таблицы для YouTube/Search и API-шлюза AI Studio.</text>
 
-  <!-- Signal 4 -->
-  <rect x="38" y="472" width="506" height="48" rx="5" fill="#0B1120" stroke="#1E2C45" />
-  <text x="50" y="490" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5" font-weight="bold">4. Google Search (футер страны и /sorry/ капча)</text>
-  <text x="454" y="490" fill="#F87171" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">МЕТКА RU!</text>
-  <text x="50" y="508" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10.5">Футер Google Search показал «Russia» (обход EU-cookie SOCS активен)</text>
+  <!-- 6 Signals -->
+  <rect x="38" y="378" width="506" height="38" rx="5" fill="#0B1120" stroke="#1E2C45" />
+  <text x="50" y="395" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">1. YouTube INNERTUBE_CONTEXT_GL</text>
+  <text x="466" y="395" fill="#F87171" font-family="Consolas, monospace" font-size="11" font-weight="bold">МЕТКА RU!</text>
+  <text x="50" y="409" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10">Зарубежный IP (NL), но YouTube вернул регион РФ</text>
 
-  <!-- 4 GeoIP Providers Consensus Card (Compact) -->
-  <rect x="22" y="546" width="538" height="134" rx="8" fill="#11192B" stroke="#22304A" />
-  <text x="38" y="568" fill="#9BAAC2" font-family="Consolas, monospace" font-size="10.5" font-weight="bold">КОНСЕНСУС 4 БАЗ GEOIP: 185.220.101.7 · NL (Netherlands) · AS210644 AEZA</text>
-  <rect x="38" y="578" width="166" height="22" rx="4" fill="#0B1120" stroke="#F59E0B" />
-  <text x="46" y="593" fill="#FCD34D" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">Hosting (Majority): ДА (3/3)</text>
-  <rect x="212" y="578" width="156" height="22" rx="4" fill="#0B1120" stroke="#F59E0B" />
-  <text x="220" y="593" fill="#FCD34D" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">Proxy/VPN (Any): ДА (1/3)</text>
-  <rect x="376" y="578" width="168" height="22" rx="4" fill="#0B1120" stroke="#10B981" />
-  <text x="384" y="593" fill="#6EE7B7" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">HTTP vs CDN IP: Единый IP</text>
+  <rect x="38" y="422" width="506" height="38" rx="5" fill="#0B1120" stroke="#1E2C45" />
+  <text x="50" y="439" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">2. YouTube Premium</text>
+  <text x="458" y="439" fill="#F87171" font-family="Consolas, monospace" font-size="11" font-weight="bold">НЕДОСТУПЕН</text>
+  <text x="50" y="453" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10">YouTube сообщил «not available in your country»</text>
 
-  <text x="38" y="622" fill="#E2E8F0" font-family="Consolas, monospace" font-size="10.5">ipwho.is (41 мс): NL · Hosting ДА · Proxy НЕТ   | ip-api.com (48 мс): NL · Hosting ДА · Proxy ДА</text>
-  <text x="38" y="642" fill="#E2E8F0" font-family="Consolas, monospace" font-size="10.5">ipinfo.io (37 мс): NL · AS210644 · Hosting ДА   | Cloudflare (19 мс): NL · Edge AMS · IP Match</text>
-  <text x="38" y="664" fill="#93C5FD" font-family="Segoe UI, sans-serif" font-size="11">Рекомендация: выберите чистый узел FI/DE справа или направьте geosite:google в чистый outbound.</text>
+  <rect x="38" y="466" width="506" height="38" rx="5" fill="#0B1120" stroke="#1E2C45" />
+  <text x="50" y="483" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">3. Google Play (регион и валюта)</text>
+  <text x="424" y="483" fill="#F87171" font-family="Consolas, monospace" font-size="11" font-weight="bold">ВАЛЮТА RUB (RU)!</text>
+  <text x="50" y="497" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10">Google Play открыл витрину в рублях (RUB) на зарубежном IP</text>
 
-  <!-- Right Column: Batch Subscription IP Scanner -->
-  <rect x="574" y="244" width="604" height="436" rx="8" fill="#11192B" stroke="#22304A" />
-  <text x="592" y="268" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ВСЕ IP ИЗ ВАШЕЙ ПОДПИСКИ (ПАКЕТНЫЙ DNS-РЕЗОЛВ И АУДИТ ПОДСЕТЕЙ)</text>
-  <rect x="592" y="280" width="568" height="32" rx="5" fill="#0B1120" stroke="#22304A" />
-  <text x="604" y="300" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11.5">Проверено узлов: 3 (уникальных IP: 3) · Высокий риск метки Google RU: 1 · Чистых: 2</text>
+  <rect x="38" y="510" width="506" height="38" rx="5" fill="#0B1120" stroke="#1E2C45" />
+  <text x="50" y="527" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">4. Google Terms / Search и /sorry/</text>
+  <text x="466" y="527" fill="#F87171" font-family="Consolas, monospace" font-size="11" font-weight="bold">МЕТКА RU!</text>
+  <text x="50" y="541" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10">policies.google.com/terms определил юрисдикцию «Russia»</text>
 
-  <!-- Row 1 -->
-  <rect x="592" y="324" width="568" height="106" rx="6" fill="#0B1120" stroke="#F59E0B" />
-  <text x="606" y="346" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">#1 · ⚡ Автовыбор (proxy-nl) — VLESS :443</text>
-  <text x="1032" y="346" fill="#93C5FD" font-family="Consolas, monospace" font-size="12">NL (Netherlands)</text>
-  <text x="606" y="366" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">nl-edge.example.com → 185.220.101.7 · AS210644 · AEZA GROUP</text>
-  <text x="606" y="388" fill="#FCD34D" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">[Риск метки RU у Google: ВЫСОКИЙ] · [ТСПУ 16 КБ: Норма] · Hosting: ДА · Proxy: ДА</text>
-  <text x="606" y="410" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11.5">Популярный у РФ-ВПН хостер (частый спуфинг Google GL=RU на подсети)</text>
+  <rect x="38" y="554" width="506" height="38" rx="5" fill="#0B1120" stroke="#1E2C45" />
+  <text x="50" y="571" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">5. Google Gemini Web</text>
+  <text x="444" y="571" fill="#F87171" font-family="Consolas, monospace" font-size="11" font-weight="bold">ЗАБЛОКИРОВАН</text>
+  <text x="50" y="585" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10">gemini.google.com отклонил IP по региону (/unsupported)</text>
 
-  <!-- Row 2 -->
-  <rect x="592" y="440" width="568" height="106" rx="6" fill="#0B1120" stroke="#10B981" />
-  <text x="606" y="462" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">#2 · ⚡ Автовыбор (proxy-fi) — VLESS XHTTP :443</text>
-  <text x="1058" y="462" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">FI (Finland)</text>
-  <text x="606" y="482" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">fi-edge.example.com → 95.216.14.88 · AS24940 · Hetzner Online GmbH</text>
-  <text x="606" y="504" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">[Риск метки RU: Низкий (GL=FI)] · [ТСПУ 16 КБ: Защищено XHTTP] · Proxy: НЕТ</text>
-  <text x="606" y="526" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11.5">Чистый зарубежный ДЦ — YouTube Premium, Gemini и Google Search работают чисто</text>
+  <rect x="38" y="598" width="506" height="38" rx="5" fill="#0B1120" stroke="#10B981" />
+  <text x="50" y="615" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">6. Google AI Studio + API</text>
+  <text x="476" y="615" fill="#34D399" font-family="Consolas, monospace" font-size="11" font-weight="bold">ПУСКАЕТ</text>
+  <text x="50" y="629" fill="#9BAAC2" font-family="Segoe UI, sans-serif" font-size="10">generativelanguage.googleapis.com пропустил IP без гео-блока</text>
 
-  <!-- Row 3 -->
-  <rect x="592" y="556" width="568" height="108" rx="6" fill="#0B1120" stroke="#10B981" />
-  <text x="606" y="578" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold">#3 · 🌍 Запасной протокол — HYSTERIA2 :443</text>
-  <text x="1052" y="578" fill="#4ADE80" font-family="Consolas, monospace" font-size="12">DE (Germany)</text>
-  <text x="606" y="598" fill="#93C5FD" font-family="Consolas, monospace" font-size="11.5">de-hy2.example.com → 194.36.144.20 · AS51167 · Contabo GmbH</text>
-  <text x="606" y="620" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold">[Риск метки RU: Низкий (GL=DE)] · [QUIC + Salamander Obfs] · Proxy: НЕТ</text>
-  <text x="606" y="642" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11.5">Чистый немецкий пул IP — Google и YouTube открываются с регионом DE без капчи</text>
+  <!-- Compact Consensus Bar -->
+  <rect x="38" y="646" width="506" height="80" rx="6" fill="#0B1120" stroke="#22304A" />
+  <text x="50" y="666" fill="#FFFFFF" font-family="Consolas, monospace" font-size="11.5" font-weight="bold">185.220.101.7 · NL (Netherlands) · AS210644 AEZA GROUP</text>
+  <text x="50" y="688" fill="#FCD34D" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">Hosting (Majority): ДА (3/3)   ·   Proxy/VPN (Any): ДА (1/3)   ·   HTTP vs CDN: Единый IP</text>
+  <text x="50" y="710" fill="#9BAAC2" font-family="Consolas, monospace" font-size="10">ipwho.is 41ms | ip-api 48ms | ipinfo 37ms | Cloudflare AMS 19ms</text>
+
+  <!-- Right Column: Batch Subscription IP Scanner with RIPE/RDAP & Live Probe -->
+  <rect x="574" y="242" width="604" height="498" rx="8" fill="#11192B" stroke="#22304A" />
+  <text x="592" y="266" fill="#93C5FD" font-family="Consolas, monospace" font-size="11" font-weight="bold">ВСЕ IP ИЗ ПОДПИСКИ (RIPE/RDAP WHOIS + ЧЕСТНАЯ 4-УРОВНЕВАЯ ШКАЛА)</text>
+  <rect x="592" y="278" width="568" height="32" rx="5" fill="#0B1120" stroke="#22304A" />
+  <text x="604" y="298" fill="#E2E8F0" font-family="Segoe UI, sans-serif" font-size="11">Узлов: 3 · Критичный/Высокий риск RU: 1 · Дата-центры (живой тест): 1 · Чистый ISP: 1</text>
+
+  <!-- Row 1: Critical + Live Verified -->
+  <rect x="592" y="320" width="568" height="142" rx="6" fill="#0B1120" stroke="#EF4444" />
+  <text x="606" y="341" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">#1 · ⚡ Автовыбор (proxy-nl) — VLESS :443</text>
+  <rect x="1032" y="327" width="116" height="22" rx="4" fill="#1D4ED8" />
+  <text x="1042" y="342" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">Проверить вживую</text>
+  <text x="606" y="360" fill="#93C5FD" font-family="Consolas, monospace" font-size="11">nl-edge.example.com → 185.220.101.7 · NL · AS210644 AEZA GROUP</text>
+  <text x="606" y="378" fill="#F87171" font-family="Consolas, monospace" font-size="10.5">RIPE/RDAP: NL · AEZA-NL-NET · ORG-AGL12-RU [РФ-СЛЕД!]</text>
+  <rect x="606" y="387" width="540" height="34" rx="4" fill="#1A0F14" stroke="#EF4444" />
+  <text x="616" y="401" fill="#FCA5A5" font-family="Consolas, monospace" font-size="10.5" font-weight="bold">ЖИВОЙ ТЕСТ (IP 185.220.101.7): МЕТКА RU ЕСТЬ (но AI Studio пускает)</text>
+  <text x="616" y="415" fill="#CBD5E1" font-family="Consolas, monospace" font-size="10">AI Studio: ПУСКАЕТ · Gemini: БЛОК · Play: RUB</text>
+  <text x="606" y="444" fill="#F87171" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">[Риск метки RU: КРИТИЧНЫЙ (RIPE/РФ)] · [ТСПУ 16 КБ: Норма] · Hosting: ДА</text>
+
+  <!-- Row 2: Medium Datacenter (Honest: Live test required) -->
+  <rect x="592" y="472" width="568" height="122" rx="6" fill="#0B1120" stroke="#FBBF24" />
+  <text x="606" y="493" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">#2 · ⚡ Автовыбор (proxy-fi) — VLESS XHTTP :443</text>
+  <rect x="1032" y="479" width="116" height="22" rx="4" fill="#162238" stroke="#3B82F6" />
+  <text x="1042" y="494" fill="#E8EEF7" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">Проверить вживую</text>
+  <text x="606" y="513" fill="#93C5FD" font-family="Consolas, monospace" font-size="11">fi-edge.example.com → 95.216.14.88 · FI · AS24940 Hetzner Online GmbH</text>
+  <text x="606" y="531" fill="#94A3B8" font-family="Consolas, monospace" font-size="10.5">RIPE/RDAP: DE · HETZNER-RZ-NBG · Hetzner Online GmbH</text>
+  <text x="606" y="553" fill="#FDE68A" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">[Риск метки RU: СРЕДНИЙ · ДЦ (нужен живой тест)] · [ТСПУ 16 КБ: Риск облака]</text>
+  <text x="606" y="575" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11">Дата-центр без РФ-следов в RDAP — переключитесь на узел и нажмите «Проверить вживую»</text>
+
+  <!-- Row 3: Low Clean ISP -->
+  <rect x="592" y="604" width="568" height="122" rx="6" fill="#0B1120" stroke="#10B981" />
+  <text x="606" y="625" fill="#FFFFFF" font-family="Segoe UI, sans-serif" font-size="12.5" font-weight="bold">#3 · 🌍 Резиденциальный канал — VLESS Vision :443</text>
+  <rect x="1032" y="611" width="116" height="22" rx="4" fill="#162238" stroke="#3B82F6" />
+  <text x="1042" y="626" fill="#E8EEF7" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">Проверить вживую</text>
+  <text x="606" y="645" fill="#93C5FD" font-family="Consolas, monospace" font-size="11">de-isp.example.com → 84.152.40.12 · DE · AS3320 Deutsche Telekom AG</text>
+  <text x="606" y="663" fill="#94A3B8" font-family="Consolas, monospace" font-size="10.5">RIPE/RDAP: DE · DTAG-DIAL · Deutsche Telekom AG</text>
+  <text x="606" y="685" fill="#4ADE80" font-family="Segoe UI, sans-serif" font-size="10.5" font-weight="bold">[Риск метки RU: Низкий (чистый ISP)] · [ТСПУ 16 КБ: Норма] · Hosting: НЕТ · Proxy: НЕТ</text>
+  <text x="606" y="707" fill="#C5D2E6" font-family="Segoe UI, sans-serif" font-size="11">Чистый зарубежный ISP — минимальный риск метки RU, YouTube/Play/AI Studio работают чисто</text>
 </svg>

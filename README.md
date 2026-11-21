@@ -2,12 +2,12 @@
 
 # 🛡️ Kontur VPN — NetworkChecker V2
 
-**Windows Desktop Diagnostics Suite for VPN Configs, Subscriptions, DPI/TSPU Fingerprints & Google `RU` Geo-Poisoning Detection**
+**Windows Desktop Diagnostics Suite for VPN Configs, Subscriptions, DPI/TSPU Fingerprints, Google `RU` Geo-Poisoning & AI Studio / Gemini Access**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 14](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
 [![Avalonia UI 12](https://img.shields.io/badge/Avalonia%20UI-12.1.4-8B44AC)](https://avaloniaui.net/)
-[![Version 2.2](https://img.shields.io/badge/Version-2.2.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
+[![Version 2.3](https://img.shields.io/badge/Version-2.3.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
 
 **English (README.md)** · [Русский README](README.ru.md)
 
@@ -17,13 +17,13 @@
 
 ## Overview
 
-**Kontur VPN (NetworkChecker V2)** is a standalone **.NET 10 / Avalonia UI 12** desktop application for Windows designed to audit VPN subscriptions, diagnose ISP/DPI interference, inspect Windows TUN/IPv6 leaks, and detect Google `RU` geo-poisoning on foreign VPN nodes.
+**Kontur VPN (NetworkChecker V2)** is a standalone **.NET 10 / Avalonia UI 12** desktop application for Windows designed to audit VPN subscriptions, diagnose ISP/DPI interference, inspect Windows TUN/IPv6 leaks, and detect Google `RU` geo-poisoning alongside independent **Google AI Studio / Gemini** availability.
 
 The interface provides **two switchable modes** right from the top bar:
 
 - **Basic Mode (default · 3 tabs)** — clean, distraction-free workspace for everyday checks:
   1. **VPN & Subscription Audit** — single input for subscription URLs (`https://`) or direct keys (`vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, AmneziaWG), node selector, one-click reachability test, and plain-language verdicts.
-  2. **IP Reputation & Google `RU`** — 4-signal Google/YouTube geo-poisoning probe and batch reputation scanner for every server inside your subscription.
+  2. **IP Reputation & Google `RU`** — 6-signal live Google geo-poisoning detector with independent **AI Studio** & **Gemini** badges plus batch **RIPE/RDAP WHOIS** auditing for every server inside your subscription.
   3. **Support Ticket Generator** — two-step *Without VPN / With VPN* capture and masked report ready for Telegram support.
 - **Advanced Mode (6 tabs)** — unlocks the full engineering suite: raw JSON/URI editor, presets, local `127.0.0.1` subscription hosting, DNS Architect (`DoH`/`DoT` injection), DPI/TSPU fingerprint tests (16 KB cutoff / UDP / whitelists), Windows network stack audit (`TUN` / `IPv6` / `MTU`), and `/24` Reality SNI scanner with live TLS 1.3 handshake verification.
 
@@ -53,7 +53,7 @@ The interface provides **two switchable modes** right from the top bar:
 #### 4. Windows Network Stack (TUN / IPv6 / MTU) & Reality SNI Hunter (TLS 1.3)
 ![Windows Network Stack and SNI Hunter](screenshots/04-windows-stack-sni-hunter.svg)
 
-#### 5. IP Reputation, 4-Signal Google `RU` Detector & Batch Subscription IP Audit
+#### 5. IP Reputation, 6-Signal Google `RU` + AI Studio Detector & RIPE/RDAP Subscription Audit
 ![IP Reputation and Google RU](screenshots/05-ip-reputation-google-ru.svg)
 
 #### 6. Support Ticket Builder (Telegram Report with Automatic Secret Masking)
@@ -61,27 +61,27 @@ The interface provides **two switchable modes** right from the top bar:
 
 ---
 
-## 🎯 How the 4-Signal Google `RU` Geo-Poisoning Probe Works (v2.2)
+## 🎯 How the 6-Signal Google `RU` Detector & RIPE/RDAP Audit Work (v2.3)
 
-Foreign VPS subnets heavily used by VPN clients often get re-tagged as **Russia (`RU`)** inside Google's internal geo database due to mobile Wi-Fi/GPS telemetry. Even when GeoIP databases report `NL`, `DE`, or `FI`, **Google Gemini** blocks access, **YouTube Premium** becomes unavailable, and Search may trigger `/sorry/` captchas.
+Foreign VPS subnets heavily used by VPN clients or owned by Russian LIRs often get re-tagged as **Russia (`RU`)** inside Google's geo database. Because Google maintains **separate geo tables** for YouTube/Play/Search and the **Google AI Studio / Generative Language API** gateway, an `RU`-tagged node can block YouTube Premium and Gemini while still allowing AI Studio (or vice versa).
 
-In **v2.2**, the Google detection engine uses:
+In **v2.3**, the detector separates these signals cleanly:
 
-- **EU Consent Wall Bypass**: attaches `SOCS` + `CONSENT` cookies and a desktop Chrome `User-Agent` to prevent European exit nodes (`DE`, `NL`, `FI`, `PL`) from redirecting to `consent.google.com`.
-- **4 Parallel Independent Signals**:
-  1. **YouTube `INNERTUBE_CONTEXT_GL`** — parses `youtube.com/sw.js_data` (both keyed and positional arrays) with `youtube.com/?hl=en` fallback.
-  2. **YouTube Premium Availability** — checks `youtube.com/premium?hl=en` for *"not available in your country"* vs normal regional offers.
-  3. **Google Gemini / AI Access** — probes `gemini.google.com/app?hl=en` for `/unsupported` redirects, HTTP `403`/`451`, and regional blocks.
-  4. **Google Search Region & `/sorry/` Captcha** — extracts the footer country (`<div class="uU7dJb">...</div>`), checks `google.ru` redirects, and detects `HTTP 429` `/sorry/` reCAPTCHA blocks.
-- **4-Provider GeoIP Consensus** (`ipwho.is`, `ip-api.com`, `ipinfo.io`, `Cloudflare Trace`):
-  - **Hosting / Datacenter**: Majority Vote (≥ 50% of reporting providers).
-  - **Proxy / VPN / Tor**: Strict Any-Vote detection.
-  - **HTTP vs CDN IP Consistency**: Detects split-routing discrepancies.
-- **Batch Subscription IP Scanner**: extracts every server from Happ JSON arrays, Xray configs, or URI lists, resolves domains to IPv4/IPv6, and evaluates ASN hosting/proxy status, Google `RU` bleed risk, and DPI 16 KB cloud risk.
-- **3 Routing Modes** (in Advanced Mode):
-  1. Active OS Internet / TUN Adapter.
-  2. Auto-detect Local VPN Client Proxy (`10809`, `10808`, `2080`, `7890`, `1080`).
-  3. Manual IP / Hostname Lookup without toggling your VPN.
+- **EU Consent Wall Bypass**: attaches `SOCS` + `CONSENT` cookies and a desktop Chrome `User-Agent` so European nodes (`DE`, `NL`, `FI`, `PL`) return real geo payloads without redirecting to `consent.google.com`.
+- **6 Parallel Independent Signals**:
+  1. **YouTube `INNERTUBE_CONTEXT_GL`** — parses `youtube.com/sw.js_data` (keyed & positional arrays) with `youtube.com/?hl=en` and `/red` fallbacks.
+  2. **YouTube Premium Availability** — checks `youtube.com/premium?hl=en` for *"not available in your country"* vs foreign subscription offers.
+  3. **Google Play Region & Currency** — probes a paid app page (`com.mojang.minecraftpe&hl=en` without `&gl=`): `RUB` currency or hidden paid apps on a foreign IP confirm an `RU` tag.
+  4. **Google Terms / Search & `/sorry/`** — reads `Country version:` from `policies.google.com/terms?hl=en`, the Search footer (`<div class="uU7dJb">...</div>`), and `HTTP 429` `/sorry/` reCAPTCHA blocks.
+  5. **Google Gemini Web** — probes `gemini.google.com/app?hl=en` independently for `/unsupported` redirects and `HTTP 403`/`451`.
+  6. **Google AI Studio + API Gateway** — probes `aistudio.google.com/prompts/new_chat` and `generativelanguage.googleapis.com/v1beta/models` (distinguishing `User location is not supported` geo-blocks from normal `Method doesn't allow unregistered callers`).
+- **Separate AI Studio & Gemini Badges + Divergence Callout**: clearly separates the primary `RU`-tag verdict from independent `AI Studio` and `Gemini` status badges, explaining why AI Studio can allow access on a partially poisoned subnet.
+- **Batch Subscription Audit with RIPE/RDAP WHOIS & Honest 4-Tier Risk Scale**:
+  - **Critical (`RIPE/RU`)** — Russian GeoIP or Russian LIR/maintainer footprint discovered via `rdap.db.ripe.net` / `rdap.org`.
+  - **High (`ASN/Proxy`)** — expanded catalog of ~50+ RU-popular VPN hosters/ASNs or positive `Proxy/VPN` database flags.
+  - **Medium · Datacenter (Live Test Needed)** — unknown commercial datacenters are honestly marked as requiring live testing instead of falsely reporting "Low Risk".
+  - **Low (`Clean ISP`)** — reserved strictly for non-hosting, non-proxy foreign ISPs with no RU RDAP footprint.
+  - **Per-Node «Probe Live» Button**: switch to a node in Happ/v2rayN and click *Probe Live* — matching exit IPs (or `/24` subnets) automatically receive a verified live stamp with Google `RU`, AI Studio, Gemini, and Play currency results.
 
 ---
 
@@ -95,7 +95,7 @@ NetworkChecker.slnx
 │   │   └── VpnAudit/
 │   │       ├── VpnConfigParser.cs       # VLESS / XHTTP / Vision / AWG / Hysteria2 / Happ JSON parser
 │   │       ├── VpnConfigAuditor.cs      # Audit rules & one-click patchers
-│   │       ├── IpReputationProbe.cs     # 4 GeoIP consensus + 4-signal Google RU probe + batch IP scanner
+│   │       ├── IpReputationProbe.cs     # 4 GeoIP + 6-signal Google/AI Studio probe + RIPE/RDAP scanner
 │   │       ├── SubscriptionService.cs   # Subscription fetcher, traffic metadata, local 127.0.0.1 host
 │   │       ├── BlockingFingerprintDetector.cs  # 16 KB cutoff, UDP, DNS spoofing, whitelist detector
 │   │       ├── WindowsNetworkStackAuditor.cs   # Windows adapter audit (TUN, IPv6, MTU, local proxy ports)
@@ -103,7 +103,7 @@ NetworkChecker.slnx
 │   │       └── SupportTicketBuilder.cs  # Masked Telegram & Markdown support report generator
 │   └── NetworkChecker.App/              # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Basic & Advanced UI)
 └── tests/
-    └── NetworkChecker.Core.Tests/       # xUnit test suite (parsers, Google RU signals, DPI, Windows stack)
+    └── NetworkChecker.Core.Tests/       # xUnit test suite (parsers, 6 Google signals, RDAP, DPI, Windows stack)
 ```
 
 ---

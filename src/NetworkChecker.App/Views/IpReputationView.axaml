@@ -13,7 +13,7 @@
           <TextBlock Classes="h1" Text="Репутация IP, метка Google RU и сканер всех IP подписки" />
           <TextBlock Classes="muted"
                      TextWrapping="Wrap"
-                     Text="Консенсус 4 независимых GeoIP-баз (Majority Vote по Hosting, Any Vote по Proxy/VPN), живой зонд прокажённой метки RU у Google/YouTube и пакетная проверка всех серверов подписки" />
+                     Text="6-сигнальный живой зонд Google (YouTube GL, Premium, Play, Terms/Search, Gemini, AI Studio), консенсус 4 GeoIP-баз и пакетный аудит всех серверов подписки через RIPE/RDAP WHOIS" />
         </StackPanel>
 
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
@@ -39,7 +39,7 @@
                         HorizontalAlignment="Stretch" />
             </StackPanel>
 
-            <TextBlock Text="Быстрая проверка активного IP, 4 сигналов Google/YouTube и всех серверов подписки:"
+            <TextBlock Text="Быстрая проверка активного IP, 6 сигналов Google (вкл. Play и AI Studio) и RIPE/RDAP аудит всех серверов подписки:"
                        IsVisible="{Binding !ShowTechnicalDetails}"
                        VerticalAlignment="Center"
                        FontSize="12.5"
@@ -92,10 +92,10 @@
         </StackPanel>
       </Border>
 
-      <!-- Основная рабочая сетка: Слева (Активный IP + Вердикт Google RU + 4 провайдера), Справа (Все IP из подписки) -->
+      <!-- Основная рабочая сетка: Слева (Активный IP + Вердикт Google RU + 6 сигналов + 4 провайдера), Справа (Все IP из подписки + RIPE/RDAP) -->
       <Grid ColumnDefinitions="5*,6*" ColumnSpacing="18">
 
-        <!-- ЛЕВАЯ КОЛОНКА: Активный IP, реакция Google RU и 4 базы GeoIP -->
+        <!-- ЛЕВАЯ КОЛОНКА: Активный IP, реакция Google RU, AI Studio/Gemini и 4 базы GeoIP -->
         <StackPanel Grid.Column="0" Spacing="14">
 
           <!-- Карточка вердикта Google / YouTube RU Geo-Poisoning -->
@@ -104,7 +104,7 @@
                   BorderThickness="1.5">
             <StackPanel Spacing="10">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                <TextBlock Text="ДЕТЕКТОР «ПРОКАЖЁННОЙ МЕТКИ RU» У GOOGLE И YOUTUBE"
+                <TextBlock Text="ДЕТЕКТОР МЕТКИ RU У GOOGLE (6 НЕЗАВИСИМЫХ СИГНАЛОВ)"
                            FontSize="11"
                            FontWeight="Bold"
                            Foreground="#93C5FD" />
@@ -127,12 +127,54 @@
                          Foreground="{Binding GoogleVerdictTitleBrush}"
                          TextWrapping="Wrap" />
 
+              <!-- Независимые бейджи доступа к Google AI Studio и Gemini -->
+              <WrapPanel Orientation="Horizontal">
+                <Border Background="{StaticResource SurfaceAltBrush}"
+                        BorderBrush="{StaticResource BorderBrush2}"
+                        BorderThickness="1"
+                        CornerRadius="5"
+                        Padding="10,5"
+                        Margin="0,0,8,4">
+                  <TextBlock Text="{Binding AiStudioBadgeText}"
+                             FontFamily="{StaticResource MonoFont}"
+                             FontSize="11.5"
+                             FontWeight="Bold"
+                             Foreground="{Binding AiStudioBadgeBrush}" />
+                </Border>
+
+                <Border Background="{StaticResource SurfaceAltBrush}"
+                        BorderBrush="{StaticResource BorderBrush2}"
+                        BorderThickness="1"
+                        CornerRadius="5"
+                        Padding="10,5"
+                        Margin="0,0,0,4">
+                  <TextBlock Text="{Binding GeminiBadgeText}"
+                             FontFamily="{StaticResource MonoFont}"
+                             FontSize="11.5"
+                             FontWeight="Bold"
+                             Foreground="{Binding GeminiBadgeBrush}" />
+                </Border>
+              </WrapPanel>
+
+              <!-- Пояснение расхождения (метка RU есть, но AI Studio пускает) -->
+              <Border Background="#2A200C"
+                      BorderBrush="{StaticResource WarnBrush}"
+                      BorderThickness="1"
+                      CornerRadius="6"
+                      Padding="10,8"
+                      IsVisible="{Binding HasAiDivergenceNotice}">
+                <TextBlock Text="{Binding AiDivergenceNotice}"
+                           FontSize="12"
+                           Foreground="#FDE68A"
+                           TextWrapping="Wrap" />
+              </Border>
+
               <TextBlock Text="{Binding GoogleVerdictSummary}"
                          FontSize="12.5"
                          Foreground="#E2E8F0"
                          TextWrapping="Wrap" />
 
-              <!-- 4 независимых сигнала Google / YouTube (с обходом EU-согласия) -->
+              <!-- 6 независимых сигналов Google / YouTube / Play / Terms / Gemini / AI Studio -->
               <ItemsControl ItemsSource="{Binding GoogleSignalItems}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:GoogleSignalDisplayItem">
@@ -307,21 +349,19 @@
           </Border>
         </StackPanel>
 
-        <!-- ПРАВАЯ КОЛОНКА: Все IP из подписки (Пакетный экстрактор и сканер репутации) -->
+        <!-- ПРАВАЯ КОЛОНКА: Все IP из подписки (RIPE/RDAP + честная 4-уровневая шкала + ручной живой прогон) -->
         <Border Grid.Column="1" Classes="card">
           <StackPanel Spacing="12">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="3">
-                <TextBlock Text="ВСЕ IP ИЗ ВАШЕЙ ПОДПИСКИ (ПАКЕТНЫЙ АУДИТ ПОДСЕТЕЙ)"
-                           FontSize="11"
-                           FontWeight="Bold"
-                           Foreground="#93C5FD" />
-                <TextBlock Text="Автоматически достаёт все узлы из подписки Happ / JSON-балансировщика / VLESS / HY2, разрешает домены в реальные IP и проверяет их ASN, риск метки RU у Google и риск ТСПУ 16 КБ"
-                           FontSize="12"
-                           Foreground="{StaticResource TextMuted}"
-                           TextWrapping="Wrap" />
-              </StackPanel>
-            </Grid>
+            <StackPanel Spacing="3">
+              <TextBlock Text="ВСЕ IP ИЗ ВАШЕЙ ПОДПИСКИ (RIPE/RDAP WHOIS + ЖИВОЙ ПРОГОН)"
+                         FontSize="11"
+                         FontWeight="Bold"
+                         Foreground="#93C5FD" />
+              <TextBlock Text="Проверяет владельца подсети в RIPE/RDAP, базу РФ-хостеров и флаги Proxy/Hosting. Неизвестные дата-центры честно помечаются «Средний · нужен живой тест» — переключитесь на нужный узел в ВПН-клиенте и нажмите «Проверить вживую»."
+                         FontSize="12"
+                         Foreground="{StaticResource TextMuted}"
+                         TextWrapping="Wrap" />
+            </StackPanel>
 
             <Border Background="{StaticResource SurfaceAltBrush}"
                     BorderBrush="{StaticResource BorderBrush2}"
@@ -344,21 +384,28 @@
                           Padding="12,10"
                           Margin="0,0,0,9">
                     <StackPanel Spacing="6">
-                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                         <TextBlock Text="{Binding DisplayName}"
                                    FontSize="13.5"
                                    FontWeight="Bold"
                                    Foreground="#FFFFFF"
+                                   VerticalAlignment="Center"
                                    TextWrapping="Wrap" />
                         <Border Grid.Column="1"
                                 Background="#1E293B"
                                 CornerRadius="4"
-                                Padding="7,2">
+                                Padding="7,3"
+                                VerticalAlignment="Center">
                           <TextBlock Text="{Binding ProtocolAndPort}"
                                      FontFamily="{StaticResource MonoFont}"
                                      FontSize="11"
                                      Foreground="#93C5FD" />
                         </Border>
+                        <Button Grid.Column="2"
+                                Padding="9,4"
+                                FontSize="11"
+                                Content="Проверить вживую"
+                                Command="{Binding ProbeLiveNodeCommand}" />
                       </Grid>
 
                       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
@@ -379,6 +426,35 @@
                                  FontSize="11.5"
                                  Foreground="{StaticResource TextMuted}"
                                  TextWrapping="Wrap" />
+
+                      <TextBlock Text="{Binding RdapDisplay}"
+                                 FontFamily="{StaticResource MonoFont}"
+                                 FontSize="11"
+                                 Foreground="{Binding RdapBrush}"
+                                 IsVisible="{Binding HasRdapInfo}"
+                                 TextWrapping="Wrap" />
+
+                      <!-- Штамп живой проверки (появляется после совпадения выходного IP или /24) -->
+                      <Border Background="#0B1324"
+                              BorderBrush="{Binding LiveVerificationBrush}"
+                              BorderThickness="1"
+                              CornerRadius="5"
+                              Padding="8,5"
+                              IsVisible="{Binding IsLiveVerified}">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding LiveVerificationText}"
+                                     FontFamily="{StaticResource MonoFont}"
+                                     FontSize="11.5"
+                                     FontWeight="Bold"
+                                     Foreground="{Binding LiveVerificationBrush}"
+                                     TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding LiveAiBadgesText}"
+                                     FontFamily="{StaticResource MonoFont}"
+                                     FontSize="11"
+                                     Foreground="#CBD5E1"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
 
                       <WrapPanel Orientation="Horizontal">
                         <Border Background="#111827"

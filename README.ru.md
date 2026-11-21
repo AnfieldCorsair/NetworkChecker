@@ -2,12 +2,12 @@
 
 # 🛡️ Контур ВПН — NetworkChecker V2
 
-**Настольная утилита диагностики ВПН, подписок, ТСПУ-блокировок и «прокажённой метки RU» у Google для Windows**
+**Настольная утилита диагностики ВПН, подписок, ТСПУ-блокировок, «прокажённой метки RU» у Google и доступа к AI Studio / Gemini для Windows**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 14](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
 [![Avalonia UI 12](https://img.shields.io/badge/Avalonia%20UI-12.1.4-8B44AC)](https://avaloniaui.net/)
-[![Version 2.2](https://img.shields.io/badge/Версия-2.2.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
+[![Version 2.3](https://img.shields.io/badge/Версия-2.3.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
 
 [English README](README.md) · **Русский (README.ru.md)**
 
@@ -23,7 +23,7 @@
 
 - **Базовый режим (по умолчанию · 3 вкладки)** — минималистичный интерфейс без инженерного шума:
   1. **Проверка ВПН и подписки** — одно поле для ссылки подписки (`https://`) или ключа (`vless://`, `hy2://`, `trojan://`, `vmess://`, `ss://`, AmneziaWG), выбор локации, проверка доступности и разбор простыми словами.
-  2. **Репутация IP и Google RU** — комплексный 4-сигнальный тест «прокажённой метки RU» у Google/YouTube и пакетная проверка всех IP из подписки.
+  2. **Репутация IP и Google RU** — 6-сигнальный живой детектор метки RU (с отдельными бейджами **Google AI Studio** и **Gemini**) + пакетный аудит всех IP подписки через **RIPE/RDAP WHOIS** и честную 4-уровневую шкалу риска.
   3. **Заявка в техподдержку** — сбор срезов «Без ВПН / С ВПН» и готовый безопасный отчёт для Telegram без утечки ключей и домашнего IP.
 - **Расширенный режим (6 вкладок)** — открывает полный инженерный инструментарий: редактор сырых конфигов/JSON, пресеты, локальный хостинг подписки `127.0.0.1`, архитектор DNS (`DoH` / `DoT`), детектор ТСПУ-блокировок (16 КБ / UDP / белые списки), аудит сетевого стека Windows (`TUN` / `IPv6` / `MTU`) и сканер соседей SNI `/24` с живым TLS 1.3 handshake.
 
@@ -53,7 +53,7 @@
 #### 4. Сеть Windows (TUN / IPv6 / MTU) и Охотник за SNI Reality (TLS 1.3)
 ![Сеть Windows и Охотник SNI](screenshots/04-windows-stack-sni-hunter.svg)
 
-#### 5. Репутация IP, 4-сигнальный детектор «метки RU» у Google и все IP подписки
+#### 5. Репутация IP, 6-сигнальный детектор Google RU + AI Studio и RIPE/RDAP аудит подписки
 ![Репутация IP и Google RU](screenshots/05-ip-reputation-google-ru.svg)
 
 #### 6. Конструктор заявки в техподдержку (Telegram + маскирование секретов)
@@ -61,27 +61,27 @@
 
 ---
 
-## 🎯 Как работает детектор «прокажённой метки RU» у Google (v2.2)
+## 🎯 Как работает 6-сигнальный детектор Google RU и RIPE/RDAP аудит (v2.3)
 
-Даже если ВПН-сервер физически находится в Нидерландах, Германии или Финляндии, Google нередко перепривязывает популярные подсети к России (`RU`) из-за массового трафика смартфонов с российскими Wi-Fi/GPS. В результате перестаёт открываться **Gemini**, пропадает **YouTube Premium**, а поиск начинает выдавать капчу `/sorry/`.
+Даже если ВПН-сервер физически находится в Нидерландах, Германии или Финляндии, Google перепривязывает популярные подсети к России (`RU`) из-за массового трафика смартфонов с российскими Wi-Fi/GPS или российского регистратора подсети в RIPE. При этом у Google **разные гео-таблицы** для YouTube/Play/Search и API-шлюза **Google AI Studio**, поэтому на части серверов с меткой `RU` YouTube и Gemini заблокированы, а AI Studio всё ещё пускает.
 
-В версии **2.2** модуль проверки Google полностью переработан:
+В версии **2.3** реализована точная раздельная диагностика:
 
 - **Обход EU-баннера согласия (`consent.google.com`)**: ко всем запросам прикрепляются cookie `SOCS` + `CONSENT` и десктопный `User-Agent`, благодаря чему европейские узлы (`DE`, `NL`, `FI`, `PL`) возвращают реальный контент без редиректа на страницу согласия.
-- **4 параллельных независимых сигнала**:
-  1. **YouTube `INNERTUBE_CONTEXT_GL`** — чтение внутреннего кода страны из `youtube.com/sw.js_data` (ключи + позиционный парсер) с фолбэком на `youtube.com/?hl=en`.
-  2. **Доступность YouTube Premium** — проверка `youtube.com/premium?hl=en` на маркер *«not available in your country»* против нормальной зарубежной оферты.
-  3. **Доступ к Google Gemini / AI** — проверка `gemini.google.com/app?hl=en` на редирект `/unsupported`, HTTP `403`/`451` и геоблок РФ.
-  4. **Google Search (регион и `/sorry/`)** — чтение реальной страны из футера поиска `<div class="uU7dJb">...</div>`, проверка редиректа на `google.ru` и детекция reCAPTCHA `/sorry/` (`HTTP 429`).
-- **Консенсус 4 GeoIP-баз** (`ipwho.is`, `ip-api.com`, `ipinfo.io`, `Cloudflare Trace`):
-  - **Hosting / ДЦ**: правило большинства (*Majority Vote ≥ 50%*).
-  - **Proxy / VPN / Tor**: строгое правило *Any Vote* (срабатывание хотя бы в одной базе).
-  - **Совпадение IP (HTTP vs CDN)**: выявляет скрытый сплит-трафик.
-- **Пакетный сканер всех IP подписки**: извлекает все узлы из подписки Happ / Xray JSON / списков `vless://`, `hy2://`, `trojan://`, резолвит домены в IP и пакетно оценивает риск метки Google RU и риск лимита ТСПУ 16 КБ по ASN.
-- **3 режима маршрутизации** (в Расширенном режиме):
-  1. Активный интернет / TUN-адаптер ОС.
-  2. Авто-прокси запущенного ВПН-клиента (автопоиск локальных портов `10809`, `10808`, `2080`, `7890`, `1080`).
-  3. Ручная проверка произвольного IP или домена без переключения ВПН.
+- **6 параллельных независимых сигналов**:
+  1. **YouTube `INNERTUBE_CONTEXT_GL`** — чтение реального кода страны из `youtube.com/sw.js_data` (ключи + позиционный парсер) с фолбэком на `youtube.com/?hl=en` и `/red`.
+  2. **YouTube Premium** — проверка `youtube.com/premium?hl=en` на маркер *«not available in your country»* против зарубежной оферты.
+  3. **Google Play (регион и валюта)** — запрос платного приложения (`com.mojang.minecraftpe&hl=en` без `&gl=`): валюта `RUB` или скрытие платных приложений на зарубежном IP однозначно подтверждают метку `RU`.
+  4. **Google Terms / Search и `/sorry/`** — чтение юрисдикции из `policies.google.com/terms?hl=en` (`Country version:`), футера поиска `<div class="uU7dJb">...</div>` и детекция reCAPTCHA `/sorry/` (`HTTP 429`).
+  5. **Google Gemini Web** — независимая проверка `gemini.google.com/app?hl=en` на `/unsupported` и HTTP `403`/`451`.
+  6. **Google AI Studio + API** — независимая проверка `aistudio.google.com/prompts/new_chat` + безавторизационный зонд `generativelanguage.googleapis.com/v1beta/models` (отличает гео-блок `User location is not supported` от штатного `Method doesn't allow unregistered callers`).
+- **Независимые бейджи AI Studio и Gemini + предупреждение о расхождении**: если на подсети обнаружена метка `RU`, но AI Studio пропускает IP, выводится чёткий вердикт по метке `RU`, отдельные бейджи `AI Studio: ПУСКАЕТ` / `Gemini: ЗАБЛОКИРОВАН` и пояснение причины расхождения.
+- **Пакетный аудит всех IP подписки через RIPE/RDAP WHOIS + честная 4-уровневая шкала риска**:
+  - **КРИТИЧНЫЙ (RIPE/РФ)** — российская локация или российский след владельца подсети в `rdap.db.ripe.net` / `rdap.org` (RU LIR handle, контакты `.ru`, RU-организация).
+  - **ВЫСОКИЙ (ASN/Proxy)** — расширенная база ~50+ популярных у РФ-ВПН хостеров и ASN либо флаг `Proxy/VPN`.
+  - **СРЕДНИЙ · ДЦ (нужен живой тест)** — любой неизвестный дата-центр честно помечается как требующий живой проверки (больше никаких ложных «Низкий риск» на случайных VPS!).
+  - **Низкий (чистый ISP)** — только чистые зарубежные ISP без флагов Hosting/Proxy и без РФ-следов в RDAP.
+  - **Кнопка «Проверить вживую» на каждой карточке узла**: переключайтесь на нужный сервер в Happ/v2rayN и запускайте 6-сигнальный тест — при совпадении выходного IP (или подсети `/24`) карточка узла получает живой штамп с фактическим вердиктом Google, AI Studio, Gemini и валютой Play.
 
 ---
 
@@ -95,7 +95,7 @@ NetworkChecker.slnx
 │   │   └── VpnAudit/
 │   │       ├── VpnConfigParser.cs       # Парсер VLESS / XHTTP / Vision / AWG / Hysteria2 / Happ JSON
 │   │       ├── VpnConfigAuditor.cs      # Правила аудита РФ + автолечение
-│   │       ├── IpReputationProbe.cs     # 4 GeoIP-базы + 4-сигнальный зонд Google RU + сканер IP подписки
+│   │       ├── IpReputationProbe.cs     # 4 GeoIP + 6-сигнальный зонд Google/AI Studio + RIPE/RDAP сканер
 │   │       ├── SubscriptionService.cs   # Загрузка подписок, заголовки трафика, локальный сервер 127.0.0.1
 │   │       ├── BlockingFingerprintDetector.cs  # Детектор ТСПУ 16 КБ / UDP / белых списков / DNS-спуфинга
 │   │       ├── WindowsNetworkStackAuditor.cs   # Аудит адаптеров Windows (TUN, IPv6, MTU, порты прокси)
@@ -103,7 +103,7 @@ NetworkChecker.slnx
 │   │       └── SupportTicketBuilder.cs  # Генератор тикетов Telegram с маскированием UUID/ключей/IP
 │   └── NetworkChecker.App/              # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Базовый и Расширенный UI)
 └── tests/
-    └── NetworkChecker.Core.Tests/       # Модульные тесты xUnit (парсеры, Google RU, ТСПУ, стек Windows)
+    └── NetworkChecker.Core.Tests/       # Модульные тесты xUnit (парсеры, 6 сигналов Google, RDAP, ТСПУ, стек Windows)
 ```
 
 ---

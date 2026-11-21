@@ -1072,9 +1072,9 @@ public sealed class VpnConfigAuditTests
             googleFooterCountry: null);
         Assert.True(silentPoison.IsRuGeoPoisoned);
         Assert.NotNull(silentPoison.SignalChecks);
-        Assert.Equal(4, silentPoison.SignalChecks!.Count);
+        Assert.Equal(6, silentPoison.SignalChecks!.Count);
 
-        // 6. Clean foreign IP (DE) with all 4 signals green
+        // 6. Clean foreign IP (DE) with all 6 signals green
         var cleanAll = IpReputationProbe.EvaluateGoogleGeoVerdict(
             physicalCountryCode: "DE",
             youtubeGl: "DE",
@@ -1084,12 +1084,134 @@ public sealed class VpnConfigAuditTests
             probeExecuted: true,
             youtubePremiumAvailable: true,
             geminiAccessible: true,
-            googleFooterCountry: "Germany");
+            googleFooterCountry: "Germany",
+            aiStudioAccessible: true,
+            aiStudioDetail: "API gateway OK",
+            googlePlayCurrency: "EUR",
+            googlePlayCountry: "DE",
+            googlePlayPaidAvailable: true,
+            googleTermsCountry: "DE",
+            googleTermsLabel: "Germany");
         Assert.False(cleanAll.IsRuGeoPoisoned);
+        Assert.False(cleanAll.AiAccessDivergesFromRuTag);
         Assert.True(cleanAll.ProbeSucceeded);
         Assert.NotNull(cleanAll.SignalChecks);
-        Assert.Equal(4, cleanAll.SignalChecks!.Count);
+        Assert.Equal(6, cleanAll.SignalChecks!.Count);
         Assert.All(cleanAll.SignalChecks!, s => Assert.False(s.IsAlert));
+    }
+
+    [Fact]
+    public void IpReputationProbe_SixSignalParsersAndDivergenceWorkCorrectly()
+    {
+        // 1. Google Play currency & paid availability
+        var playRu = IpReputationProbe.ParseGooglePlayRegionAndCurrency(
+            "<html><meta itemprop=\"priceCurrency\" content=\"RUB\" /></html>");
+        Assert.Equal("RUB", playRu.CurrencyCode);
+        Assert.Equal("RU", playRu.CountryCode);
+        Assert.False(playRu.PaidAppsAvailable);
+
+        var playDe = IpReputationProbe.ParseGooglePlayRegionAndCurrency(
+            "<html>{\"priceCurrency\":\"EUR\",\"gl\":\"DE\"}</html>");
+        Assert.Equal("EUR", playDe.CurrencyCode);
+        Assert.Equal("DE", playDe.CountryCode);
+        Assert.True(playDe.PaidAppsAvailable);
+
+        // 2. Google Terms jurisdiction parser
+        var termsRu = IpReputationProbe.ParseGoogleTermsCountry(
+            "<html><div>Country version: Russia</div></html>");
+        Assert.Equal("RU", termsRu.CountryCode);
+        Assert.Equal("Russia", termsRu.CountryLabel);
+
+        var termsNl = IpReputationProbe.ParseGoogleTermsCountry(
+            "<html><div>Country version: Netherlands</div></html>");
+        Assert.Equal("NL", termsNl.CountryCode);
+
+        // 3. Google AI Studio + API gateway parser
+        var aiBlocked = IpReputationProbe.ParseAiStudioAvailability(
+            "https://aistudio.google.com/prompts/new_chat",
+            200,
+            "<html></html>",
+            400,
+            "{\"error\":{\"status\":\"FAILED_PRECONDITION\",\"message\":\"User location is not supported for the API use.\"}}");
+        Assert.False(aiBlocked.Accessible);
+
+        var aiAllowed = IpReputationProbe.ParseAiStudioAvailability(
+            "https://aistudio.google.com/prompts/new_chat",
+            200,
+            "<html></html>",
+            403,
+            "{\"error\":{\"status\":\"PERMISSION_DENIED\",\"message\":\"Method doesn't allow unregistered callers\"}}");
+        Assert.True(aiAllowed.Accessible);
+
+        // 4. Divergence: RU-tagged foreign NL IP where AI Studio STILL allows access
+        var divergent = IpReputationProbe.EvaluateGoogleGeoVerdict(
+            physicalCountryCode: "NL",
+            youtubeGl: "RU",
+            googleRegion: "RU",
+            hasCaptcha: false,
+            routingChannelUsed: "Активный TUN",
+            probeExecuted: true,
+            youtubePremiumAvailable: false,
+            geminiAccessible: false,
+            googleFooterCountry: "Russia",
+            aiStudioAccessible: true,
+            aiStudioDetail: "API gateway пропустил IP",
+            googlePlayCurrency: "RUB",
+            googlePlayCountry: "RU",
+            googlePlayPaidAvailable: false,
+            googleTermsCountry: "RU",
+            googleTermsLabel: "Russia");
+        Assert.True(divergent.IsRuGeoPoisoned);
+        Assert.True(divergent.AiStudioAccessible);
+        Assert.False(divergent.GeminiAccessible);
+        Assert.True(divergent.AiAccessDivergesFromRuTag);
+        Assert.Contains("AI Studio пускает", divergent.VerdictTitle, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void IpReputationProbe_RdapParserAndFourTierRiskScaleClassifyHonestly()
+    {
+        const string rdapRuFootprintJson = """
+            {
+              "country": "NL",
+              "name": "AEZA-NL-NET",
+              "handle": "185.10.20.0 - 185.10.20.255",
+              "entities": [
+                {
+                  "handle": "ORG-AGL12-RU",
+                  "vcardArray": ["vcard", [
+                    ["fn", {}, "text", "AEZA GROUP LLC"],
+                    ["email", {}, "text", "noc@example.ru"]
+                  ]]
+                }
+              ]
+            }
+            """;
+
+        var rdapRu = IpReputationProbe.ParseRdapIpResponse(rdapRuFootprintJson);
+        Assert.Equal("NL", rdapRu.CountryCode);
+        Assert.True(rdapRu.HasRuFootprint);
+        Assert.Contains("AEZA", rdapRu.OrgOrMaintainer ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+        // Tier 1: CriticalRu when RIPE/RDAP shows RU footprint on foreign NL IP
+        var critical = IpReputationProbe.ClassifySubnetRisksDetailed("NL", "AS99999", "Unknown Hosting", true, false, rdapRu);
+        Assert.Equal(RuBleedRiskTier.CriticalRu, critical.RiskTier);
+        Assert.True(critical.HighRuGoogleBleedRisk);
+
+        // Tier 2: HighRisk when known VPN/Proxy flag is true
+        var highProxy = IpReputationProbe.ClassifySubnetRisksDetailed("DE", "AS24940", "Hetzner Online GmbH", true, true, null);
+        Assert.Equal(RuBleedRiskTier.HighRisk, highProxy.RiskTier);
+        Assert.True(highProxy.HighRuGoogleBleedRisk);
+
+        // Tier 3: MediumDatacenterUnverified for unknown datacenter (NEVER falsely Low!)
+        var mediumDc = IpReputationProbe.ClassifySubnetRisksDetailed("DE", "AS24940", "Hetzner Online GmbH", true, false, null);
+        Assert.Equal(RuBleedRiskTier.MediumDatacenterUnverified, mediumDc.RiskTier);
+        Assert.False(mediumDc.HighRuGoogleBleedRisk);
+
+        // Tier 4: LowCleanIsp only for non-hosting, non-proxy clean residential/ISP with no RU footprint
+        var cleanIsp = IpReputationProbe.ClassifySubnetRisksDetailed("DE", "AS3320", "Deutsche Telekom AG", false, false, null);
+        Assert.Equal(RuBleedRiskTier.LowCleanIsp, cleanIsp.RiskTier);
+        Assert.False(cleanIsp.HighRuGoogleBleedRisk);
     }
 
     private static readonly byte[] TestHrrRandom =
