@@ -3,7 +3,7 @@
   <!-- Top Bar (Minimalist Basic Mode) -->
   <rect x="0" y="0" width="1200" height="122" fill="#0D1526" />
   <line x1="0" y1="122" x2="1200" y2="122" stroke="#22304A" stroke-width="1" />
-  <text x="24" y="35" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="20" font-weight="bold">Контур ВПН</text>
+  <text x="24" y="35" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="20" font-weight="bold">VPN_Checker</text>
   <text x="640" y="33" fill="#8B9BB4" font-family="Segoe UI, Inter, sans-serif" font-size="12">Минималистичный режим · нажмите для всех 6 вкладок</text>
   <rect x="964" y="14" width="212" height="28" rx="5" fill="#2563EB" />
   <text x="984" y="32" fill="#FFFFFF" font-family="Segoe UI, Inter, sans-serif" font-size="12" font-weight="600">Базовый режим (3 вкладки)</text>

@@ -1,13 +1,14 @@
 <div align="center">
 
-# 🛡️ Контур ВПН — NetworkChecker V2
+# 🛡️ VPN_Checker
 
 **Настольная утилита диагностики ВПН, подписок, ТСПУ-блокировок, «прокажённой метки RU» у Google и доступа к AI Studio / Gemini для Windows**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 14](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
 [![Avalonia UI 12](https://img.shields.io/badge/Avalonia%20UI-12.1.4-8B44AC)](https://avaloniaui.net/)
-[![Version 2.3](https://img.shields.io/badge/Версия-2.3.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
+[![Version 2.3](https://img.shields.io/badge/Версия-2.3.0-2563EB)](https://github.com/AnfieldCorsair/VPN_Checker)
+[![License: AGPL v3](https://img.shields.io/badge/Лицензия-AGPL_v3-blue.svg)](LICENSE)
 
 [English README](README.md) · **Русский (README.ru.md)**
 
@@ -17,7 +18,7 @@
 
 ## О проекте
 
-**Контур ВПН (NetworkChecker V2)** — автономное Windows-приложение на **.NET 10 / Avalonia UI 12**, созданное для быстрой и понятной диагностики современных ВПН-подключений в условиях ТСПУ РФ.
+**VPN_Checker** — автономное Windows-приложение на **.NET 10 / Avalonia UI 12**, созданное для быстрой и понятной диагностики современных ВПН-подключений в условиях ТСПУ РФ.
 
 Приложение работает в **двух режимах**, переключаемых одной кнопкой в верхней панели:
 
@@ -88,10 +89,12 @@
 ## 🏗️ Архитектура решения
 
 ```text
-NetworkChecker.slnx
+VPN_Checker.slnx
 ├── Directory.Build.props                # .NET 10, C# 14, TreatWarningsAsErrors=true, AnalysisMode=Recommended
+├── LICENSE                              # GNU Affero General Public License v3.0 (AGPL-3.0)
+├── build.ps1                            # Скрипт сборки, тестов и публикации одного EXE под Windows
 ├── src/
-│   ├── NetworkChecker.Core/             # Бизнес-логика, парсеры и сетевые зонды (без UI-зависимостей)
+│   ├── VpnChecker.Core/                 # Бизнес-логика, парсеры и сетевые зонды (без UI-зависимостей)
 │   │   └── VpnAudit/
 │   │       ├── VpnConfigParser.cs       # Парсер VLESS / XHTTP / Vision / AWG / Hysteria2 / Happ JSON
 │   │       ├── VpnConfigAuditor.cs      # Правила аудита РФ + автолечение
@@ -101,9 +104,9 @@ NetworkChecker.slnx
 │   │       ├── WindowsNetworkStackAuditor.cs   # Аудит адаптеров Windows (TUN, IPv6, MTU, порты прокси)
 │   │       ├── SubnetSniScanner.cs      # Охотник за SNI в /24 подсети с проверкой TLS 1.3 ServerHello
 │   │       └── SupportTicketBuilder.cs  # Генератор тикетов Telegram с маскированием UUID/ключей/IP
-│   └── NetworkChecker.App/              # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Базовый и Расширенный UI)
+│   └── VpnChecker.App/                  # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Базовый и Расширенный UI)
 └── tests/
-    └── NetworkChecker.Core.Tests/       # Модульные тесты xUnit (парсеры, 6 сигналов Google, RDAP, ТСПУ, стек Windows)
+    └── VpnChecker.Core.Tests/           # Модульные тесты xUnit (парсеры, 6 сигналов Google, RDAP, ТСПУ, стек Windows)
 ```
 
 ---
@@ -113,24 +116,28 @@ NetworkChecker.slnx
 Требуется [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (Windows 10/11 x64).
 
 ```powershell
-# 1. Клонировать ветку Version-2.0
-git clone -b Version-2.0 https://github.com/AnfieldCorsair/NetworkChecker.git
-cd NetworkChecker
+# 1. Клонировать репозиторий
+git clone https://github.com/AnfieldCorsair/VPN_Checker.git
+cd VPN_Checker
 
 # 2. Собрать решение (TreatWarningsAsErrors включён — 0 предупреждений)
-dotnet build NetworkChecker.slnx -c Release
+dotnet build VPN_Checker.slnx -c Release
 
 # 3. Запустить модульные тесты
-dotnet test NetworkChecker.slnx -c Release
+dotnet test VPN_Checker.slnx -c Release
 
 # 4. Запустить настольное приложение
-dotnet run --project src/NetworkChecker.App -c Release
+dotnet run --project src/VpnChecker.App -c Release
 ```
 
-### Сборка автономного EXE (Self-Contained Single File)
+### Сборка автономного EXE (`VPN_Checker.exe`)
 
 ```powershell
-dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj `
+# Через встроенный скрипт сборки
+./build.ps1 -Publish -SelfContained
+
+# Или напрямую через dotnet CLI
+dotnet publish src/VpnChecker.App/VpnChecker.App.csproj `
   -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
@@ -142,3 +149,9 @@ dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj `
 - Все проверки выполняются локально с вашего ПК без промежуточных серверов телеметрии.
 - UUID, приватные ключи AmneziaWG/Reality, пароли и последние два октета домашнего IP автоматически маскируются при формировании заявки в техподдержку.
 - Точечная замена DNS-блока в подписке сохраняет все ваши серверы, ключи и правила маршрутизации без изменений.
+
+---
+
+## 📄 Лицензия
+
+Проект распространяется под лицензией **GNU Affero General Public License v3.0 (AGPL-3.0)** — полный текст приведён в файле [LICENSE](LICENSE).

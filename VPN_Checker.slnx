@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/VpnChecker.Core/VpnChecker.Core.csproj" />
+    <Project Path="src/VpnChecker.App/VpnChecker.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/VpnChecker.Core.Tests/VpnChecker.Core.Tests.csproj" />
+  </Folder>
+</Solution>

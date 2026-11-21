@@ -1,13 +1,14 @@
 <div align="center">
 
-# 🛡️ Kontur VPN — NetworkChecker V2
+# 🛡️ VPN_Checker
 
 **Windows Desktop Diagnostics Suite for VPN Configs, Subscriptions, DPI/TSPU Fingerprints, Google `RU` Geo-Poisoning & AI Studio / Gemini Access**
 
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![C# 14](https://img.shields.io/badge/C%23-14-239120?logo=csharp)](https://learn.microsoft.com/dotnet/csharp/)
 [![Avalonia UI 12](https://img.shields.io/badge/Avalonia%20UI-12.1.4-8B44AC)](https://avaloniaui.net/)
-[![Version 2.3](https://img.shields.io/badge/Version-2.3.0-2563EB)](https://github.com/AnfieldCorsair/NetworkChecker/tree/Version-2.0)
+[![Version 2.3](https://img.shields.io/badge/Version-2.3.0-2563EB)](https://github.com/AnfieldCorsair/VPN_Checker)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 **English (README.md)** · [Русский README](README.ru.md)
 
@@ -17,7 +18,7 @@
 
 ## Overview
 
-**Kontur VPN (NetworkChecker V2)** is a standalone **.NET 10 / Avalonia UI 12** desktop application for Windows designed to audit VPN subscriptions, diagnose ISP/DPI interference, inspect Windows TUN/IPv6 leaks, and detect Google `RU` geo-poisoning alongside independent **Google AI Studio / Gemini** availability.
+**VPN_Checker** is a standalone **.NET 10 / Avalonia UI 12** desktop application for Windows designed to audit VPN subscriptions, diagnose ISP/DPI interference, inspect Windows TUN/IPv6 leaks, and detect Google `RU` geo-poisoning alongside independent **Google AI Studio / Gemini** availability.
 
 The interface provides **two switchable modes** right from the top bar:
 
@@ -88,10 +89,12 @@ In **v2.3**, the detector separates these signals cleanly:
 ## 🏗️ Project Structure
 
 ```text
-NetworkChecker.slnx
+VPN_Checker.slnx
 ├── Directory.Build.props                # .NET 10, C# 14, TreatWarningsAsErrors=true, AnalysisMode=Recommended
+├── LICENSE                              # GNU Affero General Public License v3.0 (AGPL-3.0)
+├── build.ps1                            # Windows build, test & single-file publish script
 ├── src/
-│   ├── NetworkChecker.Core/             # Pure C# diagnostics core (zero UI dependencies)
+│   ├── VpnChecker.Core/                 # Pure C# diagnostics core (zero UI dependencies)
 │   │   └── VpnAudit/
 │   │       ├── VpnConfigParser.cs       # VLESS / XHTTP / Vision / AWG / Hysteria2 / Happ JSON parser
 │   │       ├── VpnConfigAuditor.cs      # Audit rules & one-click patchers
@@ -101,9 +104,9 @@ NetworkChecker.slnx
 │   │       ├── WindowsNetworkStackAuditor.cs   # Windows adapter audit (TUN, IPv6, MTU, local proxy ports)
 │   │       ├── SubnetSniScanner.cs      # /24 Reality SNI hunter with live TLS 1.3 ServerHello check
 │   │       └── SupportTicketBuilder.cs  # Masked Telegram & Markdown support report generator
-│   └── NetworkChecker.App/              # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Basic & Advanced UI)
+│   └── VpnChecker.App/                  # Avalonia 12.1.4 + CommunityToolkit.Mvvm (Basic & Advanced UI)
 └── tests/
-    └── NetworkChecker.Core.Tests/       # xUnit test suite (parsers, 6 Google signals, RDAP, DPI, Windows stack)
+    └── VpnChecker.Core.Tests/           # xUnit test suite (parsers, 6 Google signals, RDAP, DPI, Windows stack)
 ```
 
 ---
@@ -113,24 +116,28 @@ NetworkChecker.slnx
 Requires [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on Windows 10/11 x64.
 
 ```powershell
-# 1. Clone the Version-2.0 branch
-git clone -b Version-2.0 https://github.com/AnfieldCorsair/NetworkChecker.git
-cd NetworkChecker
+# 1. Clone the repository
+git clone https://github.com/AnfieldCorsair/VPN_Checker.git
+cd VPN_Checker
 
 # 2. Build (TreatWarningsAsErrors enabled — 0 warnings)
-dotnet build NetworkChecker.slnx -c Release
+dotnet build VPN_Checker.slnx -c Release
 
 # 3. Run unit tests
-dotnet test NetworkChecker.slnx -c Release
+dotnet test VPN_Checker.slnx -c Release
 
 # 4. Launch desktop app
-dotnet run --project src/NetworkChecker.App -c Release
+dotnet run --project src/VpnChecker.App -c Release
 ```
 
-### Publish Self-Contained Single-File EXE
+### Publish Self-Contained Single-File EXE (`VPN_Checker.exe`)
 
 ```powershell
-dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj `
+# Using helper script
+./build.ps1 -Publish -SelfContained
+
+# Or directly via dotnet CLI
+dotnet publish src/VpnChecker.App/VpnChecker.App.csproj `
   -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 ```
@@ -142,3 +149,9 @@ dotnet publish src/NetworkChecker.App/NetworkChecker.App.csproj `
 - All diagnostics run locally from your machine with no telemetry servers.
 - UUIDs, AmneziaWG/Reality private keys, passwords, and home IP suffixes are masked automatically in generated support tickets.
 - Targeted DNS injection preserves every server endpoint, key, and routing rule intact.
+
+---
+
+## 📄 License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)** — see the [LICENSE](LICENSE) file for the full text.

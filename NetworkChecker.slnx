@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/NetworkChecker.Core/NetworkChecker.Core.csproj" />
-    <Project Path="src/NetworkChecker.App/NetworkChecker.App.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/NetworkChecker.Core.Tests/NetworkChecker.Core.Tests.csproj" />
-  </Folder>
-</Solution>

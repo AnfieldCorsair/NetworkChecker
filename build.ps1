@@ -1,5 +1,5 @@
 <#
-    Сборка и публикация NetworkChecker V2 под Windows.
+    Сборка и публикация VPN_Checker под Windows.
     usage:
         ./build.ps1                    # Release-сборка + тесты
         ./build.ps1 -Publish           # framework-dependent publish в artifacts/win-x64
@@ -36,7 +36,7 @@ if ($Publish) {
     $out = Join-Path $root "artifacts/$Runtime"
     Write-Host "== publish -> $out" -ForegroundColor Cyan
     $publishArgs = @(
-        "publish", "src/NetworkChecker.App",
+        "publish", "src/VpnChecker.App",
         "-c", $Configuration,
         "-r", $Runtime,
         "-o", $out,
@@ -46,5 +46,5 @@ if ($Publish) {
     if ($SelfContained) { $publishArgs += "--self-contained", "true" } else { $publishArgs += "--self-contained", "false" }
     dotnet @publishArgs
     Assert-DotnetSuccess
-    Write-Host "Готово: $out/NetworkChecker.exe" -ForegroundColor Green
+    Write-Host "Готово: $out/VPN_Checker.exe" -ForegroundColor Green
 }
