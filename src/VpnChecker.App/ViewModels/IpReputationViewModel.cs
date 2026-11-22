@@ -125,13 +125,13 @@ public sealed partial class SubscriptionIpDisplayItem : ObservableObject
         {
             true => "AI Studio: ПУСКАЕТ",
             false => "AI Studio: БЛОК",
-            _ => "AI Studio: —",
+            _ => "AI Studio: не подтв.",
         };
         var geminiShort = verdict.GeminiAccessible switch
         {
-            true => "Gemini: ПУСКАЕТ",
-            false => "Gemini: БЛОК",
-            _ => "Gemini: —",
+            true => string.IsNullOrWhiteSpace(verdict.GeminiCountryCode) ? "Gemini: ПУСКАЕТ" : $"Gemini: ПУСКАЕТ ({verdict.GeminiCountryCode})",
+            false => string.IsNullOrWhiteSpace(verdict.GeminiCountryCode) ? "Gemini: БЛОК" : $"Gemini: БЛОК ({verdict.GeminiCountryCode})",
+            _ => "Gemini: не подтв.",
         };
         var playShort = !string.IsNullOrWhiteSpace(verdict.GooglePlayCurrency)
             ? $"Play: {verdict.GooglePlayCurrency}"
@@ -172,6 +172,8 @@ public sealed partial class SubscriptionIpDisplayItem : ObservableObject
 /// </summary>
 public sealed partial class IpReputationViewModel : ViewModelBase
 {
+    private static readonly Uri AiStudioBrowserCheckUri = new("https://aistudio.google.com/prompts/new_chat");
+
     private readonly HttpClient _http;
     private readonly ConfigAuditViewModel _configAudit;
     private readonly IDesktopUiService _uiService;
@@ -335,6 +337,15 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(IsManualTargetVisible));
         }
+    }
+
+    [RelayCommand]
+    private async Task OpenAiStudioInBrowserAsync()
+    {
+        var opened = await _uiService.OpenExternalUrlAsync(AiStudioBrowserCheckUri).ConfigureAwait(true);
+        CopyFeedback = opened
+            ? "Открыт aistudio.google.com в системном браузере для прямой проверки под вашей сессией."
+            : "Не удалось открыть браузер автоматически — откройте https://aistudio.google.com/prompts/new_chat вручную.";
     }
 
     [RelayCommand]
@@ -746,21 +757,28 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         {
             true => ("Google AI Studio: ПУСКАЕТ", SolidColorBrush.Parse("#34D399")),
             false => ("Google AI Studio: ЗАБЛОКИРОВАН", SolidColorBrush.Parse("#F87171")),
-            _ => (g.ProbeExecuted ? "Google AI Studio: нет ответа" : "Google AI Studio: не проверялся", SolidColorBrush.Parse("#94A3B8")),
+            _ => g.ProbeExecuted
+                ? ("Google AI Studio: НЕ ПОДТВЕРЖДЕНО", SolidColorBrush.Parse("#FBBF24"))
+                : ("Google AI Studio: не проверялся", SolidColorBrush.Parse("#94A3B8")),
         };
 
+        var gemRegionSuffix = string.IsNullOrWhiteSpace(g.GeminiCountryCode)
+            ? string.Empty
+            : $" ({g.GeminiCountryCode})";
         (GeminiBadgeText, GeminiBadgeBrush) = g.GeminiAccessible switch
         {
-            true => ("Google Gemini Web: ПУСКАЕТ", SolidColorBrush.Parse("#34D399")),
-            false => ("Google Gemini Web: ЗАБЛОКИРОВАН", SolidColorBrush.Parse("#F87171")),
-            _ => (g.ProbeExecuted ? "Google Gemini Web: нет ответа" : "Google Gemini Web: не проверялся", SolidColorBrush.Parse("#94A3B8")),
+            true => ($"Google Gemini Web: ПУСКАЕТ{gemRegionSuffix}", SolidColorBrush.Parse("#34D399")),
+            false => ($"Google Gemini Web: ЗАБЛОКИРОВАН{gemRegionSuffix}", SolidColorBrush.Parse("#F87171")),
+            _ => g.ProbeExecuted
+                ? ("Google Gemini Web: НЕ ПОДТВЕРЖДЕНО", SolidColorBrush.Parse("#FBBF24"))
+                : ("Google Gemini Web: не проверялся", SolidColorBrush.Parse("#94A3B8")),
         };
 
         if (g.AiAccessDivergesFromRuTag)
         {
             AiDivergenceNotice = g.AiStudioAccessible == true && g.GeminiAccessible != true
-                ? "На подсети есть метка RU (YouTube/Play/Terms), но Google AI Studio сейчас пускает этот IP. У Google разные гео-таблицы для YouTube/Search и API-шлюза AI Studio — поэтому AI Studio может работать на части «отравленных» серверов, а Gemini/YouTube — нет."
-                : "На подсети обнаружена метка RU (YouTube/Play/Terms), но часть ИИ-контуров Google (AI Studio / Gemini) сейчас пропускает этот IP благодаря отдельной гео-базе Google Cloud.";
+                ? "На подсети есть метка RU (YouTube/Play/Terms), но Google AI Studio сейчас пускает этот IP. У Google разные гео-таблицы для YouTube/Search и контура AI Studio — поэтому AI Studio может работать на части «отравленных» серверов, а Gemini/YouTube — нет."
+                : "На подсети обнаружена метка RU (YouTube/Play/Terms), но живой контур Google AI (Gemini / AI Studio) сейчас пропускает этот IP благодаря отдельной гео-базе Google Cloud.";
         }
         else
         {
@@ -774,7 +792,11 @@ public sealed partial class IpReputationViewModel : ViewModelBase
             {
                 var brush = sig.IsAlert
                     ? SolidColorBrush.Parse("#F87171")
-                    : (sig.IsPass ? SolidColorBrush.Parse("#34D399") : SolidColorBrush.Parse("#94A3B8"));
+                    : (sig.IsPass
+                        ? SolidColorBrush.Parse("#34D399")
+                        : (sig.StatusText.Contains("Не подтверждено", StringComparison.OrdinalIgnoreCase)
+                            ? SolidColorBrush.Parse("#FBBF24")
+                            : SolidColorBrush.Parse("#94A3B8")));
                 GoogleSignalItems.Add(new GoogleSignalDisplayItem(sig.SignalName, sig.StatusText, sig.Detail, brush));
             }
         }
@@ -852,8 +874,8 @@ public sealed partial class IpReputationViewModel : ViewModelBase
         GoogleSignalItems.Add(new GoogleSignalDisplayItem("2. YouTube Premium", "Ожидание", "Проверка «недоступна в вашей стране» (признак метки RU)", muted));
         GoogleSignalItems.Add(new GoogleSignalDisplayItem("3. Google Play (регион и валюта)", "Ожидание", "Проверка валюты (RUB vs EUR/USD) и доступности платных приложений", muted));
         GoogleSignalItems.Add(new GoogleSignalDisplayItem("4. Google Terms / Search и /sorry/", "Ожидание", "Юрисдикция policies.google.com/terms, футер Search и капча 429", muted));
-        GoogleSignalItems.Add(new GoogleSignalDisplayItem("5. Google Gemini Web", "Ожидание", "Независимая проверка доступа к gemini.google.com", muted));
-        GoogleSignalItems.Add(new GoogleSignalDisplayItem("6. Google AI Studio + API", "Ожидание", "Независимая проверка aistudio.google.com и API-шлюза generativelanguage", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("5. Google Gemini Web", "Ожидание", "Живой серверный маркер региона в HTML gemini.google.com (,2,1,200)", muted));
+        GoogleSignalItems.Add(new GoogleSignalDisplayItem("6. Google AI Studio", "Ожидание", "Проверка явных гео-блокировок aistudio.google.com (при редиректе на вход — статус «Не подтверждено»)", muted));
 
         ProviderItems.Clear();
         ProviderItems.Add(new GeoProviderDisplayItem("ipwho.is", "—", "Ожидание запуска", "Проверка ASN, ISP, флагов Hosting / Proxy / Tor", "Hosting: —", muted, "Proxy/VPN: —", muted, "Готов"));

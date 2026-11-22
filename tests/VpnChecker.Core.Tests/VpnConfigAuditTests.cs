@@ -1038,10 +1038,18 @@ public sealed class VpnConfigAuditTests
         Assert.False(IpReputationProbe.ParseYouTubePremiumAvailability("<html>YouTube Premium is not available in your country.</html>"));
         Assert.True(IpReputationProbe.ParseYouTubePremiumAvailability("<html>Try YouTube Premium Free · €12.99/month</html>"));
 
-        // 3. Google Gemini availability
+        // 3. Google Gemini availability (строгий живой маркер ,2,1,200,"ISO3" без ложных срабатываний)
         Assert.False(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/unsupported", 200, "<html></html>"));
         Assert.False(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/app", 403, "<html>Gemini isn't currently supported in your country</html>"));
-        Assert.True(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/app", 200, "<html><title>Google Gemini</title><script>window.WIZ_global_data={};</script></html>"));
+        var gemRu = IpReputationProbe.ParseGeminiAvailabilityDetailed("https://gemini.google.com/app?hl=en", 200, """<html><script>["x","",2,1,200,"RUS",null]</script></html>""");
+        Assert.False(gemRu.Accessible);
+        Assert.Equal("RU", gemRu.CountryCode);
+        var gemGb = IpReputationProbe.ParseGeminiAvailabilityDetailed("https://gemini.google.com/app?hl=en", 200, """<html><script>["x","",2,1,200,"GBR",null]</script></html>""");
+        Assert.True(gemGb.Accessible);
+        Assert.Equal("GB", gemGb.CountryCode);
+        // Обычный HTTP 200 или редирект на accounts.google.com БЕЗ серверного маркера региона -> null (Не подтверждено, не true!)
+        Assert.Null(IpReputationProbe.ParseGeminiAvailability("https://gemini.google.com/app", 200, "<html><title>Google Gemini</title><script>window.WIZ_global_data={};</script></html>"));
+        Assert.Null(IpReputationProbe.ParseGeminiAvailability("https://accounts.google.com/v3/signin/identifier", 200, "<html></html>"));
 
         // 4. Google Search footer region (EU consent bypass)
         var ruFooter = IpReputationProbe.ParseGoogleSearchRegionDetailed(
@@ -1126,7 +1134,7 @@ public sealed class VpnConfigAuditTests
             "<html><div>Country version: Netherlands</div></html>");
         Assert.Equal("NL", termsNl.CountryCode);
 
-        // 3. Google AI Studio + API gateway parser
+        // 3. Google AI Studio + API gateway parser (строго без ложных «Пускает»!)
         var aiBlocked = IpReputationProbe.ParseAiStudioAvailability(
             "https://aistudio.google.com/prompts/new_chat",
             200,
@@ -1135,15 +1143,66 @@ public sealed class VpnConfigAuditTests
             "{\"error\":{\"status\":\"FAILED_PRECONDITION\",\"message\":\"User location is not supported for the API use.\"}}");
         Assert.False(aiBlocked.Accessible);
 
-        var aiAllowed = IpReputationProbe.ParseAiStudioAvailability(
-            "https://aistudio.google.com/prompts/new_chat",
+        var aiRedirectBlocked = IpReputationProbe.ParseAiStudioAvailability(
+            "https://ai.google.dev/available_regions",
+            200,
+            "<html></html>",
+            0,
+            null);
+        Assert.False(aiRedirectBlocked.Accessible);
+
+        // КРИТИЧНО: 403 Method doesn't allow unregistered callers / ACCESS_DENIED приходит ДО проверки гео даже из РФ -> null (Не подтверждено!)
+        var aiUnregistered403 = IpReputationProbe.ParseAiStudioAvailability(
+            "https://accounts.google.com/v3/signin/identifier?continue=https://aistudio.google.com/prompts/new_chat",
             200,
             "<html></html>",
             403,
             "{\"error\":{\"status\":\"PERMISSION_DENIED\",\"message\":\"Method doesn't allow unregistered callers\"}}");
-        Assert.True(aiAllowed.Accessible);
+        Assert.Null(aiUnregistered403.Accessible);
 
-        // 4. Divergence: RU-tagged foreign NL IP where AI Studio STILL allows access
+        var aiAccessDenied403 = IpReputationProbe.ParseAiStudioAvailability(
+            "https://aistudio.google.com/welcome",
+            200,
+            "<html><meta property=\"og:title\" content=\"Google AI Studio\"></html>",
+            403,
+            "{\"error\":{\"code\":403,\"status\":\"PERMISSION_DENIED\",\"details\":[{\"reason\":\"ACCESS_DENIED\"}]}}");
+        Assert.Null(aiAccessDenied403.Accessible);
+
+        // Реальный 200 со списком моделей -> true
+        var aiConfirmed200 = IpReputationProbe.ParseAiStudioAvailability(
+            "https://aistudio.google.com/prompts/new_chat",
+            200,
+            "<html></html>",
+            200,
+            "{\"models\":[{\"name\":\"models/gemini-2.5-flash\"}]}");
+        Assert.True(aiConfirmed200.Accessible);
+
+        // Прямой российский домашний IP: редирект на login + Gemini ,2,1,200,"RUS" -> НИКОГДА не рисует «Пускает»
+        var directRuVerdict = IpReputationProbe.EvaluateGoogleGeoVerdict(
+            physicalCountryCode: "RU",
+            youtubeGl: "RU",
+            googleRegion: "RU",
+            hasCaptcha: false,
+            routingChannelUsed: "Активный стек ОС",
+            probeExecuted: true,
+            youtubePremiumAvailable: false,
+            geminiAccessible: false,
+            googleFooterCountry: "Russia",
+            aiStudioAccessible: aiUnregistered403.Accessible,
+            aiStudioDetail: aiUnregistered403.Detail,
+            googlePlayCurrency: "RUB",
+            googlePlayCountry: "RU",
+            googlePlayPaidAvailable: false,
+            googleTermsCountry: "RU",
+            googleTermsLabel: "Russia",
+            geminiCountryCode: "RU",
+            geminiStatusDetail: "Живой контур Google AI (Gemini) определил неподдерживаемый регион RU (RUS)");
+        Assert.Null(directRuVerdict.AiStudioAccessible);
+        Assert.False(directRuVerdict.GeminiAccessible);
+        Assert.False(directRuVerdict.AiAccessDivergesFromRuTag);
+        Assert.Contains(directRuVerdict.SignalChecks!, s => s.SignalName.Contains("AI Studio", StringComparison.Ordinal) && s.StatusText == "Не подтверждено" && !s.IsPass);
+
+        // 4. Divergence: RU-tagged foreign NL IP where live AI contour STILL confirms access
         var divergent = IpReputationProbe.EvaluateGoogleGeoVerdict(
             physicalCountryCode: "NL",
             youtubeGl: "RU",
@@ -1155,7 +1214,7 @@ public sealed class VpnConfigAuditTests
             geminiAccessible: false,
             googleFooterCountry: "Russia",
             aiStudioAccessible: true,
-            aiStudioDetail: "API gateway пропустил IP",
+            aiStudioDetail: "API-шлюз вернул список моделей без гео-блока",
             googlePlayCurrency: "RUB",
             googlePlayCountry: "RU",
             googlePlayPaidAvailable: false,

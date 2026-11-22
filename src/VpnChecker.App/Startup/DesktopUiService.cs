@@ -9,6 +9,7 @@ public interface IDesktopUiService
 {
     Task<bool> CopyTextAsync(string text);
     Task<string?> SaveTextFileAsync(string suggestedFileName, string content, string extension, string description);
+    Task<bool> OpenExternalUrlAsync(Uri uri);
 }
 
 public sealed class DesktopUiService : IDesktopUiService
@@ -23,6 +24,23 @@ public sealed class DesktopUiService : IDesktopUiService
 
         await window.Clipboard.SetTextAsync(text).ConfigureAwait(true);
         return true;
+    }
+
+    public async Task<bool> OpenExternalUrlAsync(Uri uri)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        if (!uri.IsAbsoluteUri || !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var window = GetMainWindow();
+        if (window?.Launcher is null)
+        {
+            return false;
+        }
+
+        return await window.Launcher.LaunchUriAsync(uri).ConfigureAwait(true);
     }
 
     public async Task<string?> SaveTextFileAsync(

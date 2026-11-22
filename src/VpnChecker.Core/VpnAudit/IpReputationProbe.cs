@@ -75,7 +75,9 @@ public sealed record GoogleGeoVerdict(
     string? GooglePlayCurrency = null,
     string? GooglePlayCountry = null,
     string? GoogleTermsCountry = null,
-    bool AiAccessDivergesFromRuTag = false);
+    bool AiAccessDivergesFromRuTag = false,
+    string? GeminiCountryCode = null,
+    string? GeminiStatusDetail = null);
 
 public sealed record IpReputationConsensusReport(
     DateTimeOffset CheckedAt,
@@ -245,6 +247,15 @@ public static partial class IpReputationProbe
 
     [GeneratedRegex("""(?:Country\s+version|Версия\s+для\s+страны)\s*:\s*(?:<[^>]+>\s*)*(?<country>[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё\s'\-]{1,44})""", RegexOptions.IgnoreCase)]
     private static partial Regex GoogleTermsCountryRegex();
+
+    // Живой серверный маркер региона в HTML-ответе gemini.google.com: ,2,1,200,"GBR" / ,2,1,200,"RUS"
+    [GeneratedRegex(""",2,1,200,"(?<iso3>[A-Z]{3})" """, RegexOptions.IgnorePatternWhitespace)]
+    private static partial Regex GeminiRegionTupleRegex();
+
+    private static readonly HashSet<string> UnsupportedGoogleAiIso3Countries = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "RUS", "BLR", "CHN", "HKG", "MAC", "IRN", "PRK", "SYR", "CUB",
+    };
 
     /// <summary>
     /// Извлекает все серверы (IP и домены) из подписки или одиночного конфига, включая мульти-outbound балансировщики в JSON Happ/Xray.
@@ -463,11 +474,17 @@ public static partial class IpReputationProbe
         return null;
     }
 
-    public static bool? ParseGeminiAvailability(string? finalUri, int statusCode, string? htmlBody)
+    public static bool? ParseGeminiAvailability(string? finalUri, int statusCode, string? htmlBody) =>
+        ParseGeminiAvailabilityDetailed(finalUri, statusCode, htmlBody).Accessible;
+
+    public static (bool? Accessible, string? CountryCode, string Detail) ParseGeminiAvailabilityDetailed(
+        string? finalUri,
+        int statusCode,
+        string? htmlBody)
     {
-        if (statusCode == 403 || statusCode == 451)
+        if (statusCode is 403 or 451)
         {
-            return false;
+            return (false, null, string.Create(CultureInfo.InvariantCulture, $"gemini.google.com вернул HTTP {statusCode} (гео-блокировка)"));
         }
 
         if (!string.IsNullOrWhiteSpace(finalUri) &&
@@ -475,7 +492,7 @@ public static partial class IpReputationProbe
              finalUri.Contains("region_not_supported", StringComparison.OrdinalIgnoreCase) ||
              finalUri.Contains("error/403", StringComparison.OrdinalIgnoreCase)))
         {
-            return false;
+            return (false, null, "gemini.google.com перенаправил на страницу неподдерживаемого региона");
         }
 
         if (!string.IsNullOrWhiteSpace(htmlBody) &&
@@ -484,19 +501,99 @@ public static partial class IpReputationProbe
              htmlBody.Contains("пока не поддерживается в вашей стране", StringComparison.OrdinalIgnoreCase) ||
              htmlBody.Contains("недоступен в вашей стране", StringComparison.OrdinalIgnoreCase)))
         {
-            return false;
+            return (false, null, "Страница Gemini сообщила об ограничении по стране");
         }
 
-        if (statusCode is >= 200 and < 400 &&
-            (!string.IsNullOrWhiteSpace(finalUri) &&
-             (finalUri.Contains("gemini.google.com", StringComparison.OrdinalIgnoreCase) ||
-              finalUri.Contains("accounts.google.com", StringComparison.OrdinalIgnoreCase))))
+        if (!string.IsNullOrWhiteSpace(htmlBody))
         {
-            return true;
+            var regionMatch = GeminiRegionTupleRegex().Match(htmlBody);
+            if (regionMatch.Success)
+            {
+                var iso3 = regionMatch.Groups["iso3"].Value.ToUpperInvariant();
+                var iso2 = MapIso3ToIso2(iso3);
+                if (UnsupportedGoogleAiIso3Countries.Contains(iso3))
+                {
+                    return (
+                        false,
+                        iso2,
+                        $"Живой контур Google AI (Gemini) определил неподдерживаемый регион {iso2} ({iso3})");
+                }
+
+                return (
+                    true,
+                    iso2,
+                    $"Живой контур Google AI (Gemini) подтвердил разрешённый регион {iso2} ({iso3})");
+            }
         }
 
-        return null;
+        if (!string.IsNullOrWhiteSpace(finalUri) &&
+            finalUri.Contains("accounts.google.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return (null, null, "gemini.google.com перенаправил на страницу входа Google — без маркера региона статус не подтверждён");
+        }
+
+        return (null, null, "gemini.google.com не вернул серверный маркер региона (,2,1,200) — статус не подтверждён");
     }
+
+    private static string MapIso3ToIso2(string iso3) =>
+        iso3.ToUpperInvariant() switch
+        {
+            "RUS" => "RU",
+            "BLR" => "BY",
+            "CHN" => "CN",
+            "HKG" => "HK",
+            "MAC" => "MO",
+            "IRN" => "IR",
+            "PRK" => "KP",
+            "SYR" => "SY",
+            "CUB" => "CU",
+            "USA" => "US",
+            "GBR" => "GB",
+            "DEU" => "DE",
+            "NLD" => "NL",
+            "FIN" => "FI",
+            "FRA" => "FR",
+            "SWE" => "SE",
+            "POL" => "PL",
+            "CHE" => "CH",
+            "AUT" => "AT",
+            "BEL" => "BE",
+            "CZE" => "CZ",
+            "ESP" => "ES",
+            "ITA" => "IT",
+            "NOR" => "NO",
+            "IRL" => "IE",
+            "LVA" => "LV",
+            "EST" => "EE",
+            "LTU" => "LT",
+            "TUR" => "TR",
+            "KAZ" => "KZ",
+            "SGP" => "SG",
+            "JPN" => "JP",
+            "CAN" => "CA",
+            "AUS" => "AU",
+            "UKR" => "UA",
+            "MDA" => "MD",
+            "ARM" => "AM",
+            "GEO" => "GE",
+            "BGR" => "BG",
+            "ROU" => "RO",
+            "HUN" => "HU",
+            "SVK" => "SK",
+            "DNK" => "DK",
+            "PRT" => "PT",
+            "GRC" => "GR",
+            "ISR" => "IL",
+            "ARE" => "AE",
+            "IND" => "IN",
+            "KOR" => "KR",
+            "TWN" => "TW",
+            "BRA" => "BR",
+            "MEX" => "MX",
+            "ARG" => "AR",
+            "ZAF" => "ZA",
+            var other => other,
+        };
 
     public static (string? CurrencyCode, string? CountryCode, bool? PaidAppsAvailable) ParseGooglePlayRegionAndCurrency(string? htmlBody)
     {
@@ -603,15 +700,14 @@ public static partial class IpReputationProbe
                 (apiBody.Contains("FAILED_PRECONDITION", StringComparison.OrdinalIgnoreCase) &&
                  apiBody.Contains("location", StringComparison.OrdinalIgnoreCase)))
             {
-                return (false, "API gateway вернул «User location is not supported» (гео-блок AI Studio)");
+                return (false, "API-шлюз generativelanguage.googleapis.com вернул «User location is not supported» (гео-блок AI Studio)");
             }
 
-            if (apiBody.Contains("Method doesn't allow unregistered callers", StringComparison.OrdinalIgnoreCase) ||
-                apiBody.Contains("API key not valid", StringComparison.OrdinalIgnoreCase) ||
-                apiBody.Contains("API_KEY_INVALID", StringComparison.OrdinalIgnoreCase) ||
-                apiStatusCode == 200)
+            // Только явный HTTP 200 со списком моделей подтверждает допуск;
+            // 403 PERMISSION_DENIED / Method doesn't allow unregistered callers / API_KEY_INVALID приходят ДО проверки региона даже из РФ.
+            if (apiStatusCode == 200 && apiBody.Contains("\"models\"", StringComparison.OrdinalIgnoreCase))
             {
-                return (true, "API gateway generativelanguage.googleapis.com пропустил IP без гео-блока");
+                return (true, "API-шлюз generativelanguage.googleapis.com вернул список моделей без гео-блока");
             }
         }
 
@@ -638,15 +734,28 @@ public static partial class IpReputationProbe
             return (false, "Страница AI Studio сообщила об ограничении по стране");
         }
 
-        if (webStatusCode is >= 200 and < 400 &&
-            !string.IsNullOrWhiteSpace(webFinalUri) &&
-            (webFinalUri.Contains("aistudio.google.com", StringComparison.OrdinalIgnoreCase) ||
-             webFinalUri.Contains("accounts.google.com", StringComparison.OrdinalIgnoreCase)))
+        if (!string.IsNullOrWhiteSpace(webFinalUri) &&
+            webFinalUri.Contains("accounts.google.com", StringComparison.OrdinalIgnoreCase))
         {
-            return (true, "aistudio.google.com доступен без редиректа на страницу блокировки");
+            return (null, "Без входа в аккаунт AI Studio перенаправил на accounts.google.com — автопроверка не гарантирует допуск (проверьте в браузере)");
         }
 
-        return (null, "Не удалось получить однозначный ответ от AI Studio");
+        if (!string.IsNullOrWhiteSpace(webFinalUri) &&
+            webFinalUri.Contains("aistudio.google.com/welcome", StringComparison.OrdinalIgnoreCase))
+        {
+            return (null, "Открылась публичная витрина aistudio.google.com/welcome без проверки сессии — проверьте допуск в браузере");
+        }
+
+        if (!string.IsNullOrWhiteSpace(apiBody) &&
+            (apiBody.Contains("Method doesn't allow unregistered callers", StringComparison.OrdinalIgnoreCase) ||
+             apiBody.Contains("PERMISSION_DENIED", StringComparison.OrdinalIgnoreCase) ||
+             apiBody.Contains("ACCESS_DENIED", StringComparison.OrdinalIgnoreCase) ||
+             apiBody.Contains("API_KEY_INVALID", StringComparison.OrdinalIgnoreCase)))
+        {
+            return (null, "API-шлюз отклонил запрос без авторизации до проверки региона (HTTP 403) — статус не подтверждён, проверьте в браузере");
+        }
+
+        return (null, "Не удалось получить однозначный ответ от AI Studio — проверьте в браузере");
     }
 
     public static RdapSubnetInfo ParseRdapIpResponse(string? jsonBody)
@@ -921,7 +1030,9 @@ public static partial class IpReputationProbe
         string? googlePlayCountry = null,
         bool? googlePlayPaidAvailable = null,
         string? googleTermsCountry = null,
-        string? googleTermsLabel = null)
+        string? googleTermsLabel = null,
+        string? geminiCountryCode = null,
+        string? geminiStatusDetail = null)
     {
         var normPhysical = string.IsNullOrWhiteSpace(physicalCountryCode) ? null : physicalCountryCode.Trim().ToUpperInvariant();
         var normYt = string.IsNullOrWhiteSpace(youtubeGl) ? null : youtubeGl.Trim().ToUpperInvariant();
@@ -929,8 +1040,9 @@ public static partial class IpReputationProbe
         var normGoogle = string.IsNullOrWhiteSpace(googleRegion) ? normTerms : googleRegion.Trim().ToUpperInvariant();
         var normPlayCountry = string.IsNullOrWhiteSpace(googlePlayCountry) ? null : googlePlayCountry.Trim().ToUpperInvariant();
         var normPlayCurrency = string.IsNullOrWhiteSpace(googlePlayCurrency) ? null : googlePlayCurrency.Trim().ToUpperInvariant();
+        var normGeminiCountry = string.IsNullOrWhiteSpace(geminiCountryCode) ? null : geminiCountryCode.Trim().ToUpperInvariant();
         var effectiveSearchLabel = googleTermsLabel ?? googleFooterCountry;
-        var detectedGl = normYt ?? normTerms ?? normGoogle ?? normPlayCountry;
+        var detectedGl = normYt ?? normTerms ?? normGoogle ?? normPlayCountry ?? normGeminiCountry;
 
         if (!probeExecuted)
         {
@@ -957,14 +1069,16 @@ public static partial class IpReputationProbe
                     new GoogleSignalCheck("3. Google Play (регион и валюта)", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
                     new GoogleSignalCheck("4. Google Terms / Search и /sorry/", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
                     new GoogleSignalCheck("5. Google Gemini Web", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
-                    new GoogleSignalCheck("6. Google AI Studio + API", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
+                    new GoogleSignalCheck("6. Google AI Studio", "Не запускался", "Требуется активный туннель или прокси ВПН", false, false),
                 ],
                 AiStudioAccessible: null,
                 AiStudioStatusDetail: null,
                 GooglePlayCurrency: null,
                 GooglePlayCountry: null,
                 GoogleTermsCountry: null,
-                AiAccessDivergesFromRuTag: false);
+                AiAccessDivergesFromRuTag: false,
+                GeminiCountryCode: null,
+                GeminiStatusDetail: null);
         }
 
         var isForeignPhysical = !string.IsNullOrWhiteSpace(normPhysical) &&
@@ -976,6 +1090,7 @@ public static partial class IpReputationProbe
         var explicitRuCode = string.Equals(normYt, "RU", StringComparison.OrdinalIgnoreCase) ||
                              string.Equals(normGoogle, "RU", StringComparison.OrdinalIgnoreCase) ||
                              string.Equals(normTerms, "RU", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(normGeminiCountry, "RU", StringComparison.OrdinalIgnoreCase) ||
                              playIndicatesRu;
 
         // Если на зарубежном IP заблокированы сразу два ключевых контура (например YouTube Premium + Gemini или Play + Premium)
@@ -996,6 +1111,8 @@ public static partial class IpReputationProbe
             effectiveSearchLabel,
             hasCaptcha,
             geminiAccessible,
+            normGeminiCountry,
+            geminiStatusDetail,
             aiStudioAccessible,
             aiStudioDetail,
             isForeignPhysical);
@@ -1019,15 +1136,15 @@ public static partial class IpReputationProbe
             : (googlePlayPaidAvailable == false ? "Платные приложения заблокированы" : "—");
         var geminiText = geminiAccessible switch
         {
-            true => "Пускает",
-            false => "Заблокирован",
-            _ => "—",
+            true => normGeminiCountry is not null ? $"Пускает ({normGeminiCountry})" : "Пускает",
+            false => normGeminiCountry is not null ? $"Заблокирован ({normGeminiCountry})" : "Заблокирован",
+            _ => "Не подтверждено",
         };
         var aiStudioText = aiStudioAccessible switch
         {
             true => "Пускает",
             false => "Заблокирован",
-            _ => "—",
+            _ => "Не подтверждено",
         };
         var searchText = !string.IsNullOrWhiteSpace(effectiveSearchLabel)
             ? $"{normGoogle ?? "—"} ({effectiveSearchLabel})"
@@ -1045,7 +1162,14 @@ public static partial class IpReputationProbe
             {
                 ruSources.Add("Google Terms/Search=RU");
             }
-            if (geminiAccessible == false) ruSources.Add("Gemini заблокирован");
+            if (string.Equals(normGeminiCountry, "RU", StringComparison.OrdinalIgnoreCase))
+            {
+                ruSources.Add("Gemini AI-контур=RU");
+            }
+            else if (geminiAccessible == false)
+            {
+                ruSources.Add("Gemini заблокирован");
+            }
             if (aiStudioAccessible == false) ruSources.Add("AI Studio заблокирован");
 
             var reason = ruSources.Count > 0
@@ -1054,7 +1178,9 @@ public static partial class IpReputationProbe
 
             var divergenceNote = aiStudioAccessible == true
                 ? " При этом контур Google AI Studio сейчас пускает этот IP — у AI Studio и YouTube/Search разные гео-таблицы."
-                : string.Empty;
+                : (geminiAccessible == true
+                    ? $" При этом живой контур Gemini определил регион {normGeminiCountry ?? "зарубежный"} и пускает этот IP."
+                    : string.Empty);
 
             return new GoogleGeoVerdict(
                 ProbeExecuted: true,
@@ -1068,7 +1194,9 @@ public static partial class IpReputationProbe
                 RoutingChannelUsed: routingChannelUsed,
                 VerdictTitle: aiStudioAccessible == true
                     ? $"МЕТКА RU ОБНАРУЖЕНА (сервер в {normPhysical}, но Google AI Studio пускает)"
-                    : $"КРИТИЧНО: Обнаружена «прокажённая метка RU» у Google (сервер в {normPhysical}, но Google видит РФ)",
+                    : (geminiAccessible == true
+                        ? $"МЕТКА RU ОБНАРУЖЕНА (сервер в {normPhysical}, но контур Gemini пускает)"
+                        : $"КРИТИЧНО: Обнаружена «прокажённая метка RU» у Google (сервер в {normPhysical}, но Google видит РФ)"),
                 VerdictSummary: $"{reason}.{divergenceNote} Причина: массовый трафик смартфонов из РФ или российский регистратор подсети (RIPE) заставили Google перепривязать IP к РФ.",
                 TechnicalEvidence: evidence,
                 YouTubePremiumAvailable: youtubePremiumAvailable,
@@ -1080,7 +1208,9 @@ public static partial class IpReputationProbe
                 GooglePlayCurrency: normPlayCurrency,
                 GooglePlayCountry: normPlayCountry,
                 GoogleTermsCountry: normTerms,
-                AiAccessDivergesFromRuTag: aiAccessDiverges);
+                AiAccessDivergesFromRuTag: aiAccessDiverges,
+                GeminiCountryCode: normGeminiCountry,
+                GeminiStatusDetail: geminiStatusDetail);
         }
 
         if (hasCaptcha)
@@ -1107,7 +1237,9 @@ public static partial class IpReputationProbe
                 GooglePlayCurrency: normPlayCurrency,
                 GooglePlayCountry: normPlayCountry,
                 GoogleTermsCountry: normTerms,
-                AiAccessDivergesFromRuTag: false);
+                AiAccessDivergesFromRuTag: false,
+                GeminiCountryCode: normGeminiCountry,
+                GeminiStatusDetail: geminiStatusDetail);
         }
 
         if (isForeignPhysical && (geminiAccessible == false || aiStudioAccessible == false || youtubePremiumAvailable == false))
@@ -1140,7 +1272,9 @@ public static partial class IpReputationProbe
                 GooglePlayCurrency: normPlayCurrency,
                 GooglePlayCountry: normPlayCountry,
                 GoogleTermsCountry: normTerms,
-                AiAccessDivergesFromRuTag: false);
+                AiAccessDivergesFromRuTag: false,
+                GeminiCountryCode: normGeminiCountry,
+                GeminiStatusDetail: geminiStatusDetail);
         }
 
         if (string.Equals(normPhysical, "RU", StringComparison.OrdinalIgnoreCase))
@@ -1167,12 +1301,17 @@ public static partial class IpReputationProbe
                 GooglePlayCurrency: normPlayCurrency,
                 GooglePlayCountry: normPlayCountry,
                 GoogleTermsCountry: normTerms,
-                AiAccessDivergesFromRuTag: false);
+                AiAccessDivergesFromRuTag: false,
+                GeminiCountryCode: normGeminiCountry,
+                GeminiStatusDetail: geminiStatusDetail);
         }
 
         if (probeSucceeded)
         {
             var shownRegion = detectedGl ?? normPhysical ?? "Зарубежный";
+            var aiNote = aiStudioAccessible is null
+                ? " Для Google AI Studio без входа в аккаунт автопроверка не может гарантировать допуск — при необходимости проверьте его кнопкой в браузере."
+                : string.Empty;
             return new GoogleGeoVerdict(
                 ProbeExecuted: true,
                 ProbeSucceeded: true,
@@ -1184,7 +1323,7 @@ public static partial class IpReputationProbe
                 GoogleSearchRegion: normGoogle,
                 RoutingChannelUsed: routingChannelUsed,
                 VerdictTitle: $"ОТЛИЧНО: Чистый зарубежный IP для Google (регион {shownRegion}, метки RU и капчи нет)",
-                VerdictSummary: $"Все активные сигналы подтверждают чистую зарубежную репутацию подсети ({normPhysical ?? shownRegion}): YouTube, Google Play, Terms/Search, Gemini и AI Studio не видят привязки к РФ.",
+                VerdictSummary: $"Активные сигналы подтверждают чистую зарубежную репутацию подсети ({normPhysical ?? shownRegion}): YouTube, Google Play, Terms/Search и контур Gemini не видят привязки к РФ.{aiNote}",
                 TechnicalEvidence: evidence,
                 YouTubePremiumAvailable: youtubePremiumAvailable,
                 GeminiAccessible: geminiAccessible,
@@ -1195,7 +1334,9 @@ public static partial class IpReputationProbe
                 GooglePlayCurrency: normPlayCurrency,
                 GooglePlayCountry: normPlayCountry,
                 GoogleTermsCountry: normTerms,
-                AiAccessDivergesFromRuTag: false);
+                AiAccessDivergesFromRuTag: false,
+                GeminiCountryCode: normGeminiCountry,
+                GeminiStatusDetail: geminiStatusDetail);
         }
 
         return new GoogleGeoVerdict(
@@ -1220,7 +1361,9 @@ public static partial class IpReputationProbe
             GooglePlayCurrency: null,
             GooglePlayCountry: null,
             GoogleTermsCountry: null,
-            AiAccessDivergesFromRuTag: false);
+            AiAccessDivergesFromRuTag: false,
+            GeminiCountryCode: null,
+            GeminiStatusDetail: null);
     }
 
     private static IReadOnlyList<GoogleSignalCheck> BuildSignalChecks(
@@ -1233,6 +1376,8 @@ public static partial class IpReputationProbe
         string? termsOrFooterLabel,
         bool hasCaptcha,
         bool? gemini,
+        string? geminiCountry,
+        string? geminiDetail,
         bool? aiStudio,
         string? aiStudioDetail,
         bool isForeignPhysical)
@@ -1310,34 +1455,36 @@ public static partial class IpReputationProbe
             "5. Google Gemini Web",
             gemini switch
             {
-                true => "ПУСКАЕТ",
-                false => "ЗАБЛОКИРОВАН",
-                _ => "Не определено",
+                true => geminiCountry is not null ? $"ПУСКАЕТ ({geminiCountry})" : "ПУСКАЕТ",
+                false => geminiCountry is not null ? $"ЗАБЛОКИРОВАН ({geminiCountry})" : "ЗАБЛОКИРОВАН",
+                _ => "Не подтверждено",
             },
-            gemini switch
-            {
-                true => "gemini.google.com принимает подключения с этого IP без гео-блокировки",
-                false => "Gemini отклонил IP по региону (/unsupported или HTTP 403)",
-                _ => "Нет однозначного ответа от gemini.google.com",
-            },
+            !string.IsNullOrWhiteSpace(geminiDetail)
+                ? geminiDetail
+                : (gemini switch
+                {
+                    true => "Живой контур gemini.google.com подтвердил доступный регион",
+                    false => "Живой контур Gemini отклонил IP по региону",
+                    _ => "gemini.google.com не вернул серверный маркер региона — статус не подтверждён",
+                }),
             IsAlert: gemini == false,
             IsPass: gemini == true);
 
         var aiStudioCheck = new GoogleSignalCheck(
-            "6. Google AI Studio + API",
+            "6. Google AI Studio",
             aiStudio switch
             {
                 true => "ПУСКАЕТ",
                 false => "ЗАБЛОКИРОВАН",
-                _ => "Не определено",
+                _ => "Не подтверждено",
             },
             !string.IsNullOrWhiteSpace(aiStudioDetail)
                 ? aiStudioDetail
                 : (aiStudio switch
                 {
-                    true => "aistudio.google.com и API-шлюз не блокируют этот IP по региону",
-                    false => "Google AI Studio отклонил IP (User location is not supported / 403)",
-                    _ => "Нет ответа от aistudio.google.com / generativelanguage.googleapis.com",
+                    true => "Контур Google AI Studio подтвердил допуск без гео-блокировки",
+                    false => "Google AI Studio отклонил IP по региону (available-regions / HTTP 403 / location not supported)",
+                    _ => "Без входа в аккаунт Google автопроверка не может гарантировать допуск — проверьте кнопкой в браузере",
                 }),
             IsAlert: aiStudio == false,
             IsPass: aiStudio == true);
@@ -1644,7 +1791,9 @@ public static partial class IpReputationProbe
                     googlePlayCountry: bundle.PlayCountry,
                     googlePlayPaidAvailable: bundle.PlayPaidAvailable,
                     googleTermsCountry: bundle.TermsCountry,
-                    googleTermsLabel: bundle.TermsLabel);
+                    googleTermsLabel: bundle.TermsLabel,
+                    geminiCountryCode: bundle.GeminiCountryCode,
+                    geminiStatusDetail: bundle.GeminiDetail);
             }
             else
             {
@@ -2205,6 +2354,8 @@ public static partial class IpReputationProbe
         bool HasCaptcha,
         bool? YtPremium,
         bool? GeminiOk,
+        string? GeminiCountryCode,
+        string? GeminiDetail,
         bool? AiStudioOk,
         string? AiStudioDetail,
         string? PlayCurrency,
@@ -2232,8 +2383,16 @@ public static partial class IpReputationProbe
         var (playCurrency, playCountry, playPaidAvailable) = await playTask.ConfigureAwait(false);
         var (termsCountry, termsLabel) = await termsTask.ConfigureAwait(false);
         var (googleGl, footerCountry, hasCaptcha) = await searchTask.ConfigureAwait(false);
-        var geminiOk = await geminiTask.ConfigureAwait(false);
+        var (geminiOk, geminiCountryCode, geminiDetail) = await geminiTask.ConfigureAwait(false);
         var (aiStudioOk, aiStudioDetail) = await aiStudioTask.ConfigureAwait(false);
+
+        if (aiStudioOk is null && !string.IsNullOrWhiteSpace(geminiCountryCode))
+        {
+            var note = geminiOk == false
+                ? $"Справочно: живой контур Gemini определил регион {geminiCountryCode} (высокий риск блока AI Studio)"
+                : $"Справочно: живой контур Gemini подтвердил регион {geminiCountryCode}";
+            aiStudioDetail = $"{aiStudioDetail} · {note}";
+        }
 
         return new LiveGoogleProbeBundle(
             ytGl,
@@ -2242,6 +2401,8 @@ public static partial class IpReputationProbe
             hasCaptcha,
             ytPrem,
             geminiOk,
+            geminiCountryCode,
+            geminiDetail,
             aiStudioOk,
             aiStudioDetail,
             playCurrency,
@@ -2357,22 +2518,22 @@ public static partial class IpReputationProbe
         }
     }
 
-    private static async Task<bool?> ProbeGeminiSignalAsync(HttpClient http, CancellationToken ct)
+    private static async Task<(bool? Accessible, string? CountryCode, string Detail)> ProbeGeminiSignalAsync(HttpClient http, CancellationToken ct)
     {
         try
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(5));
+            cts.CancelAfter(TimeSpan.FromSeconds(7));
             using var req = new HttpRequestMessage(HttpMethod.Get, GeminiAppUri);
             ApplyGoogleProbeHeaders(req);
             using var resp = await http.SendAsync(req, cts.Token).ConfigureAwait(false);
             var body = await resp.Content.ReadAsStringAsync(cts.Token).ConfigureAwait(false);
             var finalUri = resp.RequestMessage?.RequestUri?.ToString();
-            return ParseGeminiAvailability(finalUri, (int)resp.StatusCode, body);
+            return ParseGeminiAvailabilityDetailed(finalUri, (int)resp.StatusCode, body);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
         {
-            return null;
+            return (null, null, "Нет ответа от gemini.google.com в пределах таймаута");
         }
     }
 
